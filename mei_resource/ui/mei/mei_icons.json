@@ -1,0 +1,181 @@
+{
+    "btn_arrow_left": {
+        "type": "image",
+        "offset": [
+            -0.5,
+            0
+        ],
+        "size": [
+            "100%+-4px",
+            "100%+-4px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "grayscale": true,
+        "texture": "textures/ui/mei/icons/arrow_left.png"
+    },
+    "btn_arrow_right": {
+        "type": "image",
+        "offset": [
+            0.5,
+            0
+        ],
+        "size": [
+            "100%+-4px",
+            "100%+-4px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "grayscale": true,
+        "texture": "textures/ui/mei/icons/arrow_right.png"
+    },
+    "btn_back": {
+        "type": "image",
+        "size": [
+            "100%+-2px",
+            "100%+-2px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/back"
+    },
+    "btn_close": {
+        "type": "image",
+        "size": [
+            "100%+-4px",
+            "100%+-4px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/close"
+    },
+    "btn_cross": {
+        "type": "image",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/cross"
+    },
+    "btn_find_slot": {
+        "type": "image",
+        "size": [
+            "100%+-7px",
+            "100%+-7px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/find_slot"
+    },
+    "btn_pin_to_top": {
+        "type": "image",
+        "size": [
+            "100%+-4px",
+            "100%+-4px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/pin_to_top"
+    },
+    "btn_plus": {
+        "type": "image",
+        "size": [
+            "100%+-5px",
+            "100%+-5px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/plus"
+    },
+    "btn_question": {
+        "type": "image",
+        "size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/question"
+    },
+    "btn_setting": {
+        "type": "image",
+        "size": [
+            "100%+-6px",
+            "100%+-6px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/setting"
+    },
+    "btn_star": {
+        "type": "image",
+        "size": [
+            "100%+-4px",
+            "100%+-4px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/star"
+    },
+    "btn_tree": {
+        "type": "image",
+        "size": [
+            "100%+-4px",
+            "100%+-4px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/tree"
+    },
+    "namespace": "mei_icons"
+}

@@ -1,0 +1,313 @@
+{
+    "action_button": {
+        "$action_button_size|default": [
+            "100%+0px", 
+            "100%x+1px"
+        ], 
+        "$action_collection_name|default": "recipes_grid", 
+        "$action_icon|default": "", 
+        "$binding_name_prefix|default": "mei_ui.recipe.action", 
+        "$toggle_button_size|default": [
+            "default", 
+            "100%+-1px"
+        ], 
+        "controls": [
+            {
+                "toggle_button@mei_common.ore_style_toggle_button": {
+                    "$action_state_binding_name": "('#' + $binding_name_prefix + '.state')", 
+                    "$action_visible_binding_name": "('#' + $binding_name_prefix + '.visible')", 
+                    "$button_content_control": "$action_icon", 
+                    "$toggle_enabled_binding_condition": "always_when_visible", 
+                    "$toggle_enabled_binding_name": "('#' + $binding_name_prefix + '.enabled')", 
+                    "$toggle_enabled_binding_type": "collection", 
+                    "$toggle_grid_collection_name": "$action_collection_name", 
+                    "$toggle_name": "('#' + $binding_name_prefix + '.toggle')", 
+                    "$toggle_state_binding_name": "#toggle_state", 
+                    "anchor_from": "top_middle", 
+                    "anchor_to": "top_middle", 
+                    "bindings": [
+                        {
+                            "binding_collection_name": "$action_collection_name", 
+                            "binding_condition": "always_when_visible", 
+                            "binding_type": "collection_details"
+                        }, 
+                        {
+                            "binding_collection_name": "$action_collection_name", 
+                            "binding_condition": "always", 
+                            "binding_name": "$action_visible_binding_name", 
+                            "binding_name_override": "#visible", 
+                            "binding_type": "collection"
+                        }, 
+                        {
+                            "binding_collection_name": "$action_collection_name", 
+                            "binding_condition": "always_when_visible", 
+                            "binding_name": "$action_state_binding_name", 
+                            "binding_name_override": "#toggle_state", 
+                            "binding_type": "collection"
+                        }
+                    ], 
+                    "property_bag": {
+                        "#toggle_state": false, 
+                        "#visible": false
+                    }, 
+                    "size": "$toggle_button_size", 
+                    "visible": "#visible"
+                }
+            }
+        ], 
+        "layer": 1, 
+        "size": "$action_button_size", 
+        "type": "panel"
+    }, 
+    "buttons_panel_horizontal": {
+        "$action_button_size": [
+            "100%y+1px", 
+            "100%+0px"
+        ], 
+        "$action_collection_name|default": "recipes_grid", 
+        "$plus_button_ignored|default": true, 
+        "$star_button_ignored|default": false, 
+        "$toggle_button_size": [
+            "100%+-1px", 
+            "default"
+        ], 
+        "$top_button_ignored|default": false, 
+        "$tree_button_ignored|default": true, 
+        "anchor_from": "bottom_right", 
+        "anchor_to": "top_right", 
+        "controls": [
+            {
+                "0@mei_recipe_common.action_button": {
+                    "$action_icon": "mei_icons.btn_tree", 
+                    "$binding_name_prefix": "mei_ui.recipe.action.tree", 
+                    "ignored": "$tree_button_ignored"
+                }
+            }, 
+            {
+                "1@mei_recipe_common.action_button": {
+                    "$action_icon": "mei_icons.btn_pin_to_top", 
+                    "$binding_name_prefix": "mei_ui.recipe.action.top", 
+                    "ignored": "$top_button_ignored"
+                }
+            }, 
+            {
+                "2@mei_recipe_common.action_button": {
+                    "$action_icon": "mei_icons.btn_star", 
+                    "$binding_name_prefix": "mei_ui.recipe.action.star", 
+                    "ignored": "$star_button_ignored"
+                }
+            }, 
+            {
+                "3@mei_recipe_common.action_button": {
+                    "$action_icon": "mei_icons.btn_plus", 
+                    "$binding_name_prefix": "mei_ui.recipe.action.plus", 
+                    "ignored": "$plus_button_ignored"
+                }
+            }
+        ], 
+        "layer": 1, 
+        "max_size": [
+            "default", 
+            0.0
+        ], 
+        "offset": [
+            "0%c+0px", 
+            3.0
+        ], 
+        "orientation": "horizontal", 
+        "size": [
+            "default", 
+            13.0
+        ], 
+        "type": "stack_panel"
+    }, 
+    "buttons_panel_vertical": {
+        "$action_collection_name|default": "recipes_grid", 
+        "$plus_button_ignored|default": true, 
+        "$star_button_ignored|default": false, 
+        "$top_button_ignored|default": false, 
+        "$tree_button_ignored|default": true, 
+        "anchor_from": "bottom_right", 
+        "anchor_to": "bottom_left", 
+        "controls": [
+            {
+                "0@mei_recipe_common.action_button": {
+                    "$action_icon": "mei_icons.btn_tree", 
+                    "$binding_name_prefix": "mei_ui.recipe.action.tree", 
+                    "ignored": "$tree_button_ignored"
+                }
+            }, 
+            {
+                "1@mei_recipe_common.action_button": {
+                    "$action_icon": "mei_icons.btn_pin_to_top", 
+                    "$binding_name_prefix": "mei_ui.recipe.action.top", 
+                    "ignored": "$top_button_ignored"
+                }
+            }, 
+            {
+                "2@mei_recipe_common.action_button": {
+                    "$action_icon": "mei_icons.btn_star", 
+                    "$binding_name_prefix": "mei_ui.recipe.action.star", 
+                    "ignored": "$star_button_ignored"
+                }
+            }, 
+            {
+                "3@mei_recipe_common.action_button": {
+                    "$action_icon": "mei_icons.btn_plus", 
+                    "$binding_name_prefix": "mei_ui.recipe.action.plus", 
+                    "ignored": "$plus_button_ignored"
+                }
+            }
+        ], 
+        "layer": 1, 
+        "max_size": [
+            0.0, 
+            "default"
+        ], 
+        "offset": [
+            3.0, 
+            "0%c+0px"
+        ], 
+        "orientation": "vertical", 
+        "size": [
+            13.0, 
+            "default"
+        ], 
+        "type": "stack_panel"
+    }, 
+    "namespace": "mei_recipe_common", 
+    "preview@mei_common.tooltip_background": {
+        "$recipe_content_template|default": "mei_recipe_common.preview_empty", 
+        "controls": [
+            {
+                "stack": {
+                    "controls": [
+                        {
+                            "title@mei_common.tooltip_title": {}
+                        }, 
+                        {
+                            "gap": {
+                                "size": [
+                                    1.0, 
+                                    3.0
+                                ], 
+                                "type": "panel"
+                            }
+                        }, 
+                        {
+                            "grid@mei_recipe_common.preview_grid": {}
+                        }
+                    ], 
+                    "layer": 1, 
+                    "orientation": "vertical", 
+                    "size": [
+                        "100%cm", 
+                        "100%c"
+                    ], 
+                    "type": "stack_panel"
+                }
+            }
+        ]
+    }, 
+    "preview_cell": {
+        "$recipe_content_size|default": [
+            "100%c", 
+            "100%c"
+        ], 
+        "$recipe_content_template|default": "mei_recipe_common.preview_empty", 
+        "bindings": [
+            {
+                "binding_collection_name": "$collection_name", 
+                "binding_condition": "always_when_visible", 
+                "binding_name": "#mei_ui.recipe_details.recipe.visible", 
+                "binding_name_override": "#visible", 
+                "binding_type": "collection"
+            }
+        ], 
+        "controls": [
+            {
+                "wrapper": {
+                    "controls": [
+                        {
+                            "content@$recipe_content_template": {}
+                        }
+                    ], 
+                    "layer": 1, 
+                    "size": [
+                        "100%c", 
+                        "100%c"
+                    ], 
+                    "type": "panel"
+                }
+            }
+        ], 
+        "layer": 1, 
+        "property_bag": {
+            "#visible": true
+        }, 
+        "size": "$recipe_content_size", 
+        "type": "panel", 
+        "visible": "#visible"
+    }, 
+    "preview_empty": {
+        "size": [
+            16.0, 
+            16.0
+        ], 
+        "type": "panel"
+    }, 
+    "preview_grid": {
+        "$collection_name": "mei_tooltip_recipe", 
+        "$recipe_content_template|default": "mei_recipe_common.preview_empty", 
+        "anchor_from": "top_left", 
+        "anchor_to": "top_left", 
+        "collection_name": "$collection_name", 
+        "grid_dimensions": [
+            1, 
+            1
+        ], 
+        "grid_item_template": "mei_recipe_common.preview_cell", 
+        "layer": 1, 
+        "maximum_grid_items": 1, 
+        "size": [
+            "default", 
+            "default"
+        ], 
+        "type": "grid"
+    }, 
+    "recipe_panel": {
+        "bindings": [
+            {
+                "binding_collection_name": "$collection_name", 
+                "binding_condition": "always_when_visible", 
+                "binding_name": "#mei_ui.recipe_details.recipe.visible", 
+                "binding_name_override": "#visible", 
+                "binding_type": "collection"
+            }
+        ], 
+        "layer": 1, 
+        "property_bag": {
+            "#visible": true
+        }, 
+        "type": "panel", 
+        "visible": "#visible"
+    }, 
+    "recipes_grid": {
+        "$collection_name": "recipes_grid", 
+        "anchor_from": "top_middle", 
+        "anchor_to": "top_middle", 
+        "collection_name": "$collection_name", 
+        "grid_dimensions": [
+            1, 
+            1
+        ], 
+        "grid_item_template": "$recipe_ui_template", 
+        "layer": 1, 
+        "maximum_grid_items": 2, 
+        "offset": [
+            0.0, 
+            40.0
+        ], 
+        "type": "grid"
+    }
+}

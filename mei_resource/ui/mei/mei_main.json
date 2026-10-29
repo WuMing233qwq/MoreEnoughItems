@@ -1,0 +1,359 @@
+{
+    "find_capture@common.button": {
+        "type": "button",
+        "$pressed_button_name|default": "button.mei.find.capture",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 95,
+        "visible": false,
+        "button_mappings": [],
+        "controls": [
+            {
+                "default": {
+                    "type": "panel"
+                }
+            },
+            {
+                "hover": {
+                    "type": "panel"
+                }
+            },
+            {
+                "pressed": {
+                    "type": "panel"
+                }
+            }
+        ]
+    },
+    "float_backdrop@common.button": {
+        "type": "button",
+        "$pressed_button_name|default": "button.mei.float.backdrop",
+        "size": [
+            "200%+0px",
+            "200%+0px"
+        ],
+        "layer": 30,
+        "visible": false,
+        "button_mappings": [],
+        "controls": [
+            {
+                "default@mei_main.float_backdrop_face": {
+                    "alpha": 0.5
+                }
+            },
+            {
+                "hover@mei_main.float_backdrop_face": {
+                    "alpha": 0.5
+                }
+            },
+            {
+                "pressed@mei_main.float_backdrop_face": {
+                    "alpha": 0.5
+                }
+            }
+        ]
+    },
+    "float_backdrop_face": {
+        "type": "image",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "alpha": 0.3,
+        "fill": true,
+        "texture": "textures/ui/mei/black"
+    },
+    "float_button@common.button": {
+        "type": "button",
+        "$float_button_size|default": [
+            18,
+            18
+        ],
+        "$pressed_button_name|default": "button.mei.float.unused",
+        "size": "$float_button_size",
+        "layer": 1,
+        "button_mappings": [],
+        "controls": [
+            {
+                "default@mei_main.float_button_face": {
+                    "$float_face_texture": "$float_normal_texture"
+                }
+            },
+            {
+                "hover@mei_main.float_button_face": {
+                    "$float_face_texture": "$float_normal_texture"
+                }
+            },
+            {
+                "pressed@mei_main.float_button_face": {
+                    "$float_face_texture": "$float_pressed_texture"
+                }
+            }
+        ]
+    },
+    "float_button_face": {
+        "type": "image",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 1,
+        "texture": "$float_face_texture"
+    },
+    "float_window": {
+        "type": "input_panel",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            52,
+            22
+        ],
+        "contained": true,
+        "draggable": "both",
+        "layer": 100,
+        "visible": false,
+        "button_mappings": [
+            {
+                "to_button_id": "#netease_to_button_id",
+                "from_button_id": "button.menu_select",
+                "mapping_type": "pressed"
+            }
+        ],
+        "is_swallow": true,
+        "controls": [
+            {
+                "background": {
+                    "type": "image",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 0,
+                    "alpha": 0.45,
+                    "fill": true,
+                    "texture": "textures/ui/mei/black"
+                }
+            },
+            {
+                "buttons": {
+                    "type": "stack_panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        2,
+                        0
+                    ],
+                    "size": [
+                        "100%c",
+                        18
+                    ],
+                    "layer": 1,
+                    "orientation": "horizontal",
+                    "controls": [
+                        {
+                            "grip": {
+                                "type": "panel",
+                                "size": [
+                                    8,
+                                    18
+                                ],
+                                "controls": [
+                                    {
+                                        "dots": {
+                                            "type": "image",
+                                            "size": [
+                                                3,
+                                                9
+                                            ],
+                                            "texture": "textures/ui/mei/button/float_window/grip"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "gap": {
+                                "type": "panel",
+                                "size": [
+                                    2,
+                                    18
+                                ]
+                            }
+                        },
+                        {
+                            "mei@mei_main.float_button": {
+                                "$float_normal_texture": "textures/ui/mei/button/float_window/mei",
+                                "$float_pressed_texture": "textures/ui/mei/button/float_window/mei_pressed"
+                            }
+                        },
+                        {
+                            "query_slot": {
+                                "type": "panel",
+                                "size": [
+                                    20,
+                                    18
+                                ],
+                                "controls": [
+                                    {
+                                        "query@mei_main.float_button": {
+                                            "$float_normal_texture": "textures/ui/mei/button/float_window/query",
+                                            "$float_pressed_texture": "textures/ui/mei/button/float_window/query_pressed",
+                                            "anchor_from": "right_middle",
+                                            "anchor_to": "right_middle"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "layer_mark": {
+        "type": "panel",
+        "size": [
+            0,
+            0
+        ],
+        "visible": false
+    },
+    "main": {
+        "type": "screen",
+        "always_accepts_input": true,
+        "controls": [
+            {
+                "more_enough_items@mei_main.mei_proxy_ui": {}
+            }
+        ]
+    },
+    "mei_float_ui": {
+        "type": "panel",
+        "$mei_float_side_layer": 30,
+        "$mei_side_layer": 0,
+        "size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "min_size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "max_size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "priority": 99,
+        "controls": [
+            {
+                "side_layer_zero@mei_main.layer_mark": {}
+            },
+            {
+                "side_layer_normal@mei_main.layer_mark": {
+                    "layer": "$mei_side_layer"
+                }
+            },
+            {
+                "side_layer_float@mei_main.layer_mark": {
+                    "layer": "$mei_float_side_layer"
+                }
+            },
+            {
+                "mei_backdrop@mei_main.float_backdrop": {}
+            },
+            {
+                "mei_tooltip@mei_common.tooltip_root": {}
+            },
+            {
+                "mei_find@mei_main.find_capture": {}
+            },
+            {
+                "mei_float@mei_main.float_window": {}
+            }
+        ]
+    },
+    "mei_proxy_ui": {
+        "type": "panel",
+        "$mei_float_side_layer": 30,
+        "$mei_side_layer": 0,
+        "size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "min_size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "max_size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "priority": 99,
+        "controls": [
+            {
+                "side_layer_zero@mei_main.layer_mark": {}
+            },
+            {
+                "side_layer_normal@mei_main.layer_mark": {
+                    "layer": "$mei_side_layer"
+                }
+            },
+            {
+                "side_layer_float@mei_main.layer_mark": {
+                    "layer": "$mei_float_side_layer"
+                }
+            },
+            {
+                "mei_backdrop@mei_main.float_backdrop": {}
+            },
+            {
+                "mei_right_wrapper@MeiItemsBrowser.items_browser_ui": {
+                    "layer": "$mei_side_layer"
+                }
+            },
+            {
+                "mei_left_wrapper@MeiItemsSidebar.items_sidebar_ui": {
+                    "layer": "$mei_side_layer"
+                }
+            },
+            {
+                "mei_tooltip@mei_common.tooltip_root": {}
+            },
+            {
+                "mei_find@mei_main.find_capture": {}
+            },
+            {
+                "mei_float@mei_main.float_window": {}
+            }
+        ]
+    },
+    "mei_screen@common.base_screen": {
+        "$background_animations": [],
+        "$screen_animations": [],
+        "$screen_content": "mei_main.mei_screen_content",
+        "$use_loading_bars": false,
+        "button_mappings": [
+            {
+                "from_button_id": "button.menu_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.screen.close"
+            },
+            {
+                "from_button_id": "button.menu_inventory_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.screen.close"
+            }
+        ],
+        "is_showing_menu": true
+    },
+    "mei_screen_content": {
+        "type": "panel",
+        "size": [
+            "100%",
+            "100%"
+        ]
+    },
+    "namespace": "mei_main"
+}

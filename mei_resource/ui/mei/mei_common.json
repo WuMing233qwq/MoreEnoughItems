@@ -1,0 +1,1670 @@
+{
+    "alpha_in": {
+        "anim_type": "alpha",
+        "duration": 0.15,
+        "easing": "cubicOut",
+        "from": 0,
+        "next": "",
+        "to": 1
+    },
+    "highlight_panel@common.highlight_slot_panel": {
+        "$item_overlay_btn_hover_text_binding_name": "('#' + $binding_name_prefix + '.overlay.btn.hover_text')",
+        "$item_overlay_hover_probe_binding_name": "('#' + $binding_name_prefix + '.overlay.hover')",
+        "bindings": [
+            {
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always_when_visible",
+                "binding_name": "$item_overlay_hover_probe_binding_name",
+                "binding_name_override": "#mei_hover_probe",
+                "binding_type": "collection"
+            }
+        ],
+        "controls": [
+            {
+                "highlight@mei_common.highlight_slot": {
+                    "controls": [
+                        {
+                            "hover_text@common.hover_text": {
+                                "bindings": [
+                                    {
+                                        "binding_collection_name": "$collection_name",
+                                        "binding_condition": "always",
+                                        "binding_name": "$item_overlay_btn_hover_text_binding_name",
+                                        "binding_name_override": "#hover_text",
+                                        "binding_type": "collection"
+                                    }
+                                ],
+                                "layer": 99,
+                                "property_bag": {
+                                    "#hover_text": "待获取"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "property_bag": {
+            "#mei_hover_probe": false
+        }
+    },
+    "highlight_slot@common.highlight_slot": {
+        "alpha": 0.25,
+        "fill": true,
+        "layer": 1,
+        "size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "texture": "textures/ui/mei/white"
+    },
+    "hover_content": {
+        "type": "image",
+        "$hover_content_text|default": "",
+        "size": [
+            "100%c+8px",
+            "100%c+8px"
+        ],
+        "layer": 1,
+        "texture": "textures/ui/mei/hover/content_background",
+        "controls": [
+            {
+                "label": {
+                    "type": "label",
+                    "color": [
+                        0.7725490196078432,
+                        0.7725490196078432,
+                        0.7725490196078432
+                    ],
+                    "font_type": "default",
+                    "text": "$hover_content_text",
+                    "text_alignment": "center"
+                }
+            }
+        ]
+    },
+    "item_panel@mei_common.slot_base": {
+        "controls": [
+            {
+                "background@mei_common.slot_background": {}
+            },
+            {
+                "item@mei_common.slot_item": {}
+            },
+            {
+                "overlay@mei_common.slot_overlay": {}
+            }
+        ]
+    },
+    "main": {
+        "type": "screen",
+        "controls": [
+            {}
+        ]
+    },
+    "menu_button@common.button": {
+        "type": "button",
+        "$menu_button_size|default": [
+            40,
+            14
+        ],
+        "$pressed_button_name|default": "button.mei.menu.unused",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": "$menu_button_size",
+        "layer": 2,
+        "visible": false,
+        "controls": [
+            {
+                "default@mei_common.menu_button_face": {
+                    "$menu_face_texture": "textures/ui/mei/button/tooltip_button/button"
+                }
+            },
+            {
+                "hover@mei_common.menu_button_face": {
+                    "$menu_face_texture": "textures/ui/mei/button/tooltip_button/button_highlighted"
+                }
+            },
+            {
+                "pressed@mei_common.menu_button_face": {
+                    "$menu_face_texture": "textures/ui/mei/button/tooltip_button/button_pressed"
+                }
+            },
+            {
+                "mask": {
+                    "type": "image",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 3,
+                    "visible": false,
+                    "texture": "textures/ui/mei/button/tooltip_button/button_disabled"
+                }
+            },
+            {
+                "label": {
+                    "type": "label",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [
+                        "default",
+                        "default"
+                    ],
+                    "layer": 4,
+                    "color": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "default",
+                    "localize": false,
+                    "shadow": true,
+                    "text": ""
+                }
+            }
+        ]
+    },
+    "menu_button_face": {
+        "type": "image",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 1,
+        "texture": "$menu_face_texture"
+    },
+    "menu_icon_button@common.button": {
+        "type": "button",
+        "$menu_icon_control|default": "mei_icons.btn_cross",
+        "$menu_icon_size|default": [
+            14.0,
+            14.0
+        ],
+        "$pressed_button_name|default": "button.mei.menu.unused",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": "$menu_icon_size",
+        "layer": 2,
+        "visible": false,
+        "controls": [
+            {
+                "default@$menu_icon_control": {
+                    "fill": true
+                }
+            },
+            {
+                "hover@$menu_icon_control": {
+                    "color": [
+                        1,
+                        1,
+                        1
+                    ],
+                    "fill": true
+                }
+            },
+            {
+                "pressed@$menu_icon_control": {
+                    "color": [
+                        0.75,
+                        0.75,
+                        0.75
+                    ],
+                    "fill": true
+                }
+            }
+        ]
+    },
+    "namespace": "mei_common",
+    "nothing": {
+        "type": "panel",
+        "size": [
+            0,
+            0
+        ]
+    },
+    "ore_style_button@common.button": {
+        "type": "button",
+        "$button_content_control|default": "",
+        "$control_alpha": 1.0,
+        "$default_texture": "textures/ui/mei/button/button",
+        "$hover_texture": "textures/ui/mei/button/button_highlighted",
+        "$is_new_nine_slice": false,
+        "$label_color": [
+            1,
+            1,
+            1
+        ],
+        "$label_font_scale_factor": 1.0,
+        "$label_font_size": "large",
+        "$label_layer": 3,
+        "$label_offset": [
+            0,
+            0
+        ],
+        "$label_text": "Button",
+        "$nine_slice_buttom": 0,
+        "$nine_slice_left": 0,
+        "$nine_slice_right": 0,
+        "$nine_slice_top": 0,
+        "$nineslice_size": [
+            0,
+            0,
+            0,
+            0
+        ],
+        "$pressed_button_name": "%netease_editor_template_namespace.click",
+        "$pressed_texture": "textures/ui/mei/button/button_pressed_highlighted",
+        "$texture_layer": 2,
+        "layer": 2,
+        "button_mappings": [],
+        "default_control": "default",
+        "hover_control": "hover",
+        "is_handle_button_move_event": true,
+        "pressed_control": "pressed",
+        "bindings": [
+            {
+                "binding_type": "collection_details",
+                "binding_collection_name": "",
+                "binding_condition": "always_when_visible"
+            }
+        ],
+        "controls": [
+            {
+                "default@netease_editor_template_namespace.default": {
+                    "color": [
+                        1,
+                        1,
+                        1
+                    ],
+                    "controls": [
+                        {
+                            "wrapper": {
+                                "type": "panel",
+                                "offset": [
+                                    0,
+                                    -1
+                                ],
+                                "controls": [
+                                    {
+                                        "button_content@$button_content_control": {}
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "fill": true
+                }
+            },
+            {
+                "hover@netease_editor_template_namespace.hover": {
+                    "color": [
+                        0.898,
+                        0.898,
+                        0.898
+                    ],
+                    "controls": [
+                        {
+                            "wrapper": {
+                                "type": "panel",
+                                "offset": [
+                                    0,
+                                    -1
+                                ],
+                                "controls": [
+                                    {
+                                        "button_content@$button_content_control": {}
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "fill": true
+                }
+            },
+            {
+                "pressed@netease_editor_template_namespace.pressed": {
+                    "controls": [
+                        {
+                            "wrapper": {
+                                "type": "panel",
+                                "offset": [
+                                    0,
+                                    0.5
+                                ],
+                                "controls": [
+                                    {
+                                        "button_content@$button_content_control": {}
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "fill": true
+                }
+            },
+            {
+                "disabled": {
+                    "type": "image",
+                    "layer": 10,
+                    "visible": false,
+                    "fill": true,
+                    "texture": "textures/ui/mei/button/button_disabled",
+                    "controls": [
+                        {
+                            "wrapper": {
+                                "type": "panel",
+                                "offset": [
+                                    0,
+                                    0
+                                ],
+                                "controls": [
+                                    {
+                                        "button_content@$button_content_control": {
+                                            "layer": 10
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "button_label@netease_editor_template_namespace.button_label": {
+                    "visible": false
+                }
+            }
+        ]
+    },
+    "ore_style_button_disabled_wrapper": {
+        "type": "image",
+        "fill": true,
+        "texture": "textures/ui/mei/button/button_disabled",
+        "controls": [
+            {
+                "button_content@$button_content_control": {
+                    "offset": [
+                        0,
+                        0
+                    ]
+                }
+            }
+        ]
+    },
+    "ore_style_button_hover_wrapper": {
+        "type": "image",
+        "fill": true,
+        "texture": "textures/ui/mei/button/button_highlighted",
+        "controls": [
+            {
+                "button_content@$button_content_control": {
+                    "offset": [
+                        0,
+                        -1
+                    ]
+                }
+            }
+        ]
+    },
+    "ore_style_button_pressed_hover_wrapper": {
+        "type": "image",
+        "anchor_from": "bottom_middle",
+        "anchor_to": "bottom_middle",
+        "fill": true,
+        "texture": "textures/ui/mei/button/button_pressed_highlighted",
+        "controls": [
+            {
+                "button_content@$button_content_control": {
+                    "color": [
+                        0.4824,
+                        0.6078,
+                        0.8667
+                    ],
+                    "offset": [
+                        0,
+                        0.5
+                    ]
+                }
+            }
+        ]
+    },
+    "ore_style_button_pressed_wrapper": {
+        "type": "image",
+        "anchor_from": "bottom_middle",
+        "anchor_to": "bottom_middle",
+        "fill": true,
+        "texture": "textures/ui/mei/button/button_pressed",
+        "controls": [
+            {
+                "button_content@$button_content_control": {
+                    "color": [
+                        0.4824,
+                        0.6078,
+                        0.8667
+                    ],
+                    "offset": [
+                        0,
+                        0.5
+                    ]
+                }
+            }
+        ]
+    },
+    "ore_style_button_wrapper": {
+        "type": "image",
+        "fill": true,
+        "texture": "textures/ui/mei/button/button",
+        "controls": [
+            {
+                "button_content@$button_content_control": {
+                    "offset": [
+                        0,
+                        -1
+                    ]
+                }
+            }
+        ]
+    },
+    "ore_style_edit_box@common.text_edit_box": {
+        "type": "edit_box",
+        "$edit_box_default_texture": "textures/ui/mei/edit_box/text_field",
+        "$edit_box_hover_texture": "textures/ui/mei/edit_box/text_field_highlighted",
+        "$text_background_default": "netease_editor_template_namespace.edit_box_background_default",
+        "$text_background_hover": "netease_editor_template_namespace.edit_box_background_hover",
+        "$text_edit_box_content_binding_name": "#netease_editor_template_namespace.message_content",
+        "$text_edit_box_label_anchor_point": "right_middle",
+        "$text_edit_box_label_min_size": [
+            "100%",
+            0
+        ],
+        "$text_edit_box_label_size": [
+            "default",
+            "default"
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "layer": 1,
+        "max_length": 512
+    },
+    "ore_style_toggle_button@common_toggles.switch_toggle_collection": {
+        "type": "panel",
+        "$button_content_control|default": "",
+        "$checked_control": "mei_common.ore_style_button_pressed_wrapper",
+        "$checked_hover_control": "mei_common.ore_style_button_pressed_hover_wrapper",
+        "$checked_locked_control": "mei_common.ore_style_button_disabled_wrapper",
+        "$checked_locked_hover_control": "mei_common.ore_style_button_disabled_wrapper",
+        "$checked_locked_texture": "",
+        "$default_texture": "",
+        "$hover_texture": "",
+        "$pressed_no_hover_texture": "",
+        "$pressed_texture": "",
+        "$toggle_name": "#netease_editor_template_namespace.toggle_name",
+        "$toggle_state_binding_name": "#netease_editor_template_namespace.toggle_state",
+        "$unchecked_control": "mei_common.ore_style_button_wrapper",
+        "$unchecked_hover_control": "mei_common.ore_style_button_hover_wrapper",
+        "$unchecked_locked_control": "mei_common.ore_style_button_disabled_wrapper",
+        "$unchecked_locked_hover_control": "mei_common.ore_style_button_disabled_wrapper",
+        "$unchecked_locked_texture": "",
+        "layer": 1,
+        "bindings": [
+            {
+                "binding_type": "collection_details",
+                "binding_collection_name": "",
+                "binding_condition": "always_when_visible"
+            }
+        ]
+    },
+    "slot_background": {
+        "type": "panel",
+        "controls": [
+            {
+                "default": {
+                    "type": "image",
+                    "layer": -5,
+                    "texture": "textures/ui/cell_image"
+                }
+            }
+        ]
+    },
+    "slot_background_bordered": {
+        "type": "image",
+        "$item_bg_border_bottom_binding_name": "('#' + $binding_name_prefix + '.item.background.border.bottom.visible')",
+        "$item_bg_border_left_binding_name": "('#' + $binding_name_prefix + '.item.background.border.left.visible')",
+        "$item_bg_border_right_binding_name": "('#' + $binding_name_prefix + '.item.background.border.right.visible')",
+        "$item_bg_border_top_binding_name": "('#' + $binding_name_prefix + '.item.background.border.top.visible')",
+        "$item_bg_visible_binding_name": "('#' + $binding_name_prefix + '.item.background.visible')",
+        "size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "alpha": 0.5,
+        "visible": "#visible",
+        "color": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "fill": true,
+        "nineslice_size": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "property_bag": {
+            "#visible": false
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "$item_bg_visible_binding_name"
+            }
+        ],
+        "controls": [
+            {
+                "border": {
+                    "type": "panel",
+                    "size": [
+                        "100%+1px",
+                        "100%+1px"
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "left": {
+                                "type": "image",
+                                "anchor_from": "left_middle",
+                                "anchor_to": "left_middle",
+                                "size": [
+                                    1.0,
+                                    "default"
+                                ],
+                                "layer": 1,
+                                "visible": "#visible",
+                                "color": [
+                                    0.8,
+                                    0.8,
+                                    0.8
+                                ],
+                                "fill": true,
+                                "texture": "textures/ui/mei/white",
+                                "property_bag": {
+                                    "#visible": false
+                                },
+                                "bindings": [
+                                    {
+                                        "binding_name_override": "#visible",
+                                        "binding_collection_name": "$collection_name",
+                                        "binding_condition": "always",
+                                        "binding_type": "collection",
+                                        "binding_name": "$item_bg_border_left_binding_name"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "right": {
+                                "type": "image",
+                                "anchor_from": "right_middle",
+                                "anchor_to": "right_middle",
+                                "size": [
+                                    1.0,
+                                    "default"
+                                ],
+                                "layer": 1,
+                                "visible": "#visible",
+                                "color": [
+                                    0.8,
+                                    0.8,
+                                    0.8
+                                ],
+                                "fill": true,
+                                "texture": "textures/ui/mei/white",
+                                "property_bag": {
+                                    "#visible": false
+                                },
+                                "bindings": [
+                                    {
+                                        "binding_name_override": "#visible",
+                                        "binding_collection_name": "$collection_name",
+                                        "binding_condition": "always",
+                                        "binding_type": "collection",
+                                        "binding_name": "$item_bg_border_right_binding_name"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "top": {
+                                "type": "image",
+                                "anchor_from": "top_middle",
+                                "anchor_to": "top_middle",
+                                "size": [
+                                    "default",
+                                    1.0
+                                ],
+                                "layer": 1,
+                                "visible": "#visible",
+                                "color": [
+                                    0.8,
+                                    0.8,
+                                    0.8
+                                ],
+                                "fill": true,
+                                "texture": "textures/ui/mei/white",
+                                "property_bag": {
+                                    "#visible": false
+                                },
+                                "bindings": [
+                                    {
+                                        "binding_name_override": "#visible",
+                                        "binding_collection_name": "$collection_name",
+                                        "binding_condition": "always",
+                                        "binding_type": "collection",
+                                        "binding_name": "$item_bg_border_top_binding_name"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bottom": {
+                                "type": "image",
+                                "anchor_from": "bottom_middle",
+                                "anchor_to": "bottom_middle",
+                                "size": [
+                                    "default",
+                                    1.0
+                                ],
+                                "layer": 1,
+                                "visible": "#visible",
+                                "color": [
+                                    0.8,
+                                    0.8,
+                                    0.8
+                                ],
+                                "fill": true,
+                                "texture": "textures/ui/mei/white",
+                                "property_bag": {
+                                    "#visible": false
+                                },
+                                "bindings": [
+                                    {
+                                        "binding_name_override": "#visible",
+                                        "binding_collection_name": "$collection_name",
+                                        "binding_condition": "always",
+                                        "binding_type": "collection",
+                                        "binding_name": "$item_bg_border_bottom_binding_name"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "slot_base": {
+        "type": "panel",
+        "$binding_name_prefix|default": "meiui.item_panel",
+        "$item_label_text_binding_name": "('#' + $binding_name_prefix + '.item.label.text')",
+        "$item_label_visible_binding_name": "('#' + $binding_name_prefix + '.item.label.visible')",
+        "$item_renderer_id_aux_binding_name": "('#' + $binding_name_prefix + '.item.renderer.id_aux')",
+        "$item_renderer_visible_binding_name": "('#' + $binding_name_prefix + '.item.renderer.visible')",
+        "$item_visible_binding_name": "('#' + $binding_name_prefix + '.item.visible')",
+        "$overlay_btn_primary_click_binding_name": "('#' + $binding_name_prefix + '.overlay.btn.click_' + $collection_name)",
+        "$overlay_btn_secondary_click_binding_name": "('#' + $binding_name_prefix + '.overlay.btn.right_click_' + $collection_name)",
+        "$overlay_visible_binding_name": "('#' + $binding_name_prefix + '.overlay.visible')",
+        "$panel_visible_binding_name": "('#' + $binding_name_prefix + '.visible')",
+        "size": [
+            20.0,
+            20.0
+        ],
+        "visible": "#visible",
+        "property_bag": {
+            "#visible": true
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "$panel_visible_binding_name"
+            }
+        ]
+    },
+    "slot_button_prototype@common.button": {
+        "type": "button",
+        "$control_alpha": 0.25,
+        "$default_texture": "",
+        "$hover_texture": "textures/ui/mei/white",
+        "$is_new_nine_slice": false,
+        "$label_color": [
+            1,
+            1,
+            1
+        ],
+        "$label_font_scale_factor": 1.0,
+        "$label_font_size": "large",
+        "$label_layer": 3,
+        "$label_offset": [
+            0,
+            0
+        ],
+        "$label_text": "",
+        "$nine_slice_buttom": 0,
+        "$nine_slice_left": 0,
+        "$nine_slice_right": 0,
+        "$nine_slice_top": 0,
+        "$nineslice_size": [
+            0,
+            0,
+            0,
+            0
+        ],
+        "$pressed_button_name": "%netease_editor_template_namespace.click",
+        "$pressed_texture": "textures/ui/mei/white",
+        "$texture_layer": 2,
+        "button_mappings": [
+            {
+                "to_button_id": "$overlay_btn_primary_click_binding_name",
+                "from_button_id": "button.menu_select",
+                "mapping_type": "pressed"
+            },
+            {
+                "to_button_id": "$overlay_btn_secondary_click_binding_name",
+                "from_button_id": "button.menu_secondary_select",
+                "mapping_type": "pressed"
+            },
+            {
+                "to_button_id": "$overlay_btn_primary_click_binding_name",
+                "from_button_id": "button.controller_back",
+                "mapping_type": "pressed"
+            },
+            {
+                "to_button_id": "$overlay_btn_primary_click_binding_name",
+                "from_button_id": "button.menu_ok",
+                "mapping_type": "pressed"
+            },
+            {
+                "to_button_id": "$overlay_btn_secondary_click_binding_name",
+                "from_button_id": "button.controller_select",
+                "mapping_type": "pressed"
+            }
+        ],
+        "default_control": "default",
+        "hover_control": "hover",
+        "is_handle_button_move_event": true,
+        "pressed_control": "pressed",
+        "sound_pitch": 0.0,
+        "sound_volume": 0.0,
+        "bindings": [
+            {
+                "binding_type": "collection_details",
+                "binding_collection_name": "",
+                "binding_condition": "always_when_visible"
+            }
+        ],
+        "controls": [
+            {
+                "default@netease_editor_template_namespace.default": {}
+            },
+            {
+                "hover@mei_common.highlight_panel": {
+                    "$item_collection_name": "$collection_name",
+                    "layer": 3
+                }
+            },
+            {
+                "pressed@netease_editor_template_namespace.pressed": {
+                    "fill": true
+                }
+            },
+            {
+                "button_label@netease_editor_template_namespace.button_label": {
+                    "visible": false
+                }
+            }
+        ]
+    },
+    "slot_item": {
+        "type": "panel",
+        "size": [
+            18.0,
+            18.0
+        ],
+        "layer": 1,
+        "visible": "#visible",
+        "property_bag": {
+            "#visible": false
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "($item_visible_binding_name)"
+            }
+        ],
+        "controls": [
+            {
+                "renderer": {
+                    "type": "custom",
+                    "renderer": "inventory_item_renderer",
+                    "layer": 3,
+                    "visible": "#visible",
+                    "property_bag": {
+                        "#item_id_aux": -10551296
+                    },
+                    "bindings": [
+                        {
+                            "binding_name_override": "#visible",
+                            "binding_collection_name": "$collection_name",
+                            "binding_condition": "always",
+                            "binding_type": "collection",
+                            "binding_name": "($item_renderer_visible_binding_name)"
+                        }
+                    ]
+                }
+            },
+            {
+                "label": {
+                    "type": "label",
+                    "anchor_from": "bottom_right",
+                    "anchor_to": "bottom_right",
+                    "offset": [
+                        0.0,
+                        1.0
+                    ],
+                    "size": [
+                        "default",
+                        10.0
+                    ],
+                    "layer": 4,
+                    "visible": "#visible",
+                    "font_type": "unicode",
+                    "line_padding": 1.0,
+                    "shadow": true,
+                    "text": "#text",
+                    "text_alignment": "center",
+                    "property_bag": {
+                        "#text": "",
+                        "#visible": false
+                    },
+                    "bindings": [
+                        {
+                            "binding_name_override": "#visible",
+                            "binding_collection_name": "$collection_name",
+                            "binding_condition": "always",
+                            "binding_type": "collection",
+                            "binding_name": "($item_label_visible_binding_name)"
+                        },
+                        {
+                            "binding_name_override": "#text",
+                            "binding_collection_name": "$collection_name",
+                            "binding_condition": "always_when_visible",
+                            "binding_type": "collection",
+                            "binding_name": "($item_label_text_binding_name)"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "slot_item_marked": {
+        "type": "panel",
+        "$item_extra_control|default": "mei_common.nothing",
+        "size": [
+            "100%+-2px",
+            "100%+-2px"
+        ],
+        "layer": 2,
+        "visible": "#visible",
+        "property_bag": {
+            "#visible": true
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "$item_visible_binding_name"
+            }
+        ],
+        "controls": [
+            {
+                "group@$item_extra_control": {}
+            },
+            {
+                "renderer": {
+                    "type": "custom",
+                    "renderer": "inventory_item_renderer",
+                    "layer": 2,
+                    "visible": "#visible",
+                    "property_bag": {
+                        "#item_id_aux": -10551296,
+                        "#visible": true
+                    },
+                    "bindings": [
+                        {
+                            "binding_name_override": "#visible",
+                            "binding_collection_name": "$collection_name",
+                            "binding_condition": "always",
+                            "binding_type": "collection",
+                            "binding_name": "$item_renderer_visible_binding_name"
+                        }
+                    ]
+                }
+            },
+            {
+                "label": {
+                    "type": "label",
+                    "anchor_from": "bottom_right",
+                    "anchor_to": "bottom_right",
+                    "offset": [
+                        1.0,
+                        2.0
+                    ],
+                    "size": [
+                        "default",
+                        10.0
+                    ],
+                    "layer": 10,
+                    "visible": "#visible",
+                    "color": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "font_scale_factor": 0.9,
+                    "font_type": "unicode",
+                    "line_padding": 1.0,
+                    "text": "+",
+                    "text_alignment": "center",
+                    "property_bag": {
+                        "#visible": false
+                    },
+                    "bindings": [
+                        {
+                            "binding_name_override": "#visible",
+                            "binding_collection_name": "$collection_name",
+                            "binding_condition": "always",
+                            "binding_type": "collection",
+                            "binding_name": "$item_label_visible_binding_name"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "slot_overlay": {
+        "type": "panel",
+        "$overlay_btn_control|default": "mei_common.slot_overlay_button",
+        "$overlay_layer|default": 9,
+        "priority": 5,
+        "layer": "$overlay_layer",
+        "visible": "#visible",
+        "property_bag": {
+            "#visible": true
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "($overlay_visible_binding_name)"
+            }
+        ],
+        "controls": [
+            {
+                "btn_overlay@$overlay_btn_control": {}
+            }
+        ]
+    },
+    "slot_overlay_button@mei_common.slot_button_prototype": {},
+    "slot_overlay_button_flat@mei_common.slot_button_prototype": {
+        "$pressed_texture": "",
+        "priority": 10
+    },
+    "tooltip_background": {
+        "type": "image",
+        "size": [
+            "100%c+8px",
+            "100%c+8px"
+        ],
+        "layer": 1,
+        "alpha": 0.0,
+        "propagate_alpha": true,
+        "texture": "textures/ui/purpleBorder"
+    },
+    "tooltip_item_panel@mei_common.slot_base": {
+        "$more_text_binding_name": "('#' + $binding_name_prefix + '.more.text')",
+        "$more_visible_binding_name": "('#' + $binding_name_prefix + '.more.visible')",
+        "controls": [
+            {
+                "background@mei_common.slot_background": {}
+            },
+            {
+                "item@mei_common.slot_item": {}
+            },
+            {
+                "more": {
+                    "type": "label",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [
+                        "default",
+                        10.0
+                    ],
+                    "layer": 5,
+                    "visible": "#visible",
+                    "color": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text": "#text",
+                    "text_alignment": "center",
+                    "property_bag": {
+                        "#text": "",
+                        "#visible": false
+                    },
+                    "bindings": [
+                        {
+                            "binding_name_override": "#visible",
+                            "binding_collection_name": "$collection_name",
+                            "binding_condition": "always",
+                            "binding_type": "collection",
+                            "binding_name": "($more_visible_binding_name)"
+                        },
+                        {
+                            "binding_name_override": "#text",
+                            "binding_collection_name": "$collection_name",
+                            "binding_condition": "always_when_visible",
+                            "binding_type": "collection",
+                            "binding_name": "($more_text_binding_name)"
+                        }
+                    ]
+                }
+            },
+            {
+                "overlay@mei_common.slot_overlay": {}
+            }
+        ]
+    },
+    "tooltip_items@mei_common.tooltip_background": {
+        "controls": [
+            {
+                "stack": {
+                    "type": "stack_panel",
+                    "size": [
+                        "100%cm",
+                        "100%c"
+                    ],
+                    "layer": 1,
+                    "orientation": "vertical",
+                    "controls": [
+                        {
+                            "title@mei_common.tooltip_title": {}
+                        },
+                        {
+                            "gap": {
+                                "type": "panel",
+                                "size": [
+                                    1.0,
+                                    3.0
+                                ]
+                            }
+                        },
+                        {
+                            "grid": {
+                                "type": "grid",
+                                "$binding_name_prefix": "meiui.mei_tooltip_items",
+                                "$collection_name": "mei_tooltip_items",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ],
+                                "layer": 1,
+                                "collection_name": "$collection_name",
+                                "grid_dimensions": [
+                                    1,
+                                    1
+                                ],
+                                "grid_item_template": "mei_common.tooltip_item_panel"
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "tooltip_root": {
+        "type": "panel",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 0,
+        "visible": false,
+        "controls": [
+            {
+                "desktop": {
+                    "type": "input_panel",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        1.0,
+                        1.0
+                    ],
+                    "follows_cursor": true,
+                    "layer": -10,
+                    "visible": false,
+                    "always_handle_pointer": true,
+                    "consume_hover_events": false,
+                    "controls": [
+                        {
+                            "cursor_gap": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    11.0,
+                                    0.0
+                                ],
+                                "size": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        },
+                        {
+                            "frame": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    0.0,
+                                    0.0
+                                ],
+                                "size": [
+                                    "100%cm",
+                                    "100%cm"
+                                ],
+                                "layer": 80
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "touch": {
+                    "type": "input_panel",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%cm",
+                        "100%cm"
+                    ],
+                    "layer": 70,
+                    "visible": false,
+                    "button_mappings": [
+                        {
+                            "to_button_id": "button.mei.menu.backdrop",
+                            "from_button_id": "button.menu_select",
+                            "mapping_type": "pressed"
+                        }
+                    ],
+                    "controls": [
+                        {
+                            "frame": {
+                                "type": "image",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    0,
+                                    0
+                                ],
+                                "layer": 1,
+                                "alpha": 0.0,
+                                "propagate_alpha": true,
+                                "texture": "textures/ui/purpleBorder",
+                                "controls": [
+                                    {
+                                        "kind": {
+                                            "type": "label",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ],
+                                            "layer": 3,
+                                            "visible": false,
+                                            "color": [
+                                                0.62,
+                                                0.58,
+                                                0.72
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": ""
+                                        }
+                                    },
+                                    {
+                                        "close_slot": {
+                                            "type": "panel",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                0,
+                                                0
+                                            ],
+                                            "layer": 3,
+                                            "controls": [
+                                                {
+                                                    "close@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_cross",
+                                                        "$menu_icon_size": [
+                                                            14,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.menu.close",
+                                                        "offset": [
+                                                            0,
+                                                            -2
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "content": {
+                                            "type": "panel",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                "100%cm",
+                                                "100%cm"
+                                            ],
+                                            "layer": 1
+                                        }
+                                    },
+                                    {
+                                        "divider": {
+                                            "type": "image",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                0,
+                                                1
+                                            ],
+                                            "layer": 2,
+                                            "alpha": 0.75,
+                                            "visible": false,
+                                            "color": [
+                                                0.24,
+                                                0.15,
+                                                0.42
+                                            ],
+                                            "fill": true,
+                                            "texture": "textures/ui/mei/white"
+                                        }
+                                    },
+                                    {
+                                        "actions": {
+                                            "type": "panel",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                0,
+                                                0
+                                            ],
+                                            "layer": 2,
+                                            "controls": [
+                                                {
+                                                    "sec_0": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_1": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_2": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_3": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_4": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_5": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "num_0": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": true,
+                                                        "text": "",
+                                                        "text_alignment": "center"
+                                                    }
+                                                },
+                                                {
+                                                    "num_1": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": true,
+                                                        "text": "",
+                                                        "text_alignment": "center"
+                                                    }
+                                                },
+                                                {
+                                                    "icon_prev@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_arrow_left",
+                                                        "$pressed_button_name": "button.mei.menu.icon.prev"
+                                                    }
+                                                },
+                                                {
+                                                    "icon_next@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_arrow_right",
+                                                        "$pressed_button_name": "button.mei.menu.icon.next"
+                                                    }
+                                                },
+                                                {
+                                                    "button_0@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.0"
+                                                    }
+                                                },
+                                                {
+                                                    "button_1@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.1"
+                                                    }
+                                                },
+                                                {
+                                                    "button_2@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.2"
+                                                    }
+                                                },
+                                                {
+                                                    "button_3@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.3"
+                                                    }
+                                                },
+                                                {
+                                                    "button_4@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.4"
+                                                    }
+                                                },
+                                                {
+                                                    "button_5@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.5"
+                                                    }
+                                                },
+                                                {
+                                                    "button_6@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.6"
+                                                    }
+                                                },
+                                                {
+                                                    "button_7@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.7"
+                                                    }
+                                                },
+                                                {
+                                                    "button_8@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.8"
+                                                    }
+                                                },
+                                                {
+                                                    "button_9@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.9"
+                                                    }
+                                                },
+                                                {
+                                                    "button_10@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.10"
+                                                    }
+                                                },
+                                                {
+                                                    "button_11@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.11"
+                                                    }
+                                                },
+                                                {
+                                                    "button_12@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.12"
+                                                    }
+                                                },
+                                                {
+                                                    "button_13@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.13"
+                                                    }
+                                                },
+                                                {
+                                                    "button_14@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.14"
+                                                    }
+                                                },
+                                                {
+                                                    "button_15@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.menu.15"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "tooltip_title": {
+        "type": "label",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            "default",
+            "default"
+        ],
+        "layer": 2,
+        "color": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "enable_profanity_filter": false,
+        "font_type": "default",
+        "localize": false,
+        "shadow": true,
+        "text": ""
+    },
+    "tooltip_title_only@mei_common.tooltip_background": {
+        "controls": [
+            {
+                "stack": {
+                    "type": "stack_panel",
+                    "size": [
+                        "100%cm",
+                        "100%c"
+                    ],
+                    "layer": 1,
+                    "orientation": "vertical",
+                    "controls": [
+                        {
+                            "title@mei_common.tooltip_title": {}
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

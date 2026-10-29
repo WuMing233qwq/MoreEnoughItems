@@ -1,0 +1,2014 @@
+{
+    "tree_screen@common.base_screen": {
+        "$background_animations": [],
+        "$screen_animations": [],
+        "$screen_content": "MeiRecipeTree.tree_root",
+        "$use_loading_bars": false,
+        "button_mappings": [
+            {
+                "from_button_id": "button.menu_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.tree.close"
+            },
+            {
+                "from_button_id": "button.menu_inventory_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.tree.close"
+            }
+        ],
+        "is_showing_menu": true
+    },
+    "tree_root": {
+        "type": "panel",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 1,
+        "controls": [
+            {
+                "backdrop": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 0,
+                    "alpha": 0.6,
+                    "fill": true,
+                    "texture": "textures/ui/mei/black"
+                }
+            },
+            {
+                "window": {
+                    "type": "image",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [
+                        "100% - 8px",
+                        "100% - 8px"
+                    ],
+                    "layer": 1,
+                    "texture": "textures/ui/purpleBorder",
+                    "controls": [
+                        {
+                            "top": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    4,
+                                    4
+                                ],
+                                "size": [
+                                    "100% - 8px",
+                                    20
+                                ],
+                                "layer": 4,
+                                "controls": [
+                                    {
+                                        "root@MeiRecipeTree.cell": {
+                                            "$cell_bg_ignored": true
+                                        }
+                                    },
+                                    {
+                                        "title": {
+                                            "type": "label",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "offset": [
+                                                24,
+                                                6
+                                            ],
+                                            "size": [
+                                                "default",
+                                                10
+                                            ],
+                                            "layer": 3,
+                                            "color": [
+                                                1.0,
+                                                1.0,
+                                                1.0
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": true,
+                                            "text": ""
+                                        }
+                                    },
+                                    {
+                                        "bar": {
+                                            "type": "stack_panel",
+                                            "anchor_from": "top_right",
+                                            "anchor_to": "top_right",
+                                            "offset": [
+                                                0,
+                                                3
+                                            ],
+                                            "orientation": "horizontal",
+                                            "size": [
+                                                "100%c",
+                                                14
+                                            ],
+                                            "layer": 2,
+                                            "controls": [
+                                                {
+                                                    "minus@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            14,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.minus",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_0": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "qty": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "layer": 1,
+                                                        "controls": [
+                                                            {
+                                                                "label": {
+                                                                    "type": "label",
+                                                                    "anchor_from": "center",
+                                                                    "anchor_to": "center",
+                                                                    "offset": [
+                                                                        0,
+                                                                        0
+                                                                    ],
+                                                                    "size": [
+                                                                        "100%",
+                                                                        10
+                                                                    ],
+                                                                    "layer": 3,
+                                                                    "color": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0
+                                                                    ],
+                                                                    "enable_profanity_filter": false,
+                                                                    "font_type": "default",
+                                                                    "localize": false,
+                                                                    "shadow": true,
+                                                                    "text_alignment": "center",
+                                                                    "text": ""
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "gap_1": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "plus@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            14,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.plus",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_2": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "x64@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            24,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.x64",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_3": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            6,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "center@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.center",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_4": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "unfold@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            36,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.unfold",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_5": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "fold2@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            34,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.fold2",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_6": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "back@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.back",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_7": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "save@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.save",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_8": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            4,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "close@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_cross",
+                                                        "$menu_icon_size": [
+                                                            14,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.close_button",
+                                                        "visible": true
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "cut": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    4,
+                                    26
+                                ],
+                                "size": [
+                                    "100% - 8px",
+                                    "100% - 82px"
+                                ],
+                                "layer": 2,
+                                "clips_children": true,
+                                "controls": [
+                                    {
+                                        "bg": {
+                                            "type": "image",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                "100%",
+                                                "100%"
+                                            ],
+                                            "layer": 0,
+                                            "alpha": 0.35,
+                                            "fill": true,
+                                            "texture": "textures/ui/mei/black"
+                                        }
+                                    },
+                                    {
+                                        "dragpanel": {
+                                            "type": "panel",
+                                            "anchor_from": "center",
+                                            "anchor_to": "center",
+                                            "size": [
+                                                0,
+                                                0
+                                            ],
+                                            "layer": 1,
+                                            "controls": [
+                                                {
+                                                    "canvas": {
+                                                        "type": "input_panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "layer": 1,
+                                                        "draggable": "both",
+                                                        "contained": true,
+                                                        "button_mappings": [
+                                                            {
+                                                                "from_button_id": "button.multi_touch",
+                                                                "mapping_type": "pressed",
+                                                                "to_button_id": "#netease_to_button_id"
+                                                            }
+                                                        ],
+                                                        "controls": [
+                                                            {
+                                                                "content": {
+                                                                    "type": "panel",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "size": [
+                                                                        "100%",
+                                                                        "100%"
+                                                                    ],
+                                                                    "layer": 1,
+                                                                    "controls": [
+                                                                        {
+                                                                            "lines": {
+                                                                                "type": "panel",
+                                                                                "anchor_from": "top_left",
+                                                                                "anchor_to": "top_left",
+                                                                                "size": [
+                                                                                    0,
+                                                                                    0
+                                                                                ],
+                                                                                "layer": 1
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "frames": {
+                                                                                "type": "panel",
+                                                                                "anchor_from": "top_left",
+                                                                                "anchor_to": "top_left",
+                                                                                "size": [
+                                                                                    0,
+                                                                                    0
+                                                                                ],
+                                                                                "layer": 2
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "cells": {
+                                                                                "type": "panel",
+                                                                                "anchor_from": "top_left",
+                                                                                "anchor_to": "top_left",
+                                                                                "size": [
+                                                                                    0,
+                                                                                    0
+                                                                                ],
+                                                                                "layer": 3
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "status": {
+                                            "type": "label",
+                                            "anchor_from": "bottom_right",
+                                            "anchor_to": "bottom_right",
+                                            "offset": [
+                                                -3,
+                                                -2
+                                            ],
+                                            "size": [
+                                                "default",
+                                                10
+                                            ],
+                                            "layer": 5,
+                                            "color": [
+                                                0.62,
+                                                0.58,
+                                                0.72
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": ""
+                                        }
+                                    },
+                                    {
+                                        "busy": {
+                                            "type": "label",
+                                            "anchor_from": "center",
+                                            "anchor_to": "center",
+                                            "offset": [
+                                                0,
+                                                0
+                                            ],
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ],
+                                            "layer": 6,
+                                            "visible": false,
+                                            "color": [
+                                                1.0,
+                                                1.0,
+                                                1.0
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": true,
+                                            "text": ""
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "summary": {
+                                "type": "panel",
+                                "anchor_from": "bottom_left",
+                                "anchor_to": "bottom_left",
+                                "offset": [
+                                    4,
+                                    -4
+                                ],
+                                "size": [
+                                    "100% - 8px",
+                                    50
+                                ],
+                                "layer": 4,
+                                "controls": [
+                                    {
+                                        "tabs": {
+                                            "type": "stack_panel",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "orientation": "horizontal",
+                                            "size": [
+                                                "100%c",
+                                                14
+                                            ],
+                                            "layer": 2,
+                                            "controls": [
+                                                {
+                                                    "tab_raw@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            46,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.tab_raw",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_0": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "tab_byproduct@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            34,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.tab_byproduct",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_1": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "tab_tool@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.tab_tool",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_2": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "tab_lack@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            46,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.tab_lack",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                },
+                                                {
+                                                    "gap_3": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            8,
+                                                            14
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "refresh@mei_common.menu_button": {
+                                                        "$menu_button_size": [
+                                                            46,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.refresh",
+                                                        "layer": 2,
+                                                        "visible": true
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "note": {
+                                            "type": "label",
+                                            "anchor_from": "top_right",
+                                            "anchor_to": "top_right",
+                                            "offset": [
+                                                0,
+                                                3
+                                            ],
+                                            "size": [
+                                                "default",
+                                                10
+                                            ],
+                                            "layer": 3,
+                                            "color": [
+                                                0.62,
+                                                0.58,
+                                                0.72
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": ""
+                                        }
+                                    },
+                                    {
+                                        "note_low": {
+                                            "type": "label",
+                                            "anchor_from": "bottom_right",
+                                            "anchor_to": "bottom_right",
+                                            "offset": [
+                                                0,
+                                                0
+                                            ],
+                                            "size": [
+                                                "default",
+                                                10
+                                            ],
+                                            "layer": 3,
+                                            "visible": false,
+                                            "color": [
+                                                0.62,
+                                                0.58,
+                                                0.72
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": ""
+                                        }
+                                    },
+                                    {
+                                        "slots": {
+                                            "type": "panel",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "offset": [
+                                                0,
+                                                17
+                                            ],
+                                            "size": [
+                                                "100%",
+                                                20
+                                            ],
+                                            "layer": 2,
+                                            "controls": [
+                                                {
+                                                    "s0@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s1@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s2@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s3@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s4@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s5@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s6@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s7@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s8@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s9@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s10@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s11@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s12@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s13@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s14@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s15@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s16@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s17@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s18@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s19@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s20@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s21@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s22@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "s23@MeiRecipeTree.cell": {
+                                                        "$cell_bg_ignored": true,
+                                                        "visible": false
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "prev@mei_common.menu_icon_button": {
+                                            "$menu_icon_control": "mei_icons.btn_arrow_left",
+                                            "$pressed_button_name": "button.mei.tree.page_prev"
+                                        }
+                                    },
+                                    {
+                                        "next@mei_common.menu_icon_button": {
+                                            "$menu_icon_control": "mei_icons.btn_arrow_right",
+                                            "$pressed_button_name": "button.mei.tree.page_next"
+                                        }
+                                    },
+                                    {
+                                        "page": {
+                                            "type": "label",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "offset": [
+                                                0,
+                                                0
+                                            ],
+                                            "size": [
+                                                0,
+                                                10
+                                            ],
+                                            "layer": 3,
+                                            "visible": false,
+                                            "color": [
+                                                0.62,
+                                                0.58,
+                                                0.72
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text_alignment": "center",
+                                            "text": ""
+                                        }
+                                    },
+                                    {
+                                        "empty": {
+                                            "type": "label",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "offset": [
+                                                2,
+                                                22
+                                            ],
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ],
+                                            "layer": 3,
+                                            "visible": false,
+                                            "color": [
+                                                0.62,
+                                                0.58,
+                                                0.72
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": ""
+                                        }
+                                    },
+                                    {
+                                        "foot": {
+                                            "type": "label",
+                                            "anchor_from": "bottom_left",
+                                            "anchor_to": "bottom_left",
+                                            "offset": [
+                                                0,
+                                                0
+                                            ],
+                                            "size": [
+                                                "default",
+                                                10
+                                            ],
+                                            "layer": 3,
+                                            "color": [
+                                                0.62,
+                                                0.58,
+                                                0.72
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": ""
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "menu": {
+                    "type": "input_panel",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%cm",
+                        "100%cm"
+                    ],
+                    "layer": 60,
+                    "visible": false,
+                    "button_mappings": [
+                        {
+                            "from_button_id": "button.menu_select",
+                            "mapping_type": "pressed",
+                            "to_button_id": "button.mei.tree.menu.backdrop"
+                        }
+                    ],
+                    "controls": [
+                        {
+                            "frame": {
+                                "type": "image",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    0,
+                                    0
+                                ],
+                                "layer": 1,
+                                "texture": "textures/ui/purpleBorder",
+                                "propagate_alpha": true,
+                                "controls": [
+                                    {
+                                        "kind": {
+                                            "type": "label",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "offset": [
+                                                0,
+                                                0
+                                            ],
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ],
+                                            "layer": 3,
+                                            "color": [
+                                                0.62,
+                                                0.58,
+                                                0.72
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": ""
+                                        }
+                                    },
+                                    {
+                                        "close_slot": {
+                                            "type": "panel",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                0,
+                                                0
+                                            ],
+                                            "layer": 3,
+                                            "controls": [
+                                                {
+                                                    "close@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_cross",
+                                                        "$menu_icon_size": [
+                                                            14,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.tree.menu.close",
+                                                        "offset": [
+                                                            0,
+                                                            -2
+                                                        ],
+                                                        "visible": true
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "content": {
+                                            "type": "panel",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                0,
+                                                0
+                                            ],
+                                            "layer": 1,
+                                            "controls": [
+                                                {
+                                                    "title": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "color": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": true,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "strip": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "layer": 2,
+                                                        "controls": [
+                                                            {
+                                                                "c0@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c1@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c2@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c3@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c4@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c5@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c6@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c7@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c8@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c9@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c10@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c11@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c12@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "c13@MeiRecipeTree.cell": {
+                                                                    "visible": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "arrow": {
+                                                                    "type": "label",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "offset": [
+                                                                        0,
+                                                                        0
+                                                                    ],
+                                                                    "size": [
+                                                                        "default",
+                                                                        "default"
+                                                                    ],
+                                                                    "layer": 3,
+                                                                    "visible": false,
+                                                                    "color": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0
+                                                                    ],
+                                                                    "enable_profanity_filter": false,
+                                                                    "font_type": "default",
+                                                                    "localize": false,
+                                                                    "shadow": true,
+                                                                    "text": "->"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "preview": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "size": [
+                                                            "100%c",
+                                                            "100%c"
+                                                        ],
+                                                        "layer": 2,
+                                                        "visible": false
+                                                    }
+                                                },
+                                                {
+                                                    "info": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "divider": {
+                                            "type": "image",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                0,
+                                                1
+                                            ],
+                                            "layer": 2,
+                                            "visible": false,
+                                            "color": [
+                                                0.24,
+                                                0.15,
+                                                0.42
+                                            ],
+                                            "alpha": 0.75,
+                                            "fill": true,
+                                            "texture": "textures/ui/mei/white"
+                                        }
+                                    },
+                                    {
+                                        "actions": {
+                                            "type": "panel",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "size": [
+                                                0,
+                                                0
+                                            ],
+                                            "layer": 2,
+                                            "controls": [
+                                                {
+                                                    "sec_0": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_1": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_2": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_3": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_4": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "sec_5": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "default"
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            0.62,
+                                                            0.58,
+                                                            0.72
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": false,
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "num_0": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            0,
+                                                            10
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": true,
+                                                        "text_alignment": "center",
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "num_1": {
+                                                        "type": "label",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "size": [
+                                                            0,
+                                                            10
+                                                        ],
+                                                        "layer": 3,
+                                                        "visible": false,
+                                                        "color": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "enable_profanity_filter": false,
+                                                        "font_type": "default",
+                                                        "localize": false,
+                                                        "shadow": true,
+                                                        "text_alignment": "center",
+                                                        "text": ""
+                                                    }
+                                                },
+                                                {
+                                                    "icon_prev_0@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_arrow_left",
+                                                        "$pressed_button_name": "button.mei.tree.menu.icon.prev_0"
+                                                    }
+                                                },
+                                                {
+                                                    "icon_next_0@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_arrow_right",
+                                                        "$pressed_button_name": "button.mei.tree.menu.icon.next_0"
+                                                    }
+                                                },
+                                                {
+                                                    "icon_prev_1@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_arrow_left",
+                                                        "$pressed_button_name": "button.mei.tree.menu.icon.prev_1"
+                                                    }
+                                                },
+                                                {
+                                                    "icon_next_1@mei_common.menu_icon_button": {
+                                                        "$menu_icon_control": "mei_icons.btn_arrow_right",
+                                                        "$pressed_button_name": "button.mei.tree.menu.icon.next_1"
+                                                    }
+                                                },
+                                                {
+                                                    "button_0@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.0"
+                                                    }
+                                                },
+                                                {
+                                                    "button_1@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.1"
+                                                    }
+                                                },
+                                                {
+                                                    "button_2@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.2"
+                                                    }
+                                                },
+                                                {
+                                                    "button_3@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.3"
+                                                    }
+                                                },
+                                                {
+                                                    "button_4@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.4"
+                                                    }
+                                                },
+                                                {
+                                                    "button_5@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.5"
+                                                    }
+                                                },
+                                                {
+                                                    "button_6@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.6"
+                                                    }
+                                                },
+                                                {
+                                                    "button_7@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.7"
+                                                    }
+                                                },
+                                                {
+                                                    "button_8@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.8"
+                                                    }
+                                                },
+                                                {
+                                                    "button_9@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.9"
+                                                    }
+                                                },
+                                                {
+                                                    "button_10@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.10"
+                                                    }
+                                                },
+                                                {
+                                                    "button_11@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.11"
+                                                    }
+                                                },
+                                                {
+                                                    "button_12@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.12"
+                                                    }
+                                                },
+                                                {
+                                                    "button_13@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.13"
+                                                    }
+                                                },
+                                                {
+                                                    "button_14@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.14"
+                                                    }
+                                                },
+                                                {
+                                                    "button_15@mei_common.menu_button": {
+                                                        "$pressed_button_name": "button.mei.tree.menu.15"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "toast": {
+                    "type": "label",
+                    "anchor_from": "top_middle",
+                    "anchor_to": "top_middle",
+                    "offset": [
+                        0,
+                        30
+                    ],
+                    "size": [
+                        "default",
+                        "default"
+                    ],
+                    "layer": 70,
+                    "visible": false,
+                    "color": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "default",
+                    "localize": false,
+                    "shadow": true,
+                    "text": ""
+                }
+            }
+        ]
+    },
+    "cell": {
+        "$cell_bg_ignored|default": false,
+        "type": "panel",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            20,
+            20
+        ],
+        "layer": 1,
+        "controls": [
+            {
+                "bg": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 1,
+                    "texture": "textures/ui/cell_image",
+                    "ignored": "$cell_bg_ignored"
+                }
+            },
+            {
+                "renderer": {
+                    "type": "custom",
+                    "renderer": "inventory_item_renderer",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [
+                        16,
+                        16
+                    ],
+                    "layer": 3
+                }
+            },
+            {
+                "count": {
+                    "type": "label",
+                    "anchor_from": "bottom_right",
+                    "anchor_to": "bottom_right",
+                    "offset": [
+                        0,
+                        1
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 5,
+                    "color": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text_alignment": "right",
+                    "text": ""
+                }
+            },
+            {
+                "crafts": {
+                    "type": "label",
+                    "anchor_from": "bottom_right",
+                    "anchor_to": "bottom_right",
+                    "offset": [
+                        0,
+                        1
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 5,
+                    "visible": false,
+                    "color": [
+                        1.0,
+                        0.88,
+                        0.4
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text_alignment": "right",
+                    "text": ""
+                }
+            },
+            {
+                "have": {
+                    "type": "label",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "offset": [
+                        1,
+                        -1
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 5,
+                    "visible": false,
+                    "color": [
+                        0.75,
+                        0.75,
+                        0.75
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text": ""
+                }
+            },
+            {
+                "fold": {
+                    "type": "label",
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "offset": [
+                        1,
+                        1
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 5,
+                    "visible": false,
+                    "color": [
+                        1.0,
+                        0.88,
+                        0.4
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text": ""
+                }
+            },
+            {
+                "badge": {
+                    "type": "image",
+                    "anchor_from": "top_right",
+                    "anchor_to": "top_right",
+                    "offset": [
+                        -2,
+                        2
+                    ],
+                    "size": [
+                        2,
+                        2
+                    ],
+                    "layer": 6,
+                    "visible": false,
+                    "color": [
+                        0.75,
+                        0.15,
+                        0.15
+                    ],
+                    "fill": true,
+                    "texture": "textures/ui/mei/white"
+                }
+            },
+            {
+                "multi": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "offset": [
+                        2,
+                        2
+                    ],
+                    "size": [
+                        2,
+                        2
+                    ],
+                    "layer": 6,
+                    "visible": false,
+                    "color": [
+                        0.4,
+                        0.25,
+                        0.85
+                    ],
+                    "fill": true,
+                    "texture": "textures/ui/mei/white"
+                }
+            },
+            {
+                "dim": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 7,
+                    "visible": false,
+                    "alpha": 0.45,
+                    "fill": true,
+                    "texture": "textures/ui/mei/black"
+                }
+            },
+            {
+                "sel": {
+                    "type": "image",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [
+                        "100% + 2px",
+                        "100% + 2px"
+                    ],
+                    "layer": 8,
+                    "visible": false,
+                    "color": [
+                        1.0,
+                        0.9,
+                        0.4
+                    ],
+                    "texture": "textures/ui/mei/white_border"
+                }
+            },
+            {
+                "btn@common.button": {
+                    "type": "button",
+                    "$pressed_button_name|default": "button.mei.tree.cell",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 9,
+                    "button_mappings": [],
+                    "controls": [
+                        {
+                            "default": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    "100%",
+                                    "100%"
+                                ],
+                                "layer": 1
+                            }
+                        },
+                        {
+                            "hover@mei_common.highlight_slot": {}
+                        },
+                        {
+                            "pressed@mei_common.highlight_slot": {}
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "ws_frame": {
+        "type": "panel",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            24,
+            24
+        ],
+        "layer": 1,
+        "controls": [
+            {
+                "bg": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 1,
+                    "color": [
+                        0.2,
+                        0.2,
+                        0.24
+                    ],
+                    "fill": true,
+                    "texture": "textures/ui/mei/white"
+                }
+            },
+            {
+                "border": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 2,
+                    "color": [
+                        0.66,
+                        0.66,
+                        0.71
+                    ],
+                    "texture": "textures/ui/mei/white_border"
+                }
+            }
+        ]
+    },
+    "ing_frame": {
+        "type": "image",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            24,
+            24
+        ],
+        "layer": 1,
+        "color": [
+            0.85,
+            0.85,
+            0.89
+        ],
+        "texture": "textures/ui/mei/white_border"
+    },
+    "line": {
+        "type": "image",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            1,
+            1
+        ],
+        "layer": 1,
+        "color": [
+            0.6,
+            0.6,
+            0.65
+        ],
+        "fill": true,
+        "texture": "textures/ui/mei/white"
+    },
+    "namespace": "MeiRecipeTree"
+}

@@ -1,0 +1,627 @@
+{
+    "crafting_station_item_panel@mei_common.item_panel": {
+        "$binding_name_prefix": "meiui.crafting_station_items_grid",
+        "$collection_name": "crafting_station_items_grid"
+    },
+    "crafting_station_panel": {
+        "type": "panel",
+        "$item_collection_name": "crafting_station_tab_grid",
+        "size": [
+            22.5,
+            27.0
+        ],
+        "layer": 5,
+        "controls": [
+            {
+                "toggle@MeiRecipeDetails.tab_toggle": {}
+            },
+            {
+                "item_renderer": {
+                    "type": "custom",
+                    "renderer": "inventory_item_renderer",
+                    "offset": [
+                        0.0,
+                        -0.5
+                    ],
+                    "size": [
+                        16.0,
+                        16.0
+                    ],
+                    "layer": 13,
+                    "property_bag": {
+                        "#item_id_aux": 131072
+                    },
+                    "bindings": [
+                        {
+                            "binding_name_override": "#item_id_aux",
+                            "binding_collection_name": "$item_collection_name",
+                            "binding_condition": "always_when_visible",
+                            "binding_type": "collection",
+                            "binding_name": "#mei_ui.recipe_details.type_tab.item_id_aux"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "main": {
+        "type": "screen",
+        "controls": [
+            {
+                "ui@MeiRecipeDetails.recipe_details_ui": {}
+            }
+        ]
+    },
+    "namespace": "MeiRecipeDetails",
+    "recipe_details_ui": {
+        "type": "panel",
+        "size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "alpha": "@mei_common.alpha_in",
+        "propagate_alpha": true,
+        "visible": true,
+        "controls": [
+            {
+                "padding": {
+                    "type": "input_panel",
+                    "layer": -1,
+                    "button_mappings": [
+                        {
+                            "to_button_id": "#netease_to_button_id",
+                            "from_button_id": "button.menu_select",
+                            "mapping_type": "pressed"
+                        }
+                    ],
+                    "is_swallow": true,
+                    "controls": [
+                        {
+                            "background": {
+                                "type": "image",
+                                "layer": 1,
+                                "alpha": 0.25,
+                                "fill": true,
+                                "texture": "textures/ui/mei/black"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "RecipeDetails": {
+                    "type": "panel",
+                    "offset": [
+                        0.0,
+                        12.0
+                    ],
+                    "size": [
+                        "100%cm+0px",
+                        "100%+-31px"
+                    ],
+                    "layer": 50,
+                    "controls": [
+                        {
+                            "crafting_stations": {
+                                "type": "panel",
+                                "anchor_from": "top_middle",
+                                "anchor_to": "bottom_middle",
+                                "offset": [
+                                    0.0,
+                                    4.0
+                                ],
+                                "size": [
+                                    "100%sm+0px",
+                                    27.0
+                                ],
+                                "layer": 3,
+                                "controls": [
+                                    {
+                                        "overlay": {
+                                            "type": "panel",
+                                            "size": [
+                                                "100%+40px",
+                                                "default"
+                                            ],
+                                            "layer": 1,
+                                            "controls": [
+                                                {
+                                                    "page_down": {
+                                                        "type": "panel",
+                                                        "anchor_from": "left_middle",
+                                                        "anchor_to": "left_middle",
+                                                        "offset": [
+                                                            0.0,
+                                                            -2.0
+                                                        ],
+                                                        "size": [
+                                                            "100%y+0px",
+                                                            "100%+-8px"
+                                                        ],
+                                                        "layer": 1,
+                                                        "controls": [
+                                                            {
+                                                                "button@mei_common.ore_style_button": {
+                                                                    "$button_content_control|default": "mei_icons.btn_arrow_left",
+                                                                    "anchor_from": "left_middle",
+                                                                    "anchor_to": "left_middle"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "page_up": {
+                                                        "type": "panel",
+                                                        "anchor_from": "right_middle",
+                                                        "anchor_to": "right_middle",
+                                                        "offset": [
+                                                            0.0,
+                                                            -2.0
+                                                        ],
+                                                        "size": [
+                                                            "100%y+0px",
+                                                            "100%+-8px"
+                                                        ],
+                                                        "layer": 1,
+                                                        "controls": [
+                                                            {
+                                                                "button@mei_common.ore_style_button": {
+                                                                    "$button_content_control|default": "mei_icons.btn_arrow_right",
+                                                                    "anchor_from": "right_middle",
+                                                                    "anchor_to": "right_middle"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "type_tab": {
+                                            "type": "panel",
+                                            "size": [
+                                                "100%+0px",
+                                                "100%+0px"
+                                            ],
+                                            "layer": 1,
+                                            "controls": [
+                                                {
+                                                    "grid": {
+                                                        "type": "grid",
+                                                        "anchor_from": "left_middle",
+                                                        "anchor_to": "left_middle",
+                                                        "offset": [
+                                                            1.5,
+                                                            0.0
+                                                        ],
+                                                        "size": [
+                                                            "default",
+                                                            "100%+0px"
+                                                        ],
+                                                        "layer": 10,
+                                                        "collection_name": "crafting_station_tab_grid",
+                                                        "grid_dimensions": [
+                                                            8,
+                                                            1
+                                                        ],
+                                                        "grid_item_template": "MeiRecipeDetails.crafting_station_panel",
+                                                        "maximum_grid_items": 8
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "content_panel": {
+                                "type": "panel",
+                                "anchor_from": "top_middle",
+                                "anchor_to": "top_middle",
+                                "offset": [
+                                    0.0,
+                                    -1.0
+                                ],
+                                "size": [
+                                    "100%cm+0px",
+                                    "100%+0px"
+                                ],
+                                "layer": 1,
+                                "controls": [
+                                    {
+                                        "right": {
+                                            "type": "panel",
+                                            "anchor_from": "right_middle",
+                                            "anchor_to": "left_middle",
+                                            "offset": [
+                                                1.0,
+                                                0.0
+                                            ],
+                                            "size": [
+                                                22.0,
+                                                "100%+-6px"
+                                            ],
+                                            "layer": 1,
+                                            "controls": [
+                                                {
+                                                    "close": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            0.0,
+                                                            -1.0
+                                                        ],
+                                                        "size": [
+                                                            "100%+-3px",
+                                                            "100%x+0px"
+                                                        ],
+                                                        "layer": 1,
+                                                        "controls": [
+                                                            {
+                                                                "button@mei_common.ore_style_button": {
+                                                                    "$button_content_control|default": "mei_icons.btn_close",
+                                                                    "anchor_from": "left_middle",
+                                                                    "anchor_to": "left_middle"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "back": {
+                                                        "type": "panel",
+                                                        "anchor_from": "bottom_left",
+                                                        "anchor_to": "bottom_left",
+                                                        "offset": [
+                                                            0.0,
+                                                            -1.0
+                                                        ],
+                                                        "size": [
+                                                            "100%+-3px",
+                                                            "100%x+0px"
+                                                        ],
+                                                        "layer": 1,
+                                                        "controls": [
+                                                            {
+                                                                "button@mei_common.ore_style_button": {
+                                                                    "$button_content_control|default": "mei_icons.btn_back",
+                                                                    "anchor_from": "left_middle",
+                                                                    "anchor_to": "left_middle"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "content": {
+                                            "type": "image",
+                                            "size": [
+                                                "100%cm+0px",
+                                                "100%+0px"
+                                            ],
+                                            "min_size": [
+                                                188.0,
+                                                "default"
+                                            ],
+                                            "clip_offset": [
+                                                0.0,
+                                                0.0
+                                            ],
+                                            "clips_children": true,
+                                            "texture": "textures/ui/dialog_background_opaque",
+                                            "controls": [
+                                                {
+                                                    "top": {
+                                                        "type": "stack_panel",
+                                                        "anchor_from": "top_middle",
+                                                        "anchor_to": "top_middle",
+                                                        "offset": [
+                                                            0.0,
+                                                            4.0
+                                                        ],
+                                                        "size": [
+                                                            "100%sm+-12px",
+                                                            34.0
+                                                        ],
+                                                        "min_size": [
+                                                            176.0,
+                                                            "default"
+                                                        ],
+                                                        "layer": 1,
+                                                        "controls": [
+                                                            {
+                                                                "line1": {
+                                                                    "type": "panel",
+                                                                    "anchor_from": "top_middle",
+                                                                    "anchor_to": "top_middle",
+                                                                    "size": [
+                                                                        "100%+0px",
+                                                                        "50%+0px"
+                                                                    ],
+                                                                    "layer": 1,
+                                                                    "controls": [
+                                                                        {
+                                                                            "bg": {
+                                                                                "type": "image",
+                                                                                "size": [
+                                                                                    "100%+0px",
+                                                                                    "100%+-2px"
+                                                                                ],
+                                                                                "layer": 1,
+                                                                                "alpha": 0.25,
+                                                                                "fill": true,
+                                                                                "texture": "textures/ui/mei/black",
+                                                                                "controls": [
+                                                                                    {
+                                                                                        "page_down": {
+                                                                                            "type": "panel",
+                                                                                            "anchor_from": "left_middle",
+                                                                                            "anchor_to": "left_middle",
+                                                                                            "size": [
+                                                                                                "100%y+0px",
+                                                                                                "100%+0px"
+                                                                                            ],
+                                                                                            "layer": 1,
+                                                                                            "controls": [
+                                                                                                {
+                                                                                                    "button@mei_common.ore_style_button": {
+                                                                                                        "$button_content_control|default": "mei_icons.btn_arrow_left",
+                                                                                                        "anchor_from": "left_middle",
+                                                                                                        "anchor_to": "left_middle"
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "page_up": {
+                                                                                            "type": "panel",
+                                                                                            "anchor_from": "right_middle",
+                                                                                            "anchor_to": "right_middle",
+                                                                                            "size": [
+                                                                                                "100%y+0px",
+                                                                                                "100%+0px"
+                                                                                            ],
+                                                                                            "layer": 1,
+                                                                                            "controls": [
+                                                                                                {
+                                                                                                    "button@mei_common.ore_style_button": {
+                                                                                                        "$button_content_control|default": "mei_icons.btn_arrow_right",
+                                                                                                        "anchor_from": "right_middle",
+                                                                                                        "anchor_to": "right_middle",
+                                                                                                        "size": [
+                                                                                                            "100%y+0px",
+                                                                                                            "100%+0px"
+                                                                                                        ]
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "display_name": {
+                                                                                            "type": "label",
+                                                                                            "font_type": "default",
+                                                                                            "shadow": true,
+                                                                                            "text": "crafting",
+                                                                                            "text_alignment": "center"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "line2": {
+                                                                    "type": "panel",
+                                                                    "anchor_from": "top_middle",
+                                                                    "anchor_to": "top_middle",
+                                                                    "size": [
+                                                                        "default",
+                                                                        "50%+0px"
+                                                                    ],
+                                                                    "layer": 1,
+                                                                    "controls": [
+                                                                        {
+                                                                            "bg": {
+                                                                                "type": "image",
+                                                                                "size": [
+                                                                                    "100%+0px",
+                                                                                    "100%+-2px"
+                                                                                ],
+                                                                                "layer": 1,
+                                                                                "alpha": 0.25,
+                                                                                "fill": true,
+                                                                                "texture": "textures/ui/mei/black",
+                                                                                "controls": [
+                                                                                    {
+                                                                                        "page_down": {
+                                                                                            "type": "panel",
+                                                                                            "anchor_from": "left_middle",
+                                                                                            "anchor_to": "left_middle",
+                                                                                            "size": [
+                                                                                                "100%y+0px",
+                                                                                                "100%+0px"
+                                                                                            ],
+                                                                                            "layer": 1,
+                                                                                            "controls": [
+                                                                                                {
+                                                                                                    "button@mei_common.ore_style_button": {
+                                                                                                        "$button_content_control|default": "mei_icons.btn_arrow_left",
+                                                                                                        "anchor_from": "left_middle",
+                                                                                                        "anchor_to": "left_middle"
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "page_up": {
+                                                                                            "type": "panel",
+                                                                                            "anchor_from": "right_middle",
+                                                                                            "anchor_to": "right_middle",
+                                                                                            "size": [
+                                                                                                "100%y+0px",
+                                                                                                "100%+0px"
+                                                                                            ],
+                                                                                            "layer": 1,
+                                                                                            "controls": [
+                                                                                                {
+                                                                                                    "button@mei_common.ore_style_button": {
+                                                                                                        "$button_content_control|default": "mei_icons.btn_arrow_right",
+                                                                                                        "anchor_from": "right_middle",
+                                                                                                        "anchor_to": "right_middle",
+                                                                                                        "size": [
+                                                                                                            "100%y+0px",
+                                                                                                            "100%+0px"
+                                                                                                        ]
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "page_index": {
+                                                                                "type": "label",
+                                                                                "layer": 2,
+                                                                                "font_type": "default",
+                                                                                "shadow": true,
+                                                                                "text": "0/0",
+                                                                                "text_alignment": "center"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "crafting_items": {
+                                            "type": "panel",
+                                            "$binding_name_prefix": "meiui.crafting_station_items_grid",
+                                            "$collection_name": "crafting_station_items_grid",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_right",
+                                            "size": [
+                                                "100%cm+0px",
+                                                "100%cm+0px"
+                                            ],
+                                            "max_size": [
+                                                0.0,
+                                                "default"
+                                            ],
+                                            "layer": 1,
+                                            "controls": [
+                                                {
+                                                    "grid": {
+                                                        "type": "grid",
+                                                        "anchor_from": "top_right",
+                                                        "anchor_to": "top_right",
+                                                        "offset": [
+                                                            0.0,
+                                                            4.0
+                                                        ],
+                                                        "layer": 4,
+                                                        "collection_name": "$collection_name",
+                                                        "grid_dimensions": [
+                                                            0,
+                                                            1
+                                                        ],
+                                                        "grid_item_template": "mei_common.item_panel",
+                                                        "maximum_grid_items": 1
+                                                    }
+                                                },
+                                                {
+                                                    "background": {
+                                                        "type": "image",
+                                                        "anchor_from": "top_right",
+                                                        "anchor_to": "top_right",
+                                                        "offset": [
+                                                            5.0,
+                                                            0.0
+                                                        ],
+                                                        "size": [
+                                                            "100%sm+9px",
+                                                            "100%sm+8px"
+                                                        ],
+                                                        "clip_direction": "left",
+                                                        "clip_ratio": 0.0,
+                                                        "texture": "textures/ui/TabLeftFrontTopMost",
+                                                        "uv": [
+                                                            0.0,
+                                                            0.0
+                                                        ],
+                                                        "controls": [
+                                                            {
+                                                                "image": {
+                                                                    "type": "image",
+                                                                    "anchor_from": "top_right",
+                                                                    "anchor_to": "top_right",
+                                                                    "offset": [
+                                                                        -5.0,
+                                                                        4.0
+                                                                    ],
+                                                                    "size": [
+                                                                        "100%+-9px",
+                                                                        "100%+-8px"
+                                                                    ],
+                                                                    "texture": "textures/ui/cell_image"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "tab_toggle@common_toggles.switch_toggle_collection": {
+        "type": "panel",
+        "$checked_locked_texture": "textures/ui/TabTopFront",
+        "$default_texture": "textures/ui/TabTopBack",
+        "$hover_texture": "textures/ui/TabTopFront",
+        "$item_collection_name": "crafting_station_tab_grid",
+        "$pressed_no_hover_texture": "textures/ui/TabTopFrontHover",
+        "$pressed_texture": "textures/ui/TabTopBackHover",
+        "$radio_toggle_group": true,
+        "$toggle_grid_collection_name": "$item_collection_name",
+        "$toggle_name": "#mei_ui.recipe_details.crafting_station_type_tab",
+        "$toggle_state_binding_name": "#netease_editor_template_namespace.toggle_state",
+        "$unchecked_locked_texture": "textures/ui/TabTopBack",
+        "size": [
+            "100%+2px",
+            "100%+2px"
+        ],
+        "layer": 1,
+        "bindings": [
+            {
+                "binding_type": "collection_details",
+                "binding_collection_name": "",
+                "binding_condition": "always_when_visible"
+            }
+        ]
+    }
+}

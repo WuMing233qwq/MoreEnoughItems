@@ -1,0 +1,317 @@
+{
+    "PREVIEW@mei_recipe_common.preview": {
+        "$recipe_content_template": "MeiBrewing.content_panel"
+    },
+    "RECIPES_GRID@mei_recipe_common.recipes_grid": {
+        "$recipe_ui_template": "MeiBrewing.recipe"
+    },
+    "arrow_clip": {
+        "anim_type": "clip",
+        "duration": 3,
+        "from": 1,
+        "to": 0
+    },
+    "arrow_full": {
+        "type": "image",
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "offset": [
+            16.0,
+            -14.0
+        ],
+        "size": [
+            9.0,
+            28.0
+        ],
+        "layer": 3,
+        "clip_direction": "up",
+        "clip_ratio": "@MeiBrewing.arrow_clip",
+        "texture": "textures/ui/brewing_arrow_full"
+    },
+    "bubbles_clip": {
+        "anim_type": "clip",
+        "duration": 1,
+        "from": 1,
+        "to": 0
+    },
+    "bubbles_full": {
+        "type": "image",
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "offset": [
+            -23.0,
+            -14.0
+        ],
+        "size": [
+            12.0,
+            30.0
+        ],
+        "layer": 3,
+        "clip_direction": "down",
+        "clip_ratio": "@MeiBrewing.bubbles_clip",
+        "texture": "textures/ui/bubbles_full"
+    },
+    "content_panel": {
+        "type": "panel",
+        "size": [
+            134.0,
+            68.0
+        ],
+        "layer": 1,
+        "controls": [
+            {
+                "pictogram": {
+                    "type": "panel",
+                    "offset": [
+                        15.0,
+                        -2.0
+                    ],
+                    "size": [
+                        130.0,
+                        62.0
+                    ],
+                    "layer": 2,
+                    "controls": [
+                        {
+                            "fuel": {
+                                "type": "panel",
+                                "anchor_from": "center",
+                                "anchor_to": "center",
+                                "offset": [
+                                    -67.0,
+                                    -17.0
+                                ],
+                                "size": [
+                                    20.0,
+                                    20.0
+                                ],
+                                "layer": 8,
+                                "controls": [
+                                    {
+                                        "0@mei_common.item_panel": {
+                                            "$binding_name_prefix": "mei_ui.recipe.fuel",
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "reagent": {
+                                "type": "panel",
+                                "anchor_from": "center",
+                                "anchor_to": "center",
+                                "offset": [
+                                    0.0,
+                                    -17.0
+                                ],
+                                "size": [
+                                    20.0,
+                                    20.0
+                                ],
+                                "layer": 8,
+                                "controls": [
+                                    {
+                                        "0@mei_common.item_panel": {
+                                            "$binding_name_prefix": "mei_ui.recipe.reagent",
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bottle0": {
+                                "type": "panel",
+                                "anchor_from": "center",
+                                "anchor_to": "center",
+                                "offset": [
+                                    -23.0,
+                                    16.0
+                                ],
+                                "size": [
+                                    20.0,
+                                    20.0
+                                ],
+                                "layer": 8,
+                                "controls": [
+                                    {
+                                        "0@mei_common.item_panel": {
+                                            "$binding_name_prefix": "mei_ui.recipe.bottle",
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bottle1": {
+                                "type": "panel",
+                                "anchor_from": "center",
+                                "anchor_to": "center",
+                                "offset": [
+                                    0.0,
+                                    23.0
+                                ],
+                                "size": [
+                                    20.0,
+                                    20.0
+                                ],
+                                "layer": 8,
+                                "controls": [
+                                    {
+                                        "0@mei_common.item_panel": {
+                                            "$binding_name_prefix": "mei_ui.recipe.bottle",
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bottle2": {
+                                "type": "panel",
+                                "anchor_from": "center",
+                                "anchor_to": "center",
+                                "offset": [
+                                    23.0,
+                                    16.0
+                                ],
+                                "size": [
+                                    20.0,
+                                    20.0
+                                ],
+                                "layer": 8,
+                                "controls": [
+                                    {
+                                        "0@mei_common.item_panel": {
+                                            "$binding_name_prefix": "mei_ui.recipe.bottle",
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "output": {
+                                "type": "panel",
+                                "anchor_from": "center",
+                                "anchor_to": "center",
+                                "offset": [
+                                    37.0,
+                                    -17.0
+                                ],
+                                "size": [
+                                    20.0,
+                                    20.0
+                                ],
+                                "layer": 8,
+                                "controls": [
+                                    {
+                                        "0@mei_common.item_panel": {
+                                            "$binding_name_prefix": "mei_ui.recipe.output",
+                                            "size": [
+                                                "default",
+                                                "default"
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "fuel_pipes@brewing_stand.brewing_fuel_pipes": {}
+                        },
+                        {
+                            "pipes@brewing_stand.brewing_pipes": {}
+                        },
+                        {
+                            "arrow_empty@brewing_stand.brewing_arrow_empty_image": {}
+                        },
+                        {
+                            "arrow_full@MeiBrewing.arrow_full": {}
+                        },
+                        {
+                            "bubbles_empty@brewing_stand.bubbles_empty_image": {}
+                        },
+                        {
+                            "bubbles_full@MeiBrewing.bubbles_full": {}
+                        },
+                        {
+                            "fuel_bar_empty@brewing_stand.brewing_fuel_bar_empty_image": {}
+                        },
+                        {
+                            "fuel_bar_full@MeiBrewing.fuel_bar_full": {}
+                        }
+                    ]
+                }
+            },
+            {
+                "background": {
+                    "type": "image",
+                    "layer": 1,
+                    "texture": "textures/ui/mei/recipe/recipe_bg"
+                }
+            }
+        ]
+    },
+    "fuel_bar_full": {
+        "type": "image",
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "offset": [
+            -23.0,
+            3.0
+        ],
+        "size": [
+            22.0,
+            4.0
+        ],
+        "layer": 3,
+        "texture": "textures/ui/brewing_fuel_bar_full"
+    },
+    "namespace": "MeiBrewing",
+    "recipe@mei_recipe_common.recipe_panel": {
+        "controls": [
+            {
+                "wrapper": {
+                    "type": "panel",
+                    "size": [
+                        134.0,
+                        68.0
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "content@MeiBrewing.content_panel": {}
+                        },
+                        {
+                            "buttons@mei_recipe_common.buttons_panel_vertical": {
+                                "$tree_button_ignored": false
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "size": [
+            188,
+            72
+        ]
+    }
+}

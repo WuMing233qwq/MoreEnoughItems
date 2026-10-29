@@ -1,0 +1,119 @@
+{
+    "PREVIEW@mei_recipe_common.preview": {
+        "$recipe_content_template": "MeiStonecutter.content_panel"
+    },
+    "RECIPES_GRID@mei_recipe_common.recipes_grid": {
+        "$recipe_ui_template": "MeiStonecutter.recipe"
+    },
+    "content_panel": {
+        "type": "panel",
+        "size": [
+            134.0,
+            44.0
+        ],
+        "layer": 1,
+        "controls": [
+            {
+                "input": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        21.0,
+                        0.0
+                    ],
+                    "size": [
+                        20.0,
+                        20.0
+                    ],
+                    "layer": 8,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.input",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "arrow@stonecutter.arrow_icon": {
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "layer": 2,
+                    "offset": [
+                        55,
+                        0
+                    ]
+                }
+            },
+            {
+                "output": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        87.0,
+                        0.0
+                    ],
+                    "size": [
+                        26.0,
+                        26.0
+                    ],
+                    "layer": 8,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.output",
+                                "size": [
+                                    26,
+                                    26
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "background": {
+                    "type": "image",
+                    "layer": 1,
+                    "texture": "textures/ui/mei/recipe/recipe_bg"
+                }
+            }
+        ]
+    },
+    "namespace": "MeiStonecutter",
+    "recipe@mei_recipe_common.recipe_panel": {
+        "controls": [
+            {
+                "wrapper": {
+                    "type": "panel",
+                    "size": [
+                        134.0,
+                        44.0
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "content@MeiStonecutter.content_panel": {}
+                        },
+                        {
+                            "buttons@mei_recipe_common.buttons_panel_vertical": {
+                                "$tree_button_ignored": false
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "size": [
+            188,
+            48
+        ]
+    }
+}

@@ -1,0 +1,898 @@
+{
+    "items_sidebar_ui": {
+        "type": "panel",
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "size": [
+            150.0,
+            "default"
+        ],
+        "priority": 99,
+        "controls": [
+            {
+                "items_sidebar": {
+                    "type": "panel",
+                    "size": [
+                        "100%+-10px",
+                        "100%+-10px"
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "bottom": {
+                                "type": "stack_panel",
+                                "anchor_from": "bottom_left",
+                                "anchor_to": "bottom_left",
+                                "size": [
+                                    "100%+0px",
+                                    "0%+22px"
+                                ],
+                                "layer": 1,
+                                "orientation": "horizontal",
+                                "controls": [
+                                    {
+                                        "page_down": {
+                                            "type": "panel",
+                                            "size": [
+                                                "100%y+1px",
+                                                "100%+0px"
+                                            ],
+                                            "layer": 13,
+                                            "controls": [
+                                                {
+                                                    "button@mei_common.ore_style_button": {
+                                                        "type": "button",
+                                                        "$button_content_control|default": "mei_icons.btn_arrow_left",
+                                                        "$control_alpha": 1.0,
+                                                        "$is_new_nine_slice": false,
+                                                        "$label_color": [
+                                                            1,
+                                                            1,
+                                                            1
+                                                        ],
+                                                        "$label_font_scale_factor": 1.0,
+                                                        "$label_font_size": "large",
+                                                        "$label_layer": 3,
+                                                        "$label_offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "$label_text": "\n",
+                                                        "$nine_slice_buttom": 0,
+                                                        "$nine_slice_left": 0,
+                                                        "$nine_slice_right": 0,
+                                                        "$nine_slice_top": 0,
+                                                        "$nineslice_size": [
+                                                            0.0,
+                                                            0.0,
+                                                            0.0,
+                                                            0.0
+                                                        ],
+                                                        "$pressed_button_name": "%netease_editor_template_namespace.click",
+                                                        "$texture_layer": 2,
+                                                        "anchor_from": "left_middle",
+                                                        "anchor_to": "left_middle",
+                                                        "size": [
+                                                            "100%y+2px",
+                                                            "100%+-2px"
+                                                        ],
+                                                        "button_mappings": [],
+                                                        "is_handle_button_move_event": true,
+                                                        "bindings": [
+                                                            {
+                                                                "binding_type": "collection_details",
+                                                                "binding_collection_name": "",
+                                                                "binding_condition": "always_when_visible"
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "page_index": {
+                                            "type": "panel",
+                                            "size": [
+                                                "fill",
+                                                "default"
+                                            ],
+                                            "layer": 12,
+                                            "controls": [
+                                                {
+                                                    "page_index_bg": {
+                                                        "type": "image",
+                                                        "size": [
+                                                            "100%+2px",
+                                                            "100%+-2px"
+                                                        ],
+                                                        "alpha": 0.35,
+                                                        "color": [
+                                                            0.4980392156862745,
+                                                            0.5019607843137255,
+                                                            0.5019607843137255
+                                                        ],
+                                                        "fill": true,
+                                                        "texture": "textures/ui/mei/black"
+                                                    }
+                                                },
+                                                {
+                                                    "progress_bar": {
+                                                        "type": "panel",
+                                                        "$clip_direction": "left",
+                                                        "$clip_ratio": 0.0,
+                                                        "$is_new_nine_slice": false,
+                                                        "$nine_slice_buttom": 0,
+                                                        "$nine_slice_left": 0,
+                                                        "$nine_slice_right": 0,
+                                                        "$nine_slice_top": 0,
+                                                        "$nineslice_size": [
+                                                            0,
+                                                            0,
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "$progress_bar_empty_texture": "textures/ui/mei/white",
+                                                        "$progress_bar_filled_texture": "textures/ui/mei/white",
+                                                        "offset": [
+                                                            0.0,
+                                                            9.0
+                                                        ],
+                                                        "size": [
+                                                            "100%+2px",
+                                                            2.0
+                                                        ],
+                                                        "layer": 8,
+                                                        "controls": [
+                                                            {
+                                                                "empty_progress_bar@netease_editor_template_namespace.empty_progress_bar": {
+                                                                    "alpha": 0.15,
+                                                                    "color": [
+                                                                        1,
+                                                                        1,
+                                                                        1
+                                                                    ],
+                                                                    "fill": true,
+                                                                    "keep_ratio": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "filled_progress_bar@netease_editor_template_namespace.filled_progress_bar": {
+                                                                    "alpha": 0.8,
+                                                                    "fill": true,
+                                                                    "keep_ratio": false
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "label": {
+                                                        "type": "label",
+                                                        "offset": [
+                                                            0.0,
+                                                            "0%+-1px"
+                                                        ],
+                                                        "layer": 5,
+                                                        "font_scale_factor": 0.9999999999999999,
+                                                        "font_type": "unicode",
+                                                        "hide_hyphen": true,
+                                                        "text": "0/0",
+                                                        "text_alignment": "center",
+                                                        "controls": [
+                                                            {
+                                                                "gr_left": {
+                                                                    "type": "custom",
+                                                                    "renderer": "gradient_renderer",
+                                                                    "anchor_from": "right_middle",
+                                                                    "anchor_to": "right_middle",
+                                                                    "offset": [
+                                                                        "-50%+0px",
+                                                                        0.0
+                                                                    ],
+                                                                    "size": [
+                                                                        "50%+20px",
+                                                                        "100%+1px"
+                                                                    ],
+                                                                    "layer": -1,
+                                                                    "color1": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0,
+                                                                        0.0
+                                                                    ],
+                                                                    "color2": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0,
+                                                                        0.1372549019607843
+                                                                    ],
+                                                                    "gradient_direction": "horizontal"
+                                                                }
+                                                            },
+                                                            {
+                                                                "gr_right": {
+                                                                    "type": "custom",
+                                                                    "renderer": "gradient_renderer",
+                                                                    "anchor_from": "left_middle",
+                                                                    "anchor_to": "left_middle",
+                                                                    "offset": [
+                                                                        "50%+0px",
+                                                                        0.0
+                                                                    ],
+                                                                    "size": [
+                                                                        "50%+20px",
+                                                                        "100%+1px"
+                                                                    ],
+                                                                    "layer": -1,
+                                                                    "color1": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0,
+                                                                        0.1372549019607843
+                                                                    ],
+                                                                    "color2": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0,
+                                                                        0.0
+                                                                    ],
+                                                                    "gradient_direction": "horizontal"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "page_up": {
+                                            "type": "panel",
+                                            "size": [
+                                                "100%y+1px",
+                                                "100%+0px"
+                                            ],
+                                            "layer": 15,
+                                            "controls": [
+                                                {
+                                                    "button@mei_common.ore_style_button": {
+                                                        "type": "button",
+                                                        "$button_content_control|default": "mei_icons.btn_arrow_right",
+                                                        "$control_alpha": 1.0,
+                                                        "$is_new_nine_slice": false,
+                                                        "$label_color": [
+                                                            1,
+                                                            1,
+                                                            1
+                                                        ],
+                                                        "$label_font_scale_factor": 1.0,
+                                                        "$label_font_size": "large",
+                                                        "$label_layer": 3,
+                                                        "$label_offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "$label_text": "\n",
+                                                        "$nine_slice_buttom": 0,
+                                                        "$nine_slice_left": 0,
+                                                        "$nine_slice_right": 0,
+                                                        "$nine_slice_top": 0,
+                                                        "$nineslice_size": [
+                                                            0.0,
+                                                            0.0,
+                                                            0.0,
+                                                            0.0
+                                                        ],
+                                                        "$pressed_button_name": "%netease_editor_template_namespace.click",
+                                                        "$texture_layer": 2,
+                                                        "anchor_from": "right_middle",
+                                                        "anchor_to": "right_middle",
+                                                        "size": [
+                                                            "100%y+2px",
+                                                            "100%+-2px"
+                                                        ],
+                                                        "button_mappings": [],
+                                                        "is_handle_button_move_event": true,
+                                                        "bindings": [
+                                                            {
+                                                                "binding_type": "collection_details",
+                                                                "binding_collection_name": "",
+                                                                "binding_condition": "always_when_visible"
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "items": {
+                                "type": "panel",
+                                "size": [
+                                    "100%+0px",
+                                    "100%+-44px"
+                                ],
+                                "layer": 1,
+                                "controls": [
+                                    {
+                                        "background": {
+                                            "type": "image",
+                                            "size": [
+                                                "100%+0.5px",
+                                                "100%+2px"
+                                            ],
+                                            "layer": -99,
+                                            "alpha": 0.08,
+                                            "fill": true,
+                                            "texture": "textures/ui/mei/white"
+                                        }
+                                    },
+                                    {
+                                        "grids": {
+                                            "type": "stack_panel",
+                                            "size": [
+                                                "100%+0px",
+                                                "100%+0px"
+                                            ],
+                                            "layer": 1,
+                                            "controls": [
+                                                {
+                                                    "bookmarks": {
+                                                        "type": "grid",
+                                                        "$collection_name": "items_sidebar_bookmarks",
+                                                        "$binding_name_prefix": "meiui.items_sidebar_bookmarks",
+                                                        "size": [
+                                                            "100%+0px",
+                                                            "default"
+                                                        ],
+                                                        "layer": 1,
+                                                        "alpha": "@mei_common.alpha_in",
+                                                        "propagate_alpha": true,
+                                                        "visible": true,
+                                                        "collection_name": "$collection_name",
+                                                        "grid_dimensions": [
+                                                            1,
+                                                            1
+                                                        ],
+                                                        "grid_item_template": "MeiItemsSidebar.bookmark_item_panel"
+                                                    }
+                                                },
+                                                {
+                                                    "padding": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            "default",
+                                                            "fill"
+                                                        ],
+                                                        "layer": 1
+                                                    }
+                                                },
+                                                {
+                                                    "panel": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            "default",
+                                                            "100%cm+0px"
+                                                        ],
+                                                        "layer": 1,
+                                                        "controls": [
+                                                            {
+                                                                "history": {
+                                                                    "type": "grid",
+                                                                    "$collection_name": "items_sidebar_history",
+                                                                    "$binding_name_prefix": "meiui.items_sidebar_history",
+                                                                    "anchor_from": "bottom_middle",
+                                                                    "anchor_to": "bottom_middle",
+                                                                    "size": [
+                                                                        "100%+0px",
+                                                                        "default"
+                                                                    ],
+                                                                    "layer": 1,
+                                                                    "alpha": "@mei_common.alpha_in",
+                                                                    "propagate_alpha": true,
+                                                                    "visible": true,
+                                                                    "collection_name": "$collection_name",
+                                                                    "grid_dimensions": [
+                                                                        1,
+                                                                        1
+                                                                    ],
+                                                                    "grid_item_template": "MeiItemsSidebar.bordered_item_panel"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "top": {
+                                "type": "stack_panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    "100%+0px",
+                                    "0%+22px"
+                                ],
+                                "layer": 20,
+                                "orientation": "horizontal",
+                                "controls": [
+                                    {
+                                        "setting": {
+                                            "type": "panel",
+                                            "anchor_from": "left_middle",
+                                            "anchor_to": "left_middle",
+                                            "size": [
+                                                "100%y+0px",
+                                                "default"
+                                            ],
+                                            "layer": 25,
+                                            "controls": [
+                                                {
+                                                    "button@mei_common.ore_style_button": {
+                                                        "type": "button",
+                                                        "$button_content_control|default": "mei_icons.btn_setting",
+                                                        "$control_alpha": 1.0,
+                                                        "$is_new_nine_slice": false,
+                                                        "$label_color": [
+                                                            1,
+                                                            1,
+                                                            1
+                                                        ],
+                                                        "$label_font_scale_factor": 1.0,
+                                                        "$label_font_size": "large",
+                                                        "$label_layer": 3,
+                                                        "$label_offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "$label_text": "\n",
+                                                        "$nine_slice_buttom": 0,
+                                                        "$nine_slice_left": 0,
+                                                        "$nine_slice_right": 0,
+                                                        "$nine_slice_top": 0,
+                                                        "$nineslice_size": [
+                                                            0.0,
+                                                            0.0,
+                                                            0.0,
+                                                            0.0
+                                                        ],
+                                                        "$pressed_button_name": "%netease_editor_template_namespace.click",
+                                                        "$texture_layer": 2,
+                                                        "anchor_from": "left_middle",
+                                                        "anchor_to": "left_middle",
+                                                        "size": [
+                                                            "100%y+0px",
+                                                            "100%+-2px"
+                                                        ],
+                                                        "button_mappings": [],
+                                                        "is_handle_button_move_event": true,
+                                                        "bindings": [
+                                                            {
+                                                                "binding_type": "collection_details",
+                                                                "binding_collection_name": "",
+                                                                "binding_condition": "always_when_visible"
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "tab_prev": {
+                                            "type": "panel",
+                                            "size": [
+                                                "100%y+1px",
+                                                "100%+0px"
+                                            ],
+                                            "layer": 13,
+                                            "controls": [
+                                                {
+                                                    "button@mei_common.ore_style_button": {
+                                                        "type": "button",
+                                                        "$button_content_control|default": "mei_icons.btn_arrow_left",
+                                                        "$control_alpha": 1.0,
+                                                        "$is_new_nine_slice": false,
+                                                        "$label_color": [
+                                                            1,
+                                                            1,
+                                                            1
+                                                        ],
+                                                        "$label_font_scale_factor": 1.0,
+                                                        "$label_font_size": "large",
+                                                        "$label_layer": 3,
+                                                        "$label_offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "$label_text": "\n",
+                                                        "$nine_slice_buttom": 0,
+                                                        "$nine_slice_left": 0,
+                                                        "$nine_slice_right": 0,
+                                                        "$nine_slice_top": 0,
+                                                        "$nineslice_size": [
+                                                            0.0,
+                                                            0.0,
+                                                            0.0,
+                                                            0.0
+                                                        ],
+                                                        "$pressed_button_name": "%netease_editor_template_namespace.click",
+                                                        "$texture_layer": 2,
+                                                        "anchor_from": "left_middle",
+                                                        "anchor_to": "left_middle",
+                                                        "size": [
+                                                            "100%y+2px",
+                                                            "100%+-2px"
+                                                        ],
+                                                        "button_mappings": [],
+                                                        "is_handle_button_move_event": true,
+                                                        "bindings": [
+                                                            {
+                                                                "binding_type": "collection_details",
+                                                                "binding_collection_name": "",
+                                                                "binding_condition": "always_when_visible"
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "tab_index": {
+                                            "type": "panel",
+                                            "size": [
+                                                "fill",
+                                                "default"
+                                            ],
+                                            "layer": 12,
+                                            "controls": [
+                                                {
+                                                    "page_index_bg": {
+                                                        "type": "image",
+                                                        "size": [
+                                                            "100%+2px",
+                                                            "100%+-2px"
+                                                        ],
+                                                        "alpha": 0.35,
+                                                        "color": [
+                                                            0.4980392156862745,
+                                                            0.5019607843137255,
+                                                            0.5019607843137255
+                                                        ],
+                                                        "fill": true,
+                                                        "texture": "textures/ui/mei/black"
+                                                    }
+                                                },
+                                                {
+                                                    "progress_bar": {
+                                                        "type": "panel",
+                                                        "$clip_direction": "left",
+                                                        "$clip_ratio": 0.0,
+                                                        "$is_new_nine_slice": false,
+                                                        "$nine_slice_buttom": 0,
+                                                        "$nine_slice_left": 0,
+                                                        "$nine_slice_right": 0,
+                                                        "$nine_slice_top": 0,
+                                                        "$nineslice_size": [
+                                                            0,
+                                                            0,
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "$progress_bar_empty_texture": "textures/ui/mei/white",
+                                                        "$progress_bar_filled_texture": "textures/ui/mei/white",
+                                                        "offset": [
+                                                            0.0,
+                                                            9.0
+                                                        ],
+                                                        "size": [
+                                                            "100%+2px",
+                                                            2.0
+                                                        ],
+                                                        "layer": 8,
+                                                        "controls": [
+                                                            {
+                                                                "empty_progress_bar@netease_editor_template_namespace.empty_progress_bar": {
+                                                                    "alpha": 0.15,
+                                                                    "color": [
+                                                                        1,
+                                                                        1,
+                                                                        1
+                                                                    ],
+                                                                    "fill": true,
+                                                                    "keep_ratio": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "filled_progress_bar@netease_editor_template_namespace.filled_progress_bar": {
+                                                                    "alpha": 0.8,
+                                                                    "fill": true,
+                                                                    "keep_ratio": false
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "label": {
+                                                        "type": "label",
+                                                        "offset": [
+                                                            0.0,
+                                                            "0%+-1px"
+                                                        ],
+                                                        "layer": 5,
+                                                        "font_scale_factor": 0.9999999999999999,
+                                                        "font_type": "unicode",
+                                                        "hide_hyphen": true,
+                                                        "text": "0/0",
+                                                        "text_alignment": "center",
+                                                        "controls": [
+                                                            {
+                                                                "gr_left": {
+                                                                    "type": "custom",
+                                                                    "renderer": "gradient_renderer",
+                                                                    "anchor_from": "right_middle",
+                                                                    "anchor_to": "right_middle",
+                                                                    "offset": [
+                                                                        "-50%+0px",
+                                                                        0.0
+                                                                    ],
+                                                                    "size": [
+                                                                        "50%+20px",
+                                                                        "100%+1px"
+                                                                    ],
+                                                                    "layer": -1,
+                                                                    "color1": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0,
+                                                                        0.0
+                                                                    ],
+                                                                    "color2": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0,
+                                                                        0.1372549019607843
+                                                                    ],
+                                                                    "gradient_direction": "horizontal"
+                                                                }
+                                                            },
+                                                            {
+                                                                "gr_right": {
+                                                                    "type": "custom",
+                                                                    "renderer": "gradient_renderer",
+                                                                    "anchor_from": "left_middle",
+                                                                    "anchor_to": "left_middle",
+                                                                    "offset": [
+                                                                        "50%+0px",
+                                                                        0.0
+                                                                    ],
+                                                                    "size": [
+                                                                        "50%+20px",
+                                                                        "100%+1px"
+                                                                    ],
+                                                                    "layer": -1,
+                                                                    "color1": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0,
+                                                                        0.1372549019607843
+                                                                    ],
+                                                                    "color2": [
+                                                                        1.0,
+                                                                        1.0,
+                                                                        1.0,
+                                                                        0.0
+                                                                    ],
+                                                                    "gradient_direction": "horizontal"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "tab_next": {
+                                            "type": "panel",
+                                            "size": [
+                                                "100%y+1px",
+                                                "100%+0px"
+                                            ],
+                                            "layer": 15,
+                                            "controls": [
+                                                {
+                                                    "button@mei_common.ore_style_button": {
+                                                        "type": "button",
+                                                        "$button_content_control|default": "mei_icons.btn_arrow_right",
+                                                        "$control_alpha": 1.0,
+                                                        "$is_new_nine_slice": false,
+                                                        "$label_color": [
+                                                            1,
+                                                            1,
+                                                            1
+                                                        ],
+                                                        "$label_font_scale_factor": 1.0,
+                                                        "$label_font_size": "large",
+                                                        "$label_layer": 3,
+                                                        "$label_offset": [
+                                                            0,
+                                                            0
+                                                        ],
+                                                        "$label_text": "\n",
+                                                        "$nine_slice_buttom": 0,
+                                                        "$nine_slice_left": 0,
+                                                        "$nine_slice_right": 0,
+                                                        "$nine_slice_top": 0,
+                                                        "$nineslice_size": [
+                                                            0.0,
+                                                            0.0,
+                                                            0.0,
+                                                            0.0
+                                                        ],
+                                                        "$pressed_button_name": "%netease_editor_template_namespace.click",
+                                                        "$texture_layer": 2,
+                                                        "anchor_from": "right_middle",
+                                                        "anchor_to": "right_middle",
+                                                        "size": [
+                                                            "100%y+2px",
+                                                            "100%+-2px"
+                                                        ],
+                                                        "button_mappings": [],
+                                                        "is_handle_button_move_event": true,
+                                                        "bindings": [
+                                                            {
+                                                                "binding_type": "collection_details",
+                                                                "binding_collection_name": "",
+                                                                "binding_condition": "always_when_visible"
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "main": {},
+    "namespace": "MeiItemsSidebar",
+    "bordered_item_panel@mei_common.slot_base": {
+        "$binding_name_prefix|default": "meiui.item_panel",
+        "controls": [
+            {
+                "background@mei_common.slot_background_bordered": {}
+            },
+            {
+                "item@mei_common.slot_item_marked": {}
+            },
+            {
+                "overlay@mei_common.slot_overlay": {
+                    "$overlay_layer": 20,
+                    "$overlay_btn_control": "mei_common.slot_overlay_button_flat"
+                }
+            }
+        ]
+    },
+    "bookmark_marker": {
+        "type": "label",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "offset": [
+            1.0,
+            0.0
+        ],
+        "size": [
+            "default",
+            10.0
+        ],
+        "layer": 12,
+        "visible": "#visible",
+        "color": [
+            1.0,
+            0.85,
+            0.35
+        ],
+        "font_scale_factor": 0.75,
+        "font_type": "unicode",
+        "shadow": true,
+        "text": "#text",
+        "property_bag": {
+            "#text": "",
+            "#visible": false
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "$item_marker_visible_binding_name"
+            },
+            {
+                "binding_name_override": "#text",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always_when_visible",
+                "binding_type": "collection",
+                "binding_name": "$item_marker_text_binding_name"
+            }
+        ]
+    },
+    "bookmark_highlight": {
+        "type": "image",
+        "size": [
+            "100%+-2px",
+            "100%+-2px"
+        ],
+        "layer": 1,
+        "texture": "textures/ui/mei/white",
+        "fill": true,
+        "color": [
+            0.45,
+            0.8,
+            1.0
+        ],
+        "alpha": 0.45,
+        "visible": "#visible",
+        "property_bag": {
+            "#visible": false
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "$item_highlight_visible_binding_name"
+            }
+        ]
+    },
+    "bookmark_item_panel@mei_common.slot_base": {
+        "$binding_name_prefix|default": "meiui.item_panel",
+        "$item_highlight_visible_binding_name": "('#' + $binding_name_prefix + '.item.highlight.visible')",
+        "$item_marker_text_binding_name": "('#' + $binding_name_prefix + '.item.marker.text')",
+        "$item_marker_visible_binding_name": "('#' + $binding_name_prefix + '.item.marker.visible')",
+        "controls": [
+            {
+                "background@mei_common.slot_background_bordered": {
+                    "texture": "textures/ui/mei/white",
+                    "color": [
+                        0.6,
+                        0.6,
+                        0.6
+                    ]
+                }
+            },
+            {
+                "highlight@MeiItemsSidebar.bookmark_highlight": {}
+            },
+            {
+                "item@mei_common.slot_item": {}
+            },
+            {
+                "marker@MeiItemsSidebar.bookmark_marker": {}
+            },
+            {
+                "overlay@mei_common.slot_overlay": {
+                    "$overlay_layer": 20,
+                    "$overlay_btn_control": "mei_common.slot_overlay_button_flat"
+                }
+            }
+        ]
+    }
+}

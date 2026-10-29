@@ -1,0 +1,171 @@
+{
+    "PREVIEW@mei_recipe_common.preview": {
+        "$recipe_content_template": "MeiFuel.content_panel"
+    },
+    "RECIPES_GRID@mei_recipe_common.recipes_grid": {
+        "$recipe_ui_template": "MeiFuel.recipe"
+    },
+    "content_panel": {
+        "type": "panel",
+        "size": [
+            134.0,
+            44.0
+        ],
+        "layer": 1,
+        "controls": [
+            {
+                "input": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        10.0,
+                        0.0
+                    ],
+                    "size": [
+                        20.0,
+                        20.0
+                    ],
+                    "layer": 8,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.input",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "flame": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        33.0,
+                        0.0
+                    ],
+                    "size": [
+                        15.0,
+                        15.0
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "empty": {
+                                "type": "image",
+                                "layer": 1,
+                                "texture": "textures/ui/flame_empty_image"
+                            }
+                        },
+                        {
+                            "full": {
+                                "type": "image",
+                                "layer": 2,
+                                "clip_direction": "down",
+                                "clip_ratio": "@MeiFuel.flame_clip",
+                                "texture": "textures/ui/flame_full_image"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "burn": {
+                    "type": "label",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "offset": [
+                        54.0,
+                        10.0
+                    ],
+                    "size": [
+                        "default",
+                        "default"
+                    ],
+                    "layer": 2,
+                    "color": [
+                        0.25,
+                        0.25,
+                        0.25
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "default",
+                    "localize": false,
+                    "shadow": false,
+                    "text": ""
+                }
+            },
+            {
+                "smelts": {
+                    "type": "label",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "offset": [
+                        54.0,
+                        24.0
+                    ],
+                    "size": [
+                        "default",
+                        "default"
+                    ],
+                    "layer": 2,
+                    "color": [
+                        0.25,
+                        0.25,
+                        0.25
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "default",
+                    "localize": false,
+                    "shadow": false,
+                    "text": ""
+                }
+            },
+            {
+                "background": {
+                    "type": "image",
+                    "layer": 1,
+                    "texture": "textures/ui/mei/recipe/recipe_bg"
+                }
+            }
+        ]
+    },
+    "flame_clip": {
+        "anim_type": "clip",
+        "duration": 3,
+        "from": 0,
+        "to": 1
+    },
+    "namespace": "MeiFuel",
+    "recipe@mei_recipe_common.recipe_panel": {
+        "controls": [
+            {
+                "wrapper": {
+                    "type": "panel",
+                    "size": [
+                        134.0,
+                        44.0
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "content@MeiFuel.content_panel": {}
+                        },
+                        {
+                            "buttons@mei_recipe_common.buttons_panel_vertical": {}
+                        }
+                    ]
+                }
+            }
+        ],
+        "size": [
+            188,
+            48
+        ]
+    }
+}

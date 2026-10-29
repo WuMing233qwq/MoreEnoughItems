@@ -1,0 +1,92 @@
+# ----------------------------------------------------------------------
+#  items.pyi is part of MoreEnoughItems.
+#  Copyright (C) 2026 WuMing233qwq <2691068930@qq.com>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as
+#  published by the Free Software Foundation, version 3 only.
+#
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this program.
+#  If not, see <https://www.gnu.org/licenses/>.
+# ----------------------------------------------------------------------
+from typing import Optional, List, Dict, Callable, Any, Set
+
+from MEIScripts.common.classes.types import Item, ItemInfo, ItemSpec, ItemStack
+
+
+class __ItemFactory(object):
+    def __init__(self):
+        self.__ItemComp = None
+
+    def InitComps(self):...
+
+    def _LazyLoader(self, item: Item, kind):...
+
+    def GetItemStackFromItemDict(self, item_dict: Dict[str, Any]) -> Optional[ItemStack]:...
+
+    def GetItem(self, **kwargs: Any) -> Optional[Item]:...
+
+    def GetStacksFromIds(self, item_ids: List[str], count: int = 1) -> List[ItemStack]:...
+
+    def CreateFromSpec(self, spec: ItemSpec) -> Item:...
+
+    def CreateItem(self, item_id: str, dict_data: Dict[str, Any]) -> Item:...
+
+ItemFactory: __ItemFactory
+
+
+class __ItemManager(object):
+    def __init__(self):
+        self.items: List[Item] = []
+        self.item_ids: Set[str] = set()
+        self.hidden_keys: Set[tuple] = set()
+        self._version: int = 0
+        self.item_name_index: Dict[str, List[Item]] = {}
+        self.item_id_index: Dict[str, List[Item]] = {}
+        self.__search_cache: Dict[str, tuple] = {}
+
+    def Version(self) -> int:...
+
+    def LoadItemIds(self, item_ids: List[str], hidden_ids: Optional[List[str]] = None):...
+
+    def LookUpItem(self, item_id: str) -> bool:...
+
+    def GetItems(self) -> List[Item]:...
+
+    def GetBrowsableItems(self) -> List[Item]:...
+
+    def GetItemsById(self, item_id: str) -> List[Item]:...
+
+    def GetItemById(self, item_id: str) -> Optional[Item]:...
+
+    def GetItemsByName(self, item_name: str) -> List[Item]:...
+
+    def SearchByCondition(self, condition: Callable[[Any], bool], cache_key: Optional[str] = None) -> List[Item]:...
+
+    def ResolveTag(self, tag: str) -> List[Item]:...
+
+    def RegItemFromIdList(self, item_id_list: List[str]):...
+
+    def AddItems(self, specs: List[ItemSpec]) -> int:...
+
+    def Reset(self):...
+
+    def IsHidden(self, item: Item) -> bool:...
+
+    def SetHidden(self, item_id: str, aux_value: int = 0, hidden: bool = True) -> bool:...
+
+    def GetHiddenKeys(self) -> Set[tuple]:...
+
+    def __SetHiddenKey(self, key: tuple, hidden: bool) -> bool:...
+    def __RegItem(self, item: Item) -> bool:...
+    def __Touch(self):...
+    def __AppendToIndex(self, item: Item):...
+
+
+ItemManager: __ItemManager

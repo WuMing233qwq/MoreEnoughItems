@@ -1,0 +1,213 @@
+{
+    "PREVIEW@mei_recipe_common.preview": {
+        "$recipe_content_template": "MeiFurnace.content_panel"
+    },
+    "RECIPES_GRID@mei_recipe_common.recipes_grid": {
+        "$recipe_ui_template": "MeiFurnace.recipe"
+    },
+    "arrow_clip": {
+        "anim_type": "clip",
+        "duration": 3,
+        "from": 1,
+        "to": 0
+    },
+    "content_panel": {
+        "type": "panel",
+        "size": [
+            134.0,
+            72.0
+        ],
+        "layer": 1,
+        "controls": [
+            {
+                "input": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        18.0,
+                        -20.0
+                    ],
+                    "size": [
+                        20.0,
+                        20.0
+                    ],
+                    "layer": 8,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.input",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "flame": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        20.0,
+                        0.0
+                    ],
+                    "size": [
+                        15.0,
+                        15.0
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "empty": {
+                                "type": "image",
+                                "layer": 1,
+                                "texture": "textures/ui/flame_empty_image"
+                            }
+                        },
+                        {
+                            "full": {
+                                "type": "image",
+                                "layer": 2,
+                                "clip_direction": "down",
+                                "clip_ratio": "@MeiFurnace.flame_clip",
+                                "texture": "textures/ui/flame_full_image"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "arrow": {
+                    "type": "panel",
+                    "offset": [
+                        -4.0,
+                        0.0
+                    ],
+                    "size": [
+                        24.0,
+                        17.0
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "inactive": {
+                                "type": "image",
+                                "layer": 1,
+                                "texture": "textures/ui/arrow_inactive"
+                            }
+                        },
+                        {
+                            "active": {
+                                "type": "image",
+                                "layer": 2,
+                                "clip_direction": "left",
+                                "clip_ratio": "@MeiFurnace.arrow_clip",
+                                "texture": "textures/ui/arrow_active"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "fuel": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        18.0,
+                        20.0
+                    ],
+                    "size": [
+                        20.0,
+                        20.0
+                    ],
+                    "layer": 7,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.fuel",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "output": {
+                    "type": "panel",
+                    "anchor_from": "right_middle",
+                    "anchor_to": "right_middle",
+                    "offset": [
+                        -18.0,
+                        0.0
+                    ],
+                    "size": [
+                        28.0,
+                        28.0
+                    ],
+                    "layer": 7,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.output",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "background": {
+                    "type": "image",
+                    "layer": 1,
+                    "texture": "textures/ui/mei/recipe/recipe_bg"
+                }
+            }
+        ]
+    },
+    "flame_clip": {
+        "anim_type": "clip",
+        "duration": 3,
+        "from": 0,
+        "to": 1
+    },
+    "namespace": "MeiFurnace",
+    "recipe@mei_recipe_common.recipe_panel": {
+        "controls": [
+            {
+                "wrapper": {
+                    "type": "panel",
+                    "size": [
+                        134.0,
+                        72.0
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "content@MeiFurnace.content_panel": {}
+                        },
+                        {
+                            "buttons@mei_recipe_common.buttons_panel_vertical": {
+                                "$tree_button_ignored": false
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "size": [
+            188,
+            76
+        ]
+    }
+}

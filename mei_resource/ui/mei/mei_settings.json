@@ -1,0 +1,930 @@
+{
+    "namespace": "mei_settings",
+    "general_tab@settings_common.section_toggle_base": {
+        "$toggle_view_binding_name": "mei_general_tab_toggle",
+        "$glyph_texture": "textures/ui/video_glyph",
+        "$glyph_color_texture": "textures/ui/video_glyph_color",
+        "$glyph_size": [ 15, 12 ],
+        "$button_text": "options.mei.general.tab",
+        "$toggle_property_bag": {
+            "#panel_title": "options.mei.general.title"
+        }
+    },
+    "about_tab@settings_common.section_toggle_base": {
+        "$toggle_view_binding_name": "mei_about_tab_toggle",
+        "$glyph_texture": "textures/ui/creator_glyph",
+        "$glyph_color_texture": "textures/ui/creator_glyph_color",
+        "$glyph_size": [ 17, 17 ],
+        "$button_text": "options.mei.about.tab",
+        "$toggle_property_bag": {
+            "#panel_title": "options.mei.about.title"
+        }
+    },
+    "keys_tab@settings_common.section_toggle_base": {
+        "$toggle_view_binding_name": "mei_keys_tab_toggle",
+        "$glyph_texture": "textures/ui/keyboard_and_mouse_glyph",
+        "$glyph_color_texture": "textures/ui/keyboard_and_mouse_glyph_color",
+        "$glyph_size": [ 19, 9 ],
+        "$button_text": "options.mei.keys.tab",
+        "$toggle_property_bag": {
+            "#panel_title": "options.mei.keys.title"
+        }
+    },
+    "selector_panel": {
+        "type": "stack_panel",
+        "size": [ "100%", "100%c" ],
+        "$mei_section_header": "options.mei.group",
+        "controls": [
+            {
+                "spacer": {
+                    "type": "panel",
+                    "size": [ 2, 8 ]
+                }
+            },
+            {
+                "group_label@settings_common.selector_group_label": {
+                    "text": "$mei_section_header"
+                }
+            },
+            {
+                "general_tab@mei_settings.general_tab": {
+                    "$toggle_group_forced_index": 2026102601,
+                    "$tts_section_header": "$mei_section_header"
+                }
+            },
+            {
+                "keys_tab@mei_settings.keys_tab": {
+                    "$toggle_group_forced_index": 2026102903,
+                    "$tts_section_header": "$mei_section_header"
+                }
+            },
+            {
+                "about_tab@mei_settings.about_tab": {
+                    "$toggle_group_forced_index": 2026102602,
+                    "$tts_section_header": "$mei_section_header"
+                }
+            }
+        ]
+    },
+    "sections": {
+        "type": "stack_panel",
+        "size": [ "100%", "100%c" ],
+        "controls": [
+            {
+                "general_section@mei_settings.general_section": {
+                    "visible": false
+                }
+            },
+            {
+                "keys_section@mei_settings.keys_section": {
+                    "visible": false
+                }
+            },
+            {
+                "about_section@mei_settings.about_section": {
+                    "visible": false
+                }
+            }
+        ]
+    },
+    "general_section": {
+        "type": "stack_panel",
+        "size": [ "100%", "100%c" ],
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "bindings": [
+            {
+                "binding_type": "view",
+                "source_control_name": "mei_general_tab_toggle",
+                "source_property_name": "#toggle_state",
+                "target_property_name": "#visible"
+            }
+        ],
+        "controls": [
+            {
+                "degraded_tip@mei_settings.tips_label": {
+                    "$text": "options.mei.settings.degraded",
+                    "$text_color": [ 1, 0.33, 0.33 ],
+                    "$tips_bindings": [
+                        {
+                            "binding_name": "#mei.settings.degraded",
+                            "binding_name_override": "#visible"
+                        }
+                    ]
+                }
+            },
+            {
+                "layout_group@settings_common.option_group_label": {
+                    "$text": "options.mei.general.group.layout",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "row_items@mei_settings.slider_row": {
+                    "$option_label": "#mei.settings.row_items.label",
+                    "$slider_name": "#mei.settings.row_items.slider",
+                    "$slider_value_binding_name": "#mei.settings.row_items.value",
+                    "$slider_steps_binding_name": "#mei.settings.row_items.steps",
+                    "$slider_tts_text_value": "#mei.settings.row_items.label",
+                    "$label_bindings": [ { "binding_name": "#mei.settings.row_items.label" } ]
+                }
+            },
+            {
+                "row_items_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.row_items.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "adaptive_layout@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.adaptive",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.adaptive_layout",
+                    "$option_binding_name": "#mei.settings.adaptive_layout.state"
+                }
+            },
+            {
+                "adaptive_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.adaptive.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "find_button@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.find_button",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.find_button",
+                    "$option_binding_name": "#mei.settings.find_button.state"
+                }
+            },
+            {
+                "find_button_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.find_button.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "bookmarks_group@settings_common.option_group_label": {
+                    "$text": "options.mei.general.group.bookmarks",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "bookmarks_visible@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.bookmarks_visible",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.bookmarks_visible",
+                    "$option_binding_name": "#mei.settings.bookmarks_visible.state"
+                }
+            },
+            {
+                "bookmarks_visible_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.bookmarks_visible.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "bookmarks_world@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.bookmarks_world",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.bookmarks_world",
+                    "$option_binding_name": "#mei.settings.bookmarks_world.state"
+                }
+            },
+            {
+                "bookmarks_world_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.bookmarks_world.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "display_group@settings_common.option_group_label": {
+                    "$text": "options.mei.general.group.display",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "advanced_tooltip@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.advanced_tooltip",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.advanced_tooltip",
+                    "$option_binding_name": "#mei.settings.advanced_tooltip.state"
+                }
+            },
+            {
+                "advanced_tooltip_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.advanced_tooltip.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "touch_opposite@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.touch_opposite",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.touch_opposite",
+                    "$option_binding_name": "#mei.settings.touch_opposite.state"
+                }
+            },
+            {
+                "touch_opposite_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.touch_opposite.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "float_group@settings_common.option_group_label": {
+                    "$text": "options.mei.general.group.float",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "float_mode@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.float_mode",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.float_mode",
+                    "$option_binding_name": "#mei.settings.float_mode.state"
+                }
+            },
+            {
+                "float_mode_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.float_mode.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "float_threshold@mei_settings.slider_row": {
+                    "$option_label": "#mei.settings.float_threshold.label",
+                    "$slider_name": "#mei.settings.float_threshold.slider",
+                    "$slider_value_binding_name": "#mei.settings.float_threshold.value",
+                    "$slider_steps_binding_name": "#mei.settings.float_threshold.steps",
+                    "$slider_tts_text_value": "#mei.settings.float_threshold.label",
+                    "$label_bindings": [ { "binding_name": "#mei.settings.float_threshold.label" } ]
+                }
+            },
+            {
+                "float_threshold_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.float_threshold.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "float_quick_collapse@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.float_quick_collapse",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.float_quick_collapse",
+                    "$option_binding_name": "#mei.settings.float_quick_collapse.state"
+                }
+            },
+            {
+                "float_quick_collapse_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.float_quick_collapse.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "float_hud@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.float_hud",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.float_hud",
+                    "$option_binding_name": "#mei.settings.float_hud.state"
+                }
+            },
+            {
+                "float_hud_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.float_hud.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "float_compat@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.float_compat",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.float_compat",
+                    "$option_binding_name": "#mei.settings.float_compat.state"
+                }
+            },
+            {
+                "float_compat_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.float_compat.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "tree_group@settings_common.option_group_label": {
+                    "$text": "options.mei.general.group.tree",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "tree_preview@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.tree_preview",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.tree_preview",
+                    "$option_binding_name": "#mei.settings.tree_preview.state"
+                }
+            },
+            {
+                "tree_preview_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.tree_preview.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "reset_group@settings_common.option_group_label": {
+                    "$text": "options.mei.general.group.reset",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "reset_all@settings_common.action_button": {
+                    "$button_text": "options.mei.general.reset_all",
+                    "$pressed_button_name": "button.mei.settings.reset_all"
+                }
+            }
+        ]
+    },
+    "keys_section": {
+        "type": "stack_panel",
+        "size": [ "100%", "100%c" ],
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "bindings": [
+            {
+                "binding_type": "view",
+                "source_control_name": "mei_keys_tab_toggle",
+                "source_property_name": "#toggle_state",
+                "target_property_name": "#visible"
+            }
+        ],
+        "controls": [
+            {
+                "degraded_tip@mei_settings.tips_label": {
+                    "$text": "options.mei.settings.degraded",
+                    "$text_color": [ 1, 0.33, 0.33 ],
+                    "$tips_bindings": [
+                        {
+                            "binding_name": "#mei.settings.degraded",
+                            "binding_name_override": "#visible"
+                        }
+                    ]
+                }
+            },
+            {
+                "keys_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.keys.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "item_group@settings_common.option_group_label": {
+                    "$text": "options.mei.keys.group.item",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "hotkey_source@mei_settings.key_row": {
+                    "$key_label": "key.mei.source",
+                    "$key_button": "button.mei.settings.hotkey_source",
+                    "$key_reset": "button.mei.settings.hotkey_source.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_source.text"
+                }
+            },
+            {
+                "hotkey_uses@mei_settings.key_row": {
+                    "$key_label": "key.mei.uses",
+                    "$key_button": "button.mei.settings.hotkey_uses",
+                    "$key_reset": "button.mei.settings.hotkey_uses.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_uses.text"
+                }
+            },
+            {
+                "hotkey_bookmark@mei_settings.key_row": {
+                    "$key_label": "key.mei.bookmark",
+                    "$key_button": "button.mei.settings.hotkey_bookmark",
+                    "$key_reset": "button.mei.settings.hotkey_bookmark.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_bookmark.text"
+                }
+            },
+            {
+                "hotkey_tree@mei_settings.key_row": {
+                    "$key_label": "key.mei.tree",
+                    "$key_button": "button.mei.settings.hotkey_tree",
+                    "$key_reset": "button.mei.settings.hotkey_tree.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_tree.text"
+                }
+            },
+            {
+                "hotkey_tooltip@mei_settings.key_row": {
+                    "$key_label": "key.mei.tooltip",
+                    "$key_button": "button.mei.settings.hotkey_tooltip",
+                    "$key_reset": "button.mei.settings.hotkey_tooltip.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_tooltip.text"
+                }
+            },
+            {
+                "hotkey_copy_name@mei_settings.key_row": {
+                    "$key_label": "key.mei.copy_name",
+                    "$key_button": "button.mei.settings.hotkey_copy_name",
+                    "$key_reset": "button.mei.settings.hotkey_copy_name.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_copy_name.text"
+                }
+            },
+            {
+                "hotkey_copy_id@mei_settings.key_row": {
+                    "$key_label": "key.mei.copy_id",
+                    "$key_button": "button.mei.settings.hotkey_copy_id",
+                    "$key_reset": "button.mei.settings.hotkey_copy_id.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_copy_id.text"
+                }
+            },
+            {
+                "hotkey_candidate_wheel@mei_settings.key_row": {
+                    "$key_label": "key.mei.candidate_wheel",
+                    "$key_button": "button.mei.settings.hotkey_candidate_wheel",
+                    "$key_reset": "button.mei.settings.hotkey_candidate_wheel.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_candidate_wheel.text"
+                }
+            },
+            {
+                "hotkey_candidate_prev@mei_settings.key_row": {
+                    "$key_label": "key.mei.candidate_prev",
+                    "$key_button": "button.mei.settings.hotkey_candidate_prev",
+                    "$key_reset": "button.mei.settings.hotkey_candidate_prev.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_candidate_prev.text"
+                }
+            },
+            {
+                "hotkey_candidate_next@mei_settings.key_row": {
+                    "$key_label": "key.mei.candidate_next",
+                    "$key_button": "button.mei.settings.hotkey_candidate_next",
+                    "$key_reset": "button.mei.settings.hotkey_candidate_next.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_candidate_next.text"
+                }
+            },
+            {
+                "bookmark_group@settings_common.option_group_label": {
+                    "$text": "options.mei.keys.group.bookmark",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "hotkey_open_bookmark@mei_settings.key_row": {
+                    "$key_label": "key.mei.open_bookmark",
+                    "$key_button": "button.mei.settings.hotkey_open_bookmark",
+                    "$key_reset": "button.mei.settings.hotkey_open_bookmark.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_open_bookmark.text"
+                }
+            },
+            {
+                "hotkey_remove@mei_settings.key_row": {
+                    "$key_label": "key.mei.remove",
+                    "$key_button": "button.mei.settings.hotkey_remove",
+                    "$key_reset": "button.mei.settings.hotkey_remove.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_remove.text"
+                }
+            },
+            {
+                "hotkey_remove_group@mei_settings.key_row": {
+                    "$key_label": "key.mei.remove_group",
+                    "$key_button": "button.mei.settings.hotkey_remove_group",
+                    "$key_reset": "button.mei.settings.hotkey_remove_group.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_remove_group.text"
+                }
+            },
+            {
+                "hotkey_count_up@mei_settings.key_row": {
+                    "$key_label": "key.mei.count_up",
+                    "$key_button": "button.mei.settings.hotkey_count_up",
+                    "$key_reset": "button.mei.settings.hotkey_count_up.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_count_up.text"
+                }
+            },
+            {
+                "hotkey_count_down@mei_settings.key_row": {
+                    "$key_label": "key.mei.count_down",
+                    "$key_button": "button.mei.settings.hotkey_count_down",
+                    "$key_reset": "button.mei.settings.hotkey_count_down.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_count_down.text"
+                }
+            },
+            {
+                "hotkey_count_wheel@mei_settings.key_row": {
+                    "$key_label": "key.mei.count_wheel",
+                    "$key_button": "button.mei.settings.hotkey_count_wheel",
+                    "$key_reset": "button.mei.settings.hotkey_count_wheel.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_count_wheel.text"
+                }
+            },
+            {
+                "hotkey_move_up@mei_settings.key_row": {
+                    "$key_label": "key.mei.move_up",
+                    "$key_button": "button.mei.settings.hotkey_move_up",
+                    "$key_reset": "button.mei.settings.hotkey_move_up.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_move_up.text"
+                }
+            },
+            {
+                "hotkey_move_down@mei_settings.key_row": {
+                    "$key_label": "key.mei.move_down",
+                    "$key_button": "button.mei.settings.hotkey_move_down",
+                    "$key_reset": "button.mei.settings.hotkey_move_down.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_move_down.text"
+                }
+            },
+            {
+                "hotkey_move_head@mei_settings.key_row": {
+                    "$key_label": "key.mei.move_head",
+                    "$key_button": "button.mei.settings.hotkey_move_head",
+                    "$key_reset": "button.mei.settings.hotkey_move_head.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_move_head.text"
+                }
+            },
+            {
+                "hotkey_join@mei_settings.key_row": {
+                    "$key_label": "key.mei.join",
+                    "$key_button": "button.mei.settings.hotkey_join",
+                    "$key_reset": "button.mei.settings.hotkey_join.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_join.text"
+                }
+            },
+            {
+                "hotkey_leave@mei_settings.key_row": {
+                    "$key_label": "key.mei.leave",
+                    "$key_button": "button.mei.settings.hotkey_leave",
+                    "$key_reset": "button.mei.settings.hotkey_leave.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_leave.text"
+                }
+            },
+            {
+                "hotkey_view@mei_settings.key_row": {
+                    "$key_label": "key.mei.view",
+                    "$key_button": "button.mei.settings.hotkey_view",
+                    "$key_reset": "button.mei.settings.hotkey_view.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_view.text"
+                }
+            },
+            {
+                "hotkey_fold@mei_settings.key_row": {
+                    "$key_label": "key.mei.fold",
+                    "$key_button": "button.mei.settings.hotkey_fold",
+                    "$key_reset": "button.mei.settings.hotkey_fold.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_fold.text"
+                }
+            },
+            {
+                "recipe_group@settings_common.option_group_label": {
+                    "$text": "options.mei.keys.group.recipe",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "hotkey_star_recipe@mei_settings.key_row": {
+                    "$key_label": "key.mei.star_recipe",
+                    "$key_button": "button.mei.settings.hotkey_star_recipe",
+                    "$key_reset": "button.mei.settings.hotkey_star_recipe.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_star_recipe.text"
+                }
+            },
+            {
+                "hotkey_tree_recipe@mei_settings.key_row": {
+                    "$key_label": "key.mei.tree_recipe",
+                    "$key_button": "button.mei.settings.hotkey_tree_recipe",
+                    "$key_reset": "button.mei.settings.hotkey_tree_recipe.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_tree_recipe.text"
+                }
+            },
+            {
+                "hotkey_back@mei_settings.key_row": {
+                    "$key_label": "key.mei.back",
+                    "$key_button": "button.mei.settings.hotkey_back",
+                    "$key_reset": "button.mei.settings.hotkey_back.reset",
+                    "$key_text_binding": "#mei.settings.hotkey_back.text"
+                }
+            },
+            {
+                "keys_reset_group@settings_common.option_group_label": {
+                    "$text": "options.mei.general.group.reset",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "reset_hotkeys@settings_common.action_button": {
+                    "$button_text": "options.mei.keys.reset_all",
+                    "$pressed_button_name": "button.mei.settings.reset_hotkeys"
+                }
+            }
+        ]
+    },
+    "key_row": {
+        "type": "stack_panel",
+        "orientation": "horizontal",
+        "size": [ "100%", 30 ],
+        "controls": [
+            {
+                "name_box": {
+                    "type": "image",
+                    "texture": "textures/ui/text_label_box",
+                    "size": [ "fill", "100% - 4px" ],
+                    "controls": [
+                        {
+                            "name": {
+                                "type": "label",
+                                "color": [ 1.0, 1.0, 1.0 ],
+                                "size": [ "100% - 4px", "default" ],
+                                "text_alignment": "center",
+                                "layer": 1,
+                                "text": "$key_label"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "bind@common_buttons.light_content_button": {
+                    "$pressed_button_name": "$key_button",
+                    "$button_content": "mei_settings.key_button_content",
+                    "size": [ "40% + 1px", "100% - 4px" ]
+                }
+            },
+            {
+                "reset@common_buttons.light_glyph_button": {
+                    "$pressed_button_name": "$key_reset",
+                    "$button_content": "mei_settings.key_reset_icon",
+                    "size": [ "15% + 1px", "100% - 4px" ]
+                }
+            }
+        ]
+    },
+    "key_button_content@common_buttons.button_content_panel": {
+        "controls": [
+            {
+                "label@common.new_button_label": {
+                    "text": "#mei_key_text",
+                    "bindings": [
+                        {
+                            "binding_name": "$key_text_binding",
+                            "binding_name_override": "#mei_key_text"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "key_reset_icon": {
+        "type": "image",
+        "layer": 2,
+        "size": [ 16, 16 ],
+        "texture": "textures/ui/undoArrow"
+    },
+    "about_section": {
+        "type": "stack_panel",
+        "size": [ "100%", "100%c" ],
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "bindings": [
+            {
+                "binding_type": "view",
+                "source_control_name": "mei_about_tab_toggle",
+                "source_property_name": "#toggle_state",
+                "target_property_name": "#visible"
+            }
+        ],
+        "controls": [
+            {
+                "info_group@settings_common.option_group_label": {
+                    "$text": "options.mei.about.group",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "info_text@mei_settings.tips_label": {
+                    "$text": "#mei.settings.about",
+                    "$text_bindings": [ { "binding_name": "#mei.settings.about" } ],
+                    "$line_padding": 2.0
+                }
+            },
+            {
+                "license_group@settings_common.option_group_label": {
+                    "$text": "options.mei.about.group.license",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "license_01@mei_settings.tips_label": {
+                    "$text": "GNU LESSER GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
+                }
+            },
+            {
+                "license_02@mei_settings.tips_label": {
+                    "$text": "Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/> Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed."
+                }
+            },
+            {
+                "license_03@mei_settings.tips_label": {
+                    "$text": "This version of the GNU Lesser General Public License incorporates the terms and conditions of version 3 of the GNU General Public License, supplemented by the additional permissions listed below."
+                }
+            },
+            {
+                "license_04@mei_settings.tips_label": {
+                    "$text": "0. Additional Definitions."
+                }
+            },
+            {
+                "license_05@mei_settings.tips_label": {
+                    "$text": "As used herein, \"this License\" refers to version 3 of the GNU Lesser General Public License, and the \"GNU GPL\" refers to version 3 of the GNU General Public License."
+                }
+            },
+            {
+                "license_06@mei_settings.tips_label": {
+                    "$text": "\"The Library\" refers to a covered work governed by this License, other than an Application or a Combined Work as defined below."
+                }
+            },
+            {
+                "license_07@mei_settings.tips_label": {
+                    "$text": "An \"Application\" is any work that makes use of an interface provided by the Library, but which is not otherwise based on the Library. Defining a subclass of a class defined by the Library is deemed a mode of using an interface provided by the Library."
+                }
+            },
+            {
+                "license_08@mei_settings.tips_label": {
+                    "$text": "A \"Combined Work\" is a work produced by combining or linking an Application with the Library.  The particular version of the Library with which the Combined Work was made is also called the \"Linked Version\"."
+                }
+            },
+            {
+                "license_09@mei_settings.tips_label": {
+                    "$text": "The \"Minimal Corresponding Source\" for a Combined Work means the Corresponding Source for the Combined Work, excluding any source code for portions of the Combined Work that, considered in isolation, are based on the Application, and not on the Linked Version."
+                }
+            },
+            {
+                "license_10@mei_settings.tips_label": {
+                    "$text": "The \"Corresponding Application Code\" for a Combined Work means the object code and/or source code for the Application, including any data and utility programs needed for reproducing the Combined Work from the Application, but excluding the System Libraries of the Combined Work."
+                }
+            },
+            {
+                "license_11@mei_settings.tips_label": {
+                    "$text": "1. Exception to Section 3 of the GNU GPL."
+                }
+            },
+            {
+                "license_12@mei_settings.tips_label": {
+                    "$text": "You may convey a covered work under sections 3 and 4 of this License without being bound by section 3 of the GNU GPL."
+                }
+            },
+            {
+                "license_13@mei_settings.tips_label": {
+                    "$text": "2. Conveying Modified Versions."
+                }
+            },
+            {
+                "license_14@mei_settings.tips_label": {
+                    "$text": "If you modify a copy of the Library, and, in your modifications, a facility refers to a function or data to be supplied by an Application that uses the facility (other than as an argument passed when the facility is invoked), then you may convey a copy of the modified version:"
+                }
+            },
+            {
+                "license_15@mei_settings.tips_label": {
+                    "$text": "a) under this License, provided that you make a good faith effort to ensure that, in the event an Application does not supply the function or data, the facility still operates, and performs whatever part of its purpose remains meaningful, or"
+                }
+            },
+            {
+                "license_16@mei_settings.tips_label": {
+                    "$text": "b) under the GNU GPL, with none of the additional permissions of this License applicable to that copy."
+                }
+            },
+            {
+                "license_17@mei_settings.tips_label": {
+                    "$text": "3. Object Code Incorporating Material from Library Header Files."
+                }
+            },
+            {
+                "license_18@mei_settings.tips_label": {
+                    "$text": "The object code form of an Application may incorporate material from a header file that is part of the Library.  You may convey such object code under terms of your choice, provided that, if the incorporated material is not limited to numerical parameters, data structure layouts and accessors, or small macros, inline functions and templates (ten or fewer lines in length), you do both of the following:"
+                }
+            },
+            {
+                "license_19@mei_settings.tips_label": {
+                    "$text": "a) Give prominent notice with each copy of the object code that the Library is used in it and that the Library and its use are covered by this License."
+                }
+            },
+            {
+                "license_20@mei_settings.tips_label": {
+                    "$text": "b) Accompany the object code with a copy of the GNU GPL and this license document."
+                }
+            },
+            {
+                "license_21@mei_settings.tips_label": {
+                    "$text": "4. Combined Works."
+                }
+            },
+            {
+                "license_22@mei_settings.tips_label": {
+                    "$text": "You may convey a Combined Work under terms of your choice that, taken together, effectively do not restrict modification of the portions of the Library contained in the Combined Work and reverse engineering for debugging such modifications, if you also do each of the following:"
+                }
+            },
+            {
+                "license_23@mei_settings.tips_label": {
+                    "$text": "a) Give prominent notice with each copy of the Combined Work that the Library is used in it and that the Library and its use are covered by this License."
+                }
+            },
+            {
+                "license_24@mei_settings.tips_label": {
+                    "$text": "b) Accompany the Combined Work with a copy of the GNU GPL and this license document."
+                }
+            },
+            {
+                "license_25@mei_settings.tips_label": {
+                    "$text": "c) For a Combined Work that displays copyright notices during execution, include the copyright notice for the Library among these notices, as well as a reference directing the user to the copies of the GNU GPL and this license document."
+                }
+            },
+            {
+                "license_26@mei_settings.tips_label": {
+                    "$text": "d) Do one of the following:"
+                }
+            },
+            {
+                "license_27@mei_settings.tips_label": {
+                    "$text": "0) Convey the Minimal Corresponding Source under the terms of this License, and the Corresponding Application Code in a form suitable for, and under terms that permit, the user to recombine or relink the Application with a modified version of the Linked Version to produce a modified Combined Work, in the manner specified by section 6 of the GNU GPL for conveying Corresponding Source."
+                }
+            },
+            {
+                "license_28@mei_settings.tips_label": {
+                    "$text": "1) Use a suitable shared library mechanism for linking with the Library.  A suitable mechanism is one that (a) uses at run time a copy of the Library already present on the user's computer system, and (b) will operate properly with a modified version of the Library that is interface-compatible with the Linked Version."
+                }
+            },
+            {
+                "license_29@mei_settings.tips_label": {
+                    "$text": "e) Provide Installation Information, but only if you would otherwise be required to provide such information under section 6 of the GNU GPL, and only to the extent that such information is necessary to install and execute a modified version of the Combined Work produced by recombining or relinking the Application with a modified version of the Linked Version. (If you use option 4d0, the Installation Information must accompany the Minimal Corresponding Source and Corresponding Application Code. If you use option 4d1, you must provide the Installation Information in the manner specified by section 6 of the GNU GPL for conveying Corresponding Source.)"
+                }
+            },
+            {
+                "license_30@mei_settings.tips_label": {
+                    "$text": "5. Combined Libraries."
+                }
+            },
+            {
+                "license_31@mei_settings.tips_label": {
+                    "$text": "You may place library facilities that are a work based on the Library side by side in a single library together with other library facilities that are not Applications and are not covered by this License, and convey such a combined library under terms of your choice, if you do both of the following:"
+                }
+            },
+            {
+                "license_32@mei_settings.tips_label": {
+                    "$text": "a) Accompany the combined library with a copy of the same work based on the Library, uncombined with any other library facilities, conveyed under the terms of this License."
+                }
+            },
+            {
+                "license_33@mei_settings.tips_label": {
+                    "$text": "b) Give prominent notice with the combined library that part of it is a work based on the Library, and explaining where to find the accompanying uncombined form of the same work."
+                }
+            },
+            {
+                "license_34@mei_settings.tips_label": {
+                    "$text": "6. Revised Versions of the GNU Lesser General Public License."
+                }
+            },
+            {
+                "license_35@mei_settings.tips_label": {
+                    "$text": "The Free Software Foundation may publish revised and/or new versions of the GNU Lesser General Public License from time to time. Such new versions will be similar in spirit to the present version, but may differ in detail to address new problems or concerns."
+                }
+            },
+            {
+                "license_36@mei_settings.tips_label": {
+                    "$text": "Each version is given a distinguishing version number. If the Library as you received it specifies that a certain numbered version of the GNU Lesser General Public License \"or any later version\" applies to it, you have the option of following the terms and conditions either of that published version or of any later version published by the Free Software Foundation. If the Library as you received it does not specify a version number of the GNU Lesser General Public License, you may choose any version of the GNU Lesser General Public License ever published by the Free Software Foundation."
+                }
+            },
+            {
+                "license_37@mei_settings.tips_label": {
+                    "$text": "If the Library as you received it specifies that a proxy can decide whether future versions of the GNU Lesser General Public License shall apply, that proxy's public statement of acceptance of any version is permanent authorization for you to choose that version for the Library."
+                }
+            }
+        ]
+    },
+    "slider_row@settings_common.option_slider": {
+        "$option_enabled_binding_name": "#mei.settings.enabled"
+    },
+    "tips_label": {
+        "type": "stack_panel",
+        "size": [ "100%", "100%c" ],
+        "$text|default": "",
+        "$text_color|default": "$main_header_text_color",
+        "$text_bindings|default": [ ],
+        "$tips_bindings|default": [ ],
+        "$line_padding|default": 0.0,
+        "bindings": "$tips_bindings",
+        "controls": [
+            {
+                "text": {
+                    "type": "label",
+                    "text": "$text",
+                    "color": "$text_color",
+                    "max_size": [ "100%", "default" ],
+                    "bindings": "$text_bindings",
+                    "line_padding": "$line_padding"
+                }
+            },
+            {
+                "spacer": {
+                    "type": "panel",
+                    "size": [ 0, 4 ]
+                }
+            }
+        ]
+    }
+}

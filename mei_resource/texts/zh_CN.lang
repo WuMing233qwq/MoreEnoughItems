@@ -1,0 +1,107 @@
+## MoreEnoughItems 本地化条目
+## 配方类别显示名（RecipeCategory.NameKey）
+mei.recipe.category.crafting_table=工作台合成
+mei.recipe.category.furnace=熔炉烧炼
+mei.recipe.category.fuel=燃料
+mei.recipe.category.blast_furnace=高炉烧炼
+mei.recipe.category.smoker=烟熏炉烧炼
+mei.recipe.category.campfire=营火烘烤
+mei.recipe.category.stonecutter=切制
+mei.recipe.category.cartography_table=制图
+mei.recipe.category.smithing_table=锻造
+mei.recipe.category.brewing_stand=药水酿造
+
+## 配方页格子上多出来的那一行说明（悬停时看得到）
+mei.recipe.smithing.transform=锻造转换：保留原物品的附魔与耐久
+mei.recipe.smithing.trim=锻造纹饰：给盔甲加上纹饰（图案看模板、颜色看材料），原物品的属性保留
+mei.recipe.brewing.bottles=普通、喷溅、滞留型的药水都能这样酿（几格一起轮着看）
+
+## 燃料页的两行字（{} 是数字；熔炉烧一个物品 10 秒）
+mei.recipe.fuel.burn=燃烧 {} 秒
+mei.recipe.fuel.smelts=可烧炼 {} 个物品
+mei.recipe.fuel.unknown=燃烧时长未知
+
+## 扩展元信息（MeiExtension.NAME / DESCRIPTION）
+mei.ext.vanilla.name=原版配方
+mei.ext.vanilla.desc=工作台、熔炉家族、切石机、制图台、锻造台、酿造台与燃料
+
+## 设置页（游戏设置界面左栏的 MEI 分栏）
+options.mei.group=MEI 设置
+options.mei.settings.degraded=当前无法保存设置，改动只在本次游戏内有效
+options.mei.general.tab=通用
+options.mei.general.title=MEI 通用设置
+options.mei.general.group.layout=布局设置
+options.mei.general.row_items=每行最大物品显示数量
+options.mei.general.row_items.hint=控制两侧UI的每行最大物品显示数，下次打开容器时生效
+options.mei.general.adaptive=启用自适应（需模组支持）
+options.mei.general.adaptive.hint=自动避开原版界面：被盖住的格子留空，搜索栏与翻页栏缩窄。其他模组的界面需要该模组提供支持
+options.mei.general.find_button=在搜索框旁启用查询按钮
+options.mei.general.find_button.hint=关闭后，将隐藏搜索框旁边的查询按钮
+options.mei.general.group.bookmarks=收藏
+options.mei.general.bookmarks_visible=显示左侧栏（收藏与最近浏览）
+options.mei.general.bookmarks_visible.hint=关闭后左侧栏整个隐藏，下次打开容器时生效
+options.mei.general.bookmarks_world=收藏按存档分开保存
+options.mei.general.bookmarks_world.hint=开启后每个存档各有一套收藏；某个存档第一次用时，以当前的全局收藏为起点
+options.mei.general.group.display=信息显示
+options.mei.general.advanced_tooltip=启用高级Tooltip
+options.mei.general.advanced_tooltip.hint=关闭后不会显示例如配方预览、物品候选等高级悬浮面板
+options.mei.general.touch_opposite=触控tooltip是否沿对面侧显示
+options.mei.general.touch_opposite.hint=开启后，触控的tooltip二级菜单的位置会默认为相对于你点击位置的另一侧屏幕边缘，方便移动端双手操作
+options.mei.general.group.float=悬浮窗
+options.mei.general.float_mode=启用悬浮窗模式
+options.mei.general.float_mode.hint=开启时，即使模组支持MEI，也不会默认展开MEI的UI，而是显示MEI悬浮窗
+options.mei.general.float_threshold=自动收起阈值
+options.mei.general.float_threshold.hint=当行物品数小于设置值时自动收起为悬浮窗
+options.mei.general.float_quick_collapse=启用快速收起悬浮窗
+options.mei.general.float_quick_collapse.hint=开启后，悬浮窗状态下点击空白处即可快速收起悬浮窗
+options.mei.general.float_hud=在游戏界面展示悬浮窗
+options.mei.general.float_hud.hint=开启后，hud界面也会有MEI悬浮窗
+options.mei.general.float_compat=启用悬浮窗强制兼容
+options.mei.general.float_compat.hint=开启后，即使是未支持MEI的界面，也会显示MEI悬浮窗(这种状态下的兼容性不做保证)
+options.mei.general.group.tree=配方树
+options.mei.general.tree_preview=启用节点配方预览Tooltip
+options.mei.general.tree_preview.hint=关闭后，配方树界面的子节点二级菜单将不会显示配方预览Tooltip，而是直接展示工作站与原材料
+options.mei.general.group.reset=重置
+options.mei.general.reset_all=§c恢复全部默认设置
+options.mei.keys.tab=按键绑定
+options.mei.keys.title=键盘与鼠标-快捷键绑定
+options.mei.keys.hint=点按钮开始录键，按下想用的组合（Ctrl / Shift / Alt 加一个键），再点一次保存；录键时单按 Delete 是清除绑定。滚轮类的要按住修饰键再滚。光标停在对应的格子上按才有效；红字是和别的快捷键撞了（两个都会做）
+options.mei.keys.group.item=物品
+options.mei.keys.group.bookmark=收藏
+options.mei.keys.group.recipe=配方页
+options.mei.keys.reset_all=恢复全部默认按键
+options.mei.about.tab=关于
+options.mei.about.title=关于 MEI
+options.mei.about.group=模组信息
+options.mei.about.author=作者: {}
+options.mei.about.repo=开源地址: {}
+options.mei.about.license=本模组以 {} 许可证开源，使用、修改与再发布请遵守该许可
+options.mei.about.group.license=许可证
+
+## 快捷键（游戏设置的键盘布局里，网易自定义按键区的分组标题与按键名；注册名与 id 见 mei_ui/hotkeys/table.py）
+key.mei.source=查看来源
+key.mei.uses=查看用途
+key.mei.bookmark=收藏 / 取消收藏
+key.mei.tree=打开配方树
+key.mei.tooltip=显示 / 收起高级Tooltip
+key.mei.remove=移除收藏
+key.mei.remove_group=删除收藏分组
+key.mei.count_up=收藏数量 +1
+key.mei.count_down=收藏数量 -1
+key.mei.join=收藏并入上一组
+key.mei.leave=收藏移出分组
+key.mei.view=收藏分组横向 / 纵向排列
+key.mei.fold=收藏展开 / 折叠
+key.mei.copy_name=复制物品名
+key.mei.copy_id=复制物品ID
+key.mei.candidate_wheel=滚轮切换候选物品
+key.mei.candidate_prev=上一个候选物品
+key.mei.candidate_next=下一个候选物品
+key.mei.open_bookmark=打开收藏
+key.mei.count_wheel=滚轮调整收藏数量
+key.mei.move_up=收藏上移
+key.mei.move_down=收藏下移
+key.mei.move_head=收藏移到组首
+key.mei.star_recipe=收藏这条配方
+key.mei.tree_recipe=这条配方开配方树
+key.mei.back=返回上一个查询

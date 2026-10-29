@@ -1,0 +1,22 @@
+{
+    "ui_defs": [
+        "ui/mei/items_browser.json",
+        "ui/mei/items_sidebar.json",
+        "ui/mei/mei_common.json",
+        "ui/mei/mei_icons.json",
+        "ui/mei/mei_main.json",
+        "ui/mei/mei_settings.json",
+        "ui/mei/recipe_details.json",
+        "ui/mei/recipe_tree.json",
+        "ui/mei/recipes/brewing_stand.json",
+        "ui/mei/recipes/campfire.json",
+        "ui/mei/recipes/cartography_table.json",
+        "ui/mei/recipes/common.json",
+        "ui/mei/recipes/crafting_table.json",
+        "ui/mei/recipes/fuel.json",
+        "ui/mei/recipes/furnace.json",
+        "ui/mei/recipes/smithing_table.json",
+        "ui/mei/recipes/stonecutter.json",
+        "ui/settings_screen.json"
+    ]
+}

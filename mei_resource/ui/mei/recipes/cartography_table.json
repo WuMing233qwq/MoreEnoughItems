@@ -1,0 +1,163 @@
+{
+    "PREVIEW@mei_recipe_common.preview": {
+        "$recipe_content_template": "MeiCartography.content_panel"
+    },
+    "RECIPES_GRID@mei_recipe_common.recipes_grid": {
+        "$recipe_ui_template": "MeiCartography.recipe"
+    },
+    "content_panel": {
+        "type": "panel",
+        "size": [
+            148.0,
+            66.0
+        ],
+        "layer": 1,
+        "controls": [
+            {
+                "input": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        5.0,
+                        -19.0
+                    ],
+                    "size": [
+                        20.0,
+                        20.0
+                    ],
+                    "layer": 8,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.input",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "plus@cartography.plus_sign_icon": {
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "layer": 2,
+                    "offset": [
+                        8.5,
+                        0
+                    ]
+                }
+            },
+            {
+                "additional": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        5.0,
+                        20.0
+                    ],
+                    "size": [
+                        20.0,
+                        20.0
+                    ],
+                    "layer": 8,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.additional",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "map": {
+                    "type": "image",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        44.0,
+                        0.0
+                    ],
+                    "size": [
+                        54.0,
+                        54.0
+                    ],
+                    "layer": 2,
+                    "texture": "textures/ui/cartography_table_map"
+                }
+            },
+            {
+                "output": {
+                    "type": "panel",
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "offset": [
+                        117.0,
+                        0.0
+                    ],
+                    "size": [
+                        26.0,
+                        26.0
+                    ],
+                    "layer": 8,
+                    "controls": [
+                        {
+                            "0@mei_common.item_panel": {
+                                "$binding_name_prefix": "mei_ui.recipe.output",
+                                "size": [
+                                    26,
+                                    26
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "background": {
+                    "type": "image",
+                    "layer": 1,
+                    "texture": "textures/ui/mei/recipe/recipe_bg"
+                }
+            }
+        ]
+    },
+    "namespace": "MeiCartography",
+    "recipe@mei_recipe_common.recipe_panel": {
+        "controls": [
+            {
+                "wrapper": {
+                    "type": "panel",
+                    "size": [
+                        148.0,
+                        66.0
+                    ],
+                    "layer": 1,
+                    "controls": [
+                        {
+                            "content@MeiCartography.content_panel": {}
+                        },
+                        {
+                            "buttons@mei_recipe_common.buttons_panel_vertical": {
+                                "$tree_button_ignored": false
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "size": [
+            188,
+            70
+        ]
+    }
+}
