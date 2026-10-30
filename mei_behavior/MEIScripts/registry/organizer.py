@@ -83,6 +83,7 @@ class ItemGroup(object):
         self.item_groups[group] = {
             "Name": name if name else group,
             "Items": set(),
+            "Order": [],  # 物品 id，按加进来的顺序（GetGroupOrder）
             "Expand": False,
         }
         _touch()
@@ -110,7 +111,26 @@ class ItemGroup(object):
         # 归属关系是旁表, 旁表不该抓着池对象不放(item_model.md §6.3)
         if group not in self.item_groups:
             return False
-        self.item_groups[group]["Items"].add(item_id)
+        entry = self.item_groups[group]
+        if item_id not in entry["Items"]:
+            entry["Items"].add(item_id)
+            entry["Order"].append(item_id)
+            _touch()
+        return True
+
+    def RemoveGroupItem(self, group, item_id):  # type: (str, str) -> bool
+        """
+        从组里撤掉一样（往别人的组里加过东西的扩展 OnUnload 用：原版的锭、粗矿这类组不是它的，撤不掉整个）；
+        组不在、本来就没有给 False
+        """
+        if group not in self.item_groups:
+            return False
+        entry = self.item_groups[group]
+        if item_id not in entry["Items"]:
+            return False
+        entry["Items"].discard(item_id)
+        if item_id in entry["Order"]:
+            entry["Order"].remove(item_id)
         _touch()
         return True
 
@@ -139,6 +159,12 @@ class ItemGroup(object):
         if group not in self.item_groups:
             return set()
         return self.item_groups[group]["Items"]
+
+    def GetGroupOrder(self, group):  # type: (str) -> list
+        """ 组里的物品 id，按加进来的顺序（物品栏没选排序时组里照它排：创造栏的组是木 → 石 → 铜 → 铁 → 金 → 钻石 → 下界合金）"""
+        if group not in self.item_groups:
+            return []
+        return list(self.item_groups[group]["Order"])
 
     def GetGroupName(self, group):  # type: (str) -> str
         """ 获取组的名称 """

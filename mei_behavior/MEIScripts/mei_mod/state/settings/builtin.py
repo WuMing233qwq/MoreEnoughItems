@@ -30,6 +30,9 @@ ADAPTIVE_LAYOUT = "adaptive_layout"
 FIND_BUTTON = "find_button"
 """ 搜索框旁的查询按钮（只在触屏出现：点一下进查找状态，再点要查的格子出二级菜单）；开界面时读 """
 
+ITEM_GROUPS = "item_groups"
+""" 物品栏的物品分组（可收起 / 展开的组头）；关掉时物品一样一样平铺。建物品栏的分页时读 """
+
 BOOKMARKS_VISIBLE = "bookmarks_visible"
 """ 显示左侧栏（收藏与最近浏览）；开界面时读 """
 
@@ -77,6 +80,7 @@ def RegisterBuiltinSettings():  # type: () -> None
         Slider(ROW_ITEMS, "options.mei.general.row_items", 1, 12, step=1, default=DEFAULT_ROW_ITEMS),
         Toggle(ADAPTIVE_LAYOUT, "options.mei.general.adaptive", default=True),
         Toggle(FIND_BUTTON, "options.mei.general.find_button", default=True),
+        Toggle(ITEM_GROUPS, "options.mei.general.item_groups", default=True),
         Toggle(BOOKMARKS_VISIBLE, "options.mei.general.bookmarks_visible", default=True),
         Toggle(BOOKMARKS_WORLD, "options.mei.general.bookmarks_world", default=False),
         Toggle(ADVANCED_TOOLTIP, "options.mei.general.advanced_tooltip", default=True),
@@ -137,6 +141,11 @@ def IsItemIdShown():  # type: () -> bool
 def IsFindButtonEnabled():  # type: () -> bool
     """ 搜索框旁的查询按钮；设置项没登记时按开 """
     return SettingsManager.Get(FIND_BUTTON) is not False
+
+
+def IsItemGroupsEnabled():  # type: () -> bool
+    """ 物品栏分不分组；设置项没登记时按分 """
+    return SettingsManager.Get(ITEM_GROUPS) is not False
 
 
 def IsFloatModeForced():  # type: () -> bool

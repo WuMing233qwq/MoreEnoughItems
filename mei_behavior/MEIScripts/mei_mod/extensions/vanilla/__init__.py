@@ -54,6 +54,7 @@ class VanillaExtension(MeiExtension):
         self.Sources = []  # type: list
         self.Screens = []  # type: list  # 登记成挂 MEI 的原版界面（screens.py），卸载时逐个注销
         self.ItemViews = []  # type: list  # 登记上的物品栏筛选 / 排序 [(FILTER 或 SORT, Id)]，卸载时逐个撤
+        self.Groups = []  # type: list  # 登记上的物品分组的键，卸载时逐个撤（组表不随物品表重建）
 
     def OnRegister(self, ctx):
         # 一步一隔离、挂 MEI 的原版界面最先登记：后面哪一步抛了，MEI 照样挂得上原版界面，别的类型照常
@@ -61,6 +62,7 @@ class VanillaExtension(MeiExtension):
         for name in TYPES:
             self._Step(name, self._RegisterType, ctx, name)
         self._Step("创造栏的变体", self._RegisterCreativeItems, ctx)
+        self._Step("物品分组", self._RegisterItemGroups, ctx)
         self._Step("物品栏筛选", self._RegisterItemFilters, ctx)
 
     @staticmethod
@@ -107,6 +109,23 @@ class VanillaExtension(MeiExtension):
         logger.info("[MEI/items] 创造栏的变体: 加了 {} 个(表按游戏 {} 生成), 引擎不认识跳过 {} 个".format(
             added, GAME_VERSION, plan.Unknown))
 
+    def _RegisterItemGroups(self, ctx):
+        """
+        物品栏的分组（creative/ 的 item_groups）：创造栏的物品组（镐、剑、木板……）、引擎自己加的几族（附魔书、旗帜……）、
+        MEI 补的同类组（锭、粗矿……）。物品表里没有的 id 不进组；同一个键别人先登记了就不动它
+        """
+        from MEIScripts.api.facades.utils import logger
+        from .creative import item_groups
+        organizer = ctx.Registry.ItemOrganizer
+        members = 0
+        for key, name_key, ids in item_groups(ctx.Registry.ItemManager.LookUpItem):
+            if not organizer.AddGroup(key, name=name_key):
+                continue
+            organizer.AddGroupItemFromList(key, ids)
+            self.Groups.append(key)
+            members += len(ids)
+        logger.info("[MEI/items] 物品分组: {} 组、{} 种物品".format(len(self.Groups), members))
+
     def _RegisterItemFilters(self, ctx):
         """
         物品栏的「能燃烧」筛选与「燃烧时长」排序：用熔炉的燃料表（furnace/fuels.py）——
@@ -150,6 +169,10 @@ class VanillaExtension(MeiExtension):
         for screen_def in self.Screens:
             ctx.UI.Screens.Unregister(screen_def)
         self.Screens = []
+
+        for key in self.Groups:
+            ctx.Registry.ItemOrganizer.RemoveGroup(key)
+        self.Groups = []
 
         for kind, view_id in self.ItemViews:
             if kind == FILTER:

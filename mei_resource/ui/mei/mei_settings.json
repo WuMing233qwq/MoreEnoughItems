@@ -164,6 +164,20 @@
                 }
             },
             {
+                "item_groups@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.item_groups",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.item_groups",
+                    "$option_binding_name": "#mei.settings.item_groups.state"
+                }
+            },
+            {
+                "item_groups_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.item_groups.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
                 "bookmarks_group@settings_common.option_group_label": {
                     "$text": "options.mei.general.group.bookmarks",
                     "$main_header_text_color": [ 0.67, 0.67, 0.75 ]

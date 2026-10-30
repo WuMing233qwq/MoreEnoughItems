@@ -22,7 +22,7 @@ import mod.client.extraClientApi as clientApi
 
 from MEIScripts.constants.ui import CollectionConst, ItemsBrowserPath, PanelProtoConst, UiPathConst
 from MEIScripts.mei_mod.state import CacheManager, PrefsManager
-from MEIScripts.mei_mod.state.settings import IsFindButtonEnabled
+from MEIScripts.mei_mod.state.settings import IsFindButtonEnabled, IsItemGroupsEnabled
 from MEIScripts.mei_mod.ui_script.mei_ui.common.base import BaseItemsGridScript
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.controls.grid import GroupItemsGrid
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.controls.panel import GroupItemPanel
@@ -159,16 +159,28 @@ class ItemsBrowserScript(BaseItemsGridScript):
 
     def InitItemsList(self):
         """ 初始化物品标识表 (不含slot映射, 由调用方通过 _refreshSlots 处理) """
-        layout = self.Layout
         filtered = self.HasItemView()
         cached = CacheManager.GetItemsPage() if not filtered else None
+        if cached is not None and not self.__Fresh(cached):
+            cached = None
         if not cached:
             items = self.ApplyItemView(self.ItemSource())
-            self.ItemsPage = BuildPage(items, layout.Cols, layout.Rows)  # type: PageWithGroup
+            self.ItemsPage = self.BuildItemsPage(items)  # type: PageWithGroup
             if not filtered:
                 CacheManager.CacheItemsPage(self.ItemsPage)
         else:
             self.ItemsPage = cached
+
+    def BuildItemsPage(self, items):  # type: (list) -> PageWithGroup
+        """ 分组、分页；选了排序时组里照排好的先后，没选照组自己的顺序；设置关了「启用物品分组」就平铺 """
+        layout = self.Layout
+        return BuildPage(items, layout.Cols, layout.Rows, keep_order=bool(PrefsManager.GetItemSort()),
+                         grouped=IsItemGroupsEnabled())
+
+    @staticmethod
+    def __Fresh(page):  # type: (any) -> bool
+        """ 缓存的分页还能用：分没分组和现在的设置一样（设置页里切了「启用物品分组」，下次开界面就得重排）"""
+        return getattr(page, "Grouped", True) == IsItemGroupsEnabled()
 
     @staticmethod
     def HasItemView():  # type: () -> bool
@@ -199,9 +211,8 @@ class ItemsBrowserScript(BaseItemsGridScript):
         if not self.Inited:
             return
         CacheManager.ClearSearchData()
-        layout = self.Layout
         if self.InputText:
-            self.ItemsPage = BuildPage(self.ApplyItemView(self.ItemSource(self.InputText)), layout.Cols, layout.Rows)
+            self.ItemsPage = self.BuildItemsPage(self.ApplyItemView(self.ItemSource(self.InputText)))
             CacheManager.CacheSearchData(self.InputText, self.ItemsPage)
         else:
             self.InitItemsList()
@@ -261,7 +272,6 @@ class ItemsBrowserScript(BaseItemsGridScript):
     def SearchItem(self):
         """ 检测搜索物品的回调，当文本出现变化，自动触发搜索并刷新当前的物品 """
         input_text = utilities.GetEditBoxRawText(self.SearchControl)
-        layout = self.Layout
 
         if not input_text and self.InputText:
             self.InputText = ""
@@ -272,7 +282,7 @@ class ItemsBrowserScript(BaseItemsGridScript):
 
         elif not input_text:
             cached = CacheManager.GetSearchData()
-            if cached:
+            if cached and self.__Fresh(cached[1]):
                 self.InputText, self.ItemsPage = cached
                 self.SearchControl.SetEditText(native_str(self.InputText))
                 self.RefreshSlots()
@@ -286,7 +296,7 @@ class ItemsBrowserScript(BaseItemsGridScript):
 
             items = self.ApplyItemView(self.ItemSource(self.InputText))
 
-            self.ItemsPage = BuildPage(items, layout.Cols, layout.Rows)
+            self.ItemsPage = self.BuildItemsPage(items)
             self.RefreshSlots()
             self.UpdateIndexPanel()
 

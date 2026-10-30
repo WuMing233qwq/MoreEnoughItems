@@ -19,6 +19,7 @@
 from .builtin import (
     GetFloatThreshold, GetRowItems, IsAdaptiveEnabled, IsAdvancedTooltipEnabled, IsBookmarksVisible,
     IsBookmarksWorldSpecific, IsFindButtonEnabled, IsFloatCompat, IsFloatModeForced, IsFloatOnHud, IsFloatQuickCollapse,
+    IsItemGroupsEnabled,
     IsItemIdShown, IsNamespaceShown, IsTouchOppositeSide, IsTreePreviewEnabled, RegisterBuiltinSettings,
 )
 from .kinds import Action, Choice, KeyBind, Setting, Slider, Toggle
@@ -34,6 +35,7 @@ __all__ = [
     "IsBookmarksVisible",
     "IsBookmarksWorldSpecific",
     "IsFindButtonEnabled",
+    "IsItemGroupsEnabled",
     "IsFloatCompat",
     "IsFloatModeForced",
     "IsFloatOnHud",

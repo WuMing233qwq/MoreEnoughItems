@@ -90,6 +90,17 @@ PLAIN_REPLACED = (BOOK, ROCKET, STAR)
 这一族加上了的话，原件从物品栏藏起来（ItemManager.SetPlainHidden，带 userData 的照常显示）
 """
 
+GROUPS = (
+    ("minecraft:itemGroup.name.banner", "itemGroup.name.banner", (BANNER,)),
+    ("minecraft:itemGroup.name.enchantedBook", "itemGroup.name.enchantedBook", (BOOK,)),
+    ("minecraft:itemGroup.name.firework", "itemGroup.name.firework", (ROCKET,)),
+    ("minecraft:itemGroup.name.fireworkStars", "itemGroup.name.fireworkStars", (STAR,)),
+)
+"""
+这几族在创造栏里各是一个物品组（.lang 有 itemGroup.name.*，目录里没有），写法同 table.GROUPS：(组的键, .lang 的键, (物品 id, ...))；
+一个 id 就是一组 —— 物品栏的分组按 id 记，同一个 id 的变体（41 本附魔书、16 色旗帜……）一起进组
+"""
+
 
 def typed(kind, value):  # type: (int, any) -> dict
     """ 带类型的一个值 """

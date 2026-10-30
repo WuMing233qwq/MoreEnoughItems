@@ -21,12 +21,14 @@
 创造栏里有、物品表里没有的物品。物品表按 id 注册、每个 id 只有 aux 0（RegItemFromIdList），这两类要另外加：
   · 带附加值的（药水、药箭、床、山羊角……）—— table.py，从游戏的创造栏目录生成；
   · 引擎自己往创造栏加的带 userData 的几族（附魔书、烟花火箭、烟火之星、旗帜）—— families.py，手写。
+物品栏的分组也在这里（item_groups）：创造栏的物品组（table.GROUPS，生成的）、那几族各一组（families.GROUPS）、
+MEI 补的同类组（groups.EXTRA：锭、粗矿……，手写）。
 运行时读不到原版包里的文件，所以表是开发期生成、随 MEI 发的；换游戏版本时重跑 debug/scripts/gen_creative_table.py --emit，
 它顺带提醒手写的那几族要不要跟着改（docs/architecture/item_model.md §9）
 """
 from MEIScripts.api.facades.types import ItemAttr, ItemSpec
 
-from . import families, table
+from . import families, groups, table
 
 GAME_VERSION = table.GAME_VERSION
 """ 表是按哪个游戏版本生成的（开局的汇总日志里写它）"""
@@ -96,6 +98,26 @@ def build(lookup, load_info, enchant_limit=None):  # type: (callable, callable, 
             replaced.add(item_id)
     plan.HidePlain = [(item_id, 0) for item_id in families.PLAIN_REPLACED if item_id in replaced]
     return plan
+
+
+def item_groups(lookup):  # type: (callable) -> list
+    """
+    物品栏的分组：[(组的键, .lang 的键, [物品 id, ...])]，先创造栏的物品组、再那几族、再 MEI 补的同类组，组里照表里的顺序。
+    lookup(物品 id) -> bool：物品表里有没有这个 id；没有的不进组，一样都没有的组不要（表比游戏新、版本对不上也不出错）。
+    一个 id 只进第一个组（几张表重了以先出现的为准；生成器换版本时会报出来）
+    """
+    result = []
+    taken = set()
+    for key, name_key, ids in tuple(table.GROUPS) + tuple(families.GROUPS) + tuple(groups.EXTRA):
+        kept = []
+        for item_id in ids:
+            if item_id in taken or not lookup(item_id):
+                continue
+            taken.add(item_id)
+            kept.append(item_id)
+        if kept:
+            result.append((key, name_key, kept))
+    return result
 
 
 def enchant_limit():  # type: () -> int or None

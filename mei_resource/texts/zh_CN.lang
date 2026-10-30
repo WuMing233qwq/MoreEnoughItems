@@ -12,9 +12,9 @@ mei.recipe.category.smithing_table=锻造
 mei.recipe.category.brewing_stand=药水酿造
 
 ## 配方页格子上多出来的那一行说明（悬停时看得到）
-mei.recipe.smithing.transform=锻造转换：保留原物品的附魔与耐久
-mei.recipe.smithing.trim=锻造纹饰：给盔甲加上纹饰（图案看模板、颜色看材料），原物品的属性保留
-mei.recipe.brewing.bottles=普通、喷溅、滞留型的药水都能这样酿（几格一起轮着看）
+mei.recipe.smithing.transform=保留原物品的附魔与耐久
+mei.recipe.smithing.trim=盔甲加上纹饰，原物品的属性保留
+mei.recipe.brewing.bottles=支持普通、喷溅、滞留型的药水
 
 ## 燃料页的两行字（{} 是数字；熔炉烧一个物品 10 秒）
 mei.recipe.fuel.burn=燃烧 {} 秒
@@ -37,6 +37,8 @@ options.mei.general.adaptive=启用自适应（需模组支持）
 options.mei.general.adaptive.hint=自动避开原版界面：被盖住的格子留空，搜索栏与翻页栏缩窄。其他模组的界面需要该模组提供支持
 options.mei.general.find_button=在搜索框旁启用查询按钮
 options.mei.general.find_button.hint=关闭后，将隐藏搜索框旁边的查询按钮
+options.mei.general.item_groups=启用物品分组
+options.mei.general.item_groups.hint=关闭后，物品浏览器不再有可收起/展开的物品分组
 options.mei.general.group.bookmarks=收藏
 options.mei.general.bookmarks_visible=显示左侧栏（收藏与最近浏览）
 options.mei.general.bookmarks_visible.hint=关闭后左侧栏整个隐藏，下次打开容器时生效
@@ -128,3 +130,24 @@ mei.sort.food=饱食度
 mei.sort.burn=燃烧时长
 mei.sort.stack=最大堆叠
 mei.sort.tier=挖掘等级
+mei.group.ingot=锭
+mei.group.raw_ore=粗矿
+mei.group.nugget=粒
+mei.group.raw_ore_block=粗矿块
+mei.group.mineral_block=矿物块
+mei.group.bucket=桶
+mei.group.torch=火把
+mei.group.egg=蛋
+mei.group.froglight=蛙明灯
+mei.group.amethyst=紫水晶
+mei.group.quartz_block=石英块
+mei.group.prismarine=海晶石
+mei.group.nether_brick=下界砖块
+mei.group.resin_block=树脂块
+mei.group.brick=砖
+mei.group.ice=冰
+mei.group.dirt=泥土
+mei.group.moss=苔藓
+mei.group.vine=藤蔓
+mei.group.fishing_rod=钓竿
+mei.group.dust=粉
