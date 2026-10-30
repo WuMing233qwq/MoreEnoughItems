@@ -23,6 +23,15 @@ from collections import OrderedDict
 from MEIScripts.common.classes.types import Item
 
 
+def _touch():
+    """
+    归属变了（组、标签、分类的增删、成员、组名）：撞物品表的版本 —— 物品栏的分页、按标签搜的缓存都按它自愈。
+    展开 / 收起不算（界面自己当场重排，撞版本会让搜索索引白重建一次）。惰性 import：items 顶层 import 了本模块
+    """
+    from .items import ItemManager
+    ItemManager.Touch()
+
+
 class ItemCategory(object):
     """
     对物品的分类进行管理的类型
@@ -38,6 +47,7 @@ class ItemCategory(object):
         if category in self.categories:
             return False
         self.categories[category] = set()
+        _touch()
         return True
 
     def RemoveCategory(self, category):  # type: (str) -> bool
@@ -45,12 +55,14 @@ class ItemCategory(object):
         if category not in self.categories:
             return False
         del self.categories[category]
+        _touch()
         return True
 
     def AddCategoryItem(self, category, item):
         """ 为分类添加一个物品 """
         if category in self.categories:
             self.categories[category].add(item)
+            _touch()
             return True
         return False
 
@@ -73,6 +85,7 @@ class ItemGroup(object):
             "Items": set(),
             "Expand": False,
         }
+        _touch()
         return True
 
     def RemoveGroup(self, group):  # type: (str) -> bool
@@ -80,6 +93,7 @@ class ItemGroup(object):
         if group not in self.item_groups:
             return False
         del self.item_groups[group]
+        _touch()
         return True
 
     def SetGroupName(self, group, name):  # type: (str, str) -> bool
@@ -87,6 +101,7 @@ class ItemGroup(object):
         if group not in self.item_groups:
             return False
         self.item_groups[group]["Name"] = name
+        _touch()
         return True
 
     def AddGroupItem(self, group, item_id):  # type: (str, str) -> bool
@@ -96,6 +111,7 @@ class ItemGroup(object):
         if group not in self.item_groups:
             return False
         self.item_groups[group]["Items"].add(item_id)
+        _touch()
         return True
 
     def SetGroupExpand(self, group, expand):  # type: (str, bool) -> bool
@@ -150,6 +166,7 @@ class ItemTag(object):
         if tag in self.item_tags:
             return False
         self.item_tags[tag] = set()
+        _touch()
         return True
 
     def RemoveTag(self, tag):  # type: (str) -> bool
@@ -157,6 +174,7 @@ class ItemTag(object):
         if tag not in self.item_tags:
             return False
         del self.item_tags[tag]
+        _touch()
         return True
 
     def AddTagItem(self, tag, item):  # type: (str, str) -> bool
@@ -164,6 +182,7 @@ class ItemTag(object):
         if tag not in self.item_tags:
             return False
         self.item_tags[tag].add(item)
+        _touch()
         return True
 
     def GetTagItems(self, tag):  # type: (str) -> set

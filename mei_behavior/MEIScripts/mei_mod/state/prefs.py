@@ -96,7 +96,7 @@ class __PrefsManager(object):  # noqa
     def GetOpenCount(self):  # type: () -> int
         try:
             return int(self.Get(KEY_OPEN_COUNT, 0))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return 0
 
     def BumpOpenCount(self):  # type: () -> int

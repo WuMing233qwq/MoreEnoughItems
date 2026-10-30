@@ -47,9 +47,11 @@ class RegistryBackend(object):
     默认后端：现查 registry；全部惰性 import，registry 包门面顶层就拉引擎
     """
     @staticmethod
-    def version():  # type: () -> int
+    def version():  # type: () -> tuple
+        """ 物品表的版本 + 类型 / 来源表的版本：任何一个变了，记下的物品与配方（包括「找不回」）都作废 """
         from MEIScripts.registry import ItemManager
-        return ItemManager.Version()
+        from MEIScripts.registry.sources import SourceRegistry
+        return ItemManager.Version(), SourceRegistry.Revision()
 
     @staticmethod
     def items_by_id(item_id):  # type: (str) -> list
@@ -116,7 +118,10 @@ class __BookmarkResolver(object):  # noqa
         return self._backend
 
     def _sync(self, backend):
-        """ 物品表换了版本（重新同步、扩展重装）就清缓存 """
+        """
+        物品表换了版本（重新同步、扩展重装）、类型 / 来源变了（第三方晚到的注册）就清缓存 ——
+        不然先前记下的「找不回」一直找不回：收藏栏的格子停在失效的样子
+        """
         try:
             version = backend.version()
         except Exception:  # noqa  取不到版本就当没变，宁可旧一点也不能卡

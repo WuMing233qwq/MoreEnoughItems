@@ -179,32 +179,28 @@ def _take_from_supply(supply, candidates, need, slot):  # type: (dict, list, int
     从供给里为一个格位凑 need 个，凑不齐返回 None 且**不扣**任何东西
 
     凑不齐就整格放弃是刻意的：半格没有意义，而"先扣了再发现不够"要回滚。
+    **一格只用一种候选**（同一种可以来自背包里的几摞），按候选的先后挑第一个自己就够数的：
+    两种东西放不进同一格 —— 服务端按物品身份合并（targets._merged_count），不一样就不收，后面的格子也跟着停下
     """
-    picked = []
-    remain = need
-    # 先在不改 supply 的前提下试算, 确认凑得齐再真扣 —— 避免失败时的回滚
-    trial = []
     for key in candidates:
-        for index, (count, source_id, handle) in enumerate(supply.get(key, ())):
+        buckets = supply.get(key, ())
+        if sum(max(0, count) for count, _source, _handle in buckets) < need:
+            continue
+        picked = []
+        remain = need
+        for index, (count, source_id, handle) in enumerate(buckets):
             if remain <= 0:
                 break
             use = min(count, remain)
             if use <= 0:
                 continue
-            trial.append((key, index, use, source_id, handle))
+            supply[key][index] = (count - use, source_id, handle)
+            picked.append(TransferEntry(
+                slot=slot, item_id=key[0], aux_value=key[1],
+                count=use, source_id=source_id, handle=handle))
             remain -= use
-        if remain <= 0:
-            break
-    if remain > 0:
-        return None
-
-    for key, index, use, source_id, handle in trial:
-        count, src, hdl = supply[key][index]
-        supply[key][index] = (count - use, src, hdl)
-        picked.append(TransferEntry(
-            slot=slot, item_id=key[0], aux_value=key[1],
-            count=use, source_id=source_id, handle=handle))
-    return picked
+        return picked
+    return None
 
 
 def can_fulfill(slots, supply, multiplier=1):  # type: (list, dict, int) -> bool

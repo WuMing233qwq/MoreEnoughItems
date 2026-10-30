@@ -93,10 +93,11 @@ class TransferRequest(object):
     Catalysts: List[TransferSlot]
     Times: int
     Max: bool
+    Fits: bool
 
     def __init__(self, recipe: Any, category_id: str = "", screen_def: str = "",
                  slots: Optional[List[TransferSlot]] = None, catalysts: Optional[List[TransferSlot]] = None,
-                 times: int = 1, wants_max: bool = False, max_times: Any = None) -> None: ...
+                 times: int = 1, wants_max: bool = False, max_times: Any = None, fits: bool = True) -> None: ...
 
     def MaxTimes(self) -> int: ...
 

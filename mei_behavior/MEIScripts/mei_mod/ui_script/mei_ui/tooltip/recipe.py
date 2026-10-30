@@ -76,7 +76,11 @@ class TooltipRecipeView(object):
     @classmethod
     def CanPreview(cls, recipe):  # type: (any) -> bool
         """ 这条配方的类型有预览 grid（缺省就有，见 RecipeCategory.PreviewDef）、建得出来、也注册了配方页脚本 """
-        category_id = getattr(recipe, "Type", None)
+        return cls.CanPreviewType(getattr(recipe, "Type", None))
+
+    @classmethod
+    def CanPreviewType(cls, category_id):  # type: (str) -> bool
+        """ 同 CanPreview，只看类型（配方收藏建格子时还没找回配方）"""
         if not category_id:
             return False
         preview_def = RecipeManager.GetPreviewDef(category_id)

@@ -111,8 +111,8 @@ class __SettingsManager(object):  # noqa
         if key in raw:
             try:
                 value = spec.Coerce(raw[key])
-            except (TypeError, ValueError):
-                pass  # 盘上的值看不懂就按默认值走，原值留着不动
+            except (TypeError, ValueError, OverflowError):
+                pass  # 盘上的值看不懂就按默认值走，原值留着不动（第三方的设置种类不一定挡得住无穷大）
         self._cache[key] = value
         return value
 
@@ -123,7 +123,7 @@ class __SettingsManager(object):  # noqa
             return False
         try:
             value = spec.Coerce(value)
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError, OverflowError) as e:
             logger.warn("[MEI/settings] {} 的新值不合法: {}".format(key, error_text(e)))
             return False
         if value == self.Get(key):

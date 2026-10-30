@@ -38,6 +38,15 @@ from MEIScripts.utils.binder import ScreenBinder
 from MEIScripts.utils.bindname import make_binding_name
 from MEIScripts.utils.text import error_text
 
+_SLOT_WARNED = set()  # type: set  # 槽位回调抛过异常的 (组, 前缀下标)：同一格只记一行（绑定每帧回读）
+
+
+def _warn_slot(key, text):  # type: (tuple, str) -> None
+    if key in _SLOT_WARNED:
+        return
+    _SLOT_WARNED.add(key)
+    logger.error(text)
+
 ViewBinder = clientApi.GetViewBinderCls()
 
 KIND_ATTR = "attr"
@@ -805,7 +814,11 @@ class RecipesGridBind(object):
 
         resolver = config.get("resolver")
         if resolver:
-            return resolver(collection_index, group_id, prefix_index)
+            try:
+                return resolver(collection_index, group_id, prefix_index)
+            except Exception as e:  # noqa  这里是集合绑定的回调：抛出去引擎扔掉这条绑定（引擎结论 §15）
+                _warn_slot(("resolver", group_id, prefix), "[MEI/ui] 槽位绑定 {} 取值出错: {}".format(prefix, error_text(e)))
+                return config.get("default")
 
         key = (collection_index, group_id, prefix_index)
         panel = self.ItemPanels.get(key)
@@ -870,7 +883,12 @@ class RecipesGridBind(object):
         if not group:
             return False
 
-        panel = group["callback"](prefix_index)
+        try:
+            panel = group["callback"](prefix_index)
+        except Exception as e:  # noqa  #visible 回调的内部：抛出去整条绑定被扔掉、这一格在每一行都消失，还没有日志
+            _warn_slot(("callback", group_id, prefix_index), "[MEI/ui] 槽位回调抛异常 addr=({}, {}, {}): {}".format(
+                collection_index, group_id, prefix_index, error_text(e)))
+            return False
         if not panel:
             # **不能 raise**: 这里是绑定回调的内部, 抛出去会把那条绑定当场带走
             # 且引擎不给日志(引擎结论 §15) —— 表现是"那一格永远不显示",

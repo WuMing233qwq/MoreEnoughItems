@@ -118,7 +118,7 @@ class Store(object):
         raw_version = record.get(KEY_VERSION, 0)
         try:
             raw_version = int(raw_version)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):  # 1e999 读成无穷大：int 抛 OverflowError
             raw_version = 0
 
         if raw_version > self.Version:
@@ -225,12 +225,20 @@ class Store(object):
         return False
 
     def _backup(self, record, error):
+        """
+        载荷看不懂：原文备份到 <名字>_bak，这一局从空表开始。**备份没写成就这一局只读** ——
+        不然之后一落盘，就拿新数据盖掉了盘上那份唯一的原文（数据可以丢，但不该是我们亲手覆盖掉还能救的那份）
+        """
         logger.error("[MEI/store] {} 载荷解析失败({}), 原文备份到 {}".format(
             self.ConfigName, error_text(error), self.ConfigName + BAK_SUFFIX))
         try:
-            self.Backend.write(self.ConfigName + BAK_SUFFIX, record, self.IsGlobal)
+            saved = self.Backend.write(self.ConfigName + BAK_SUFFIX, record, self.IsGlobal)
         except Exception as e:  # noqa
             logger.error("[MEI/store] 备份也失败了: {}".format(error_text(e)))
+            saved = False
+        if not saved:
+            self._readonly = True
+            logger.error("[MEI/store] {} 的原文没备份成，这一局不写它（不拿新数据盖掉原文）".format(self.ConfigName))
 
     def _migrate(self, payload, from_version):  # type: (dict, int) -> dict
         """ 逐版升级；某一步抛异常时整体放弃，由 Load 兜底，见那里 """

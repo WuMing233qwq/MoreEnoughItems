@@ -578,6 +578,10 @@ class TooltipManager(object):
                 continue
             if not self.ShowFor(panel, rect):
                 self.__Rejected = panel
+                if not panel.HasMeiTooltip():
+                    # 格子改了主意（配方收藏找不回配方、这个类型的预览建不出来）：悬停文字的绑定这下要给原版名了，
+                    # 可写满后暂停了的 grid 不再拉 —— 唤醒一次，不然 PC 上悬停什么都不出
+                    self.__WakeGrids()
             return
 
     def __Tick(self):

@@ -25,7 +25,8 @@
 - 登记：界面（screenDef，与 PushScreenEvent 给的一样；None 或 "*" 是哪个界面都算）+ 控件路径（ScreenNode.GetBaseUIControl 用的那种）
   + 回调，可以给个别名（回调拿到别名，没给就拿到路径）。Register 返回一个记号，Unregister(记号) 撤一个；
   owner 填自己扩展的 ID，OnUnload 里 UnregisterOwner(ID) 一次撤干净。
-- 命中：点下去那一点在控件的全局矩形里（藏着的、量不出来的不算）；几个都中取面积最小的（套着的取里面那个）。
+- 命中：点下去那一点在控件的全局矩形里（藏着的、量不出来的不算 —— 外面哪一层藏着也算藏着：MEI 开着配方页时藏的是原版内容外面那一层）；
+  几个都中取面积最小的（套着的取里面那个）。
 - 回调抛异常只记一行（同一个目标只记第一次），不影响 MEI。
 - 登记时 point=True 的，回调多拿一个参数：点下去那一点的全局坐标 (x, y) —— 一个目标盖住一片格子（比如别人的 3×3 网格）时自己算点中哪一格。
 - 登记时给了 accepts(ItemStack) -> bool 的，不收的东西点上去当这个目标不在（套在外面的目标照样能接）。
@@ -65,6 +66,22 @@ def _visible(control):  # type: (any) -> bool
         return control.GetVisible() is not False
     except Exception:  # noqa  问不出来当看得见，矩形量不出来那一步还会筛
         return True
+
+
+def _shown(control_of, path):  # type: (callable, str) -> bool
+    """
+    控件连同外面每一层都显示着。引擎的 GetVisible 只管控件自己：MEI 开配方页、别的模组切页时藏的都是外面那一层，
+    只看目标自己的话，点下去会落到底下被藏起来的目标上。从外往里逐层问（只在点下去命中矩形之后问，不是每帧）
+    """
+    parts = path.strip("/").split("/")
+    for depth in range(1, len(parts)):
+        try:
+            control = control_of("/" + "/".join(parts[:depth]))
+        except Exception:  # noqa  取不到的那一层当看得见
+            control = None
+        if control is not None and not _visible(control):
+            return False
+    return True
 
 
 class __DropTargets(object):  # noqa
@@ -129,7 +146,7 @@ class __DropTargets(object):  # noqa
             if control is None or not _visible(control):
                 continue
             rect = control_rect(control)
-            if rect is None or not contains(rect, x, y):
+            if rect is None or not contains(rect, x, y) or not _shown(control_of, target.Path):
                 continue
             area = (rect[2] - rect[0]) * (rect[3] - rect[1])
             if best is None or area < best_area:

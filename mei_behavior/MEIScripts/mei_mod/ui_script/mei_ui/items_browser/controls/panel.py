@@ -20,6 +20,7 @@
 
 from MEIScripts.common.classes.types import Item
 from MEIScripts.constants.texts import ItemText
+from MEIScripts.utils.lang import localize
 from MEIScripts.utils.text import native_str
 from MEIScripts.mei_mod.ui_script.controls.item import ItemPanel
 from MEIScripts.mei_mod.ui_script.controls.item.panel import render_args
@@ -46,6 +47,7 @@ class GroupItemPanel(ItemPanel):
 
         self.Renderer1Control = None
         self.Renderer2Control = None
+        self.GroupRenderData = ()  # type: tuple  # 分组头两个小图标的 SetUiItem 参数：格子重建后（SetUiItem）照它补画
 
     def SetGroupItemData(self, data_dict):
         """ 初始化ItemPanel 用于维护分组内的物品 """
@@ -85,14 +87,26 @@ class GroupItemPanel(ItemPanel):
         item_2 = items[1] if len(items) > 1 else item_1
 
         self.SetBorders(edges)
-        self.Renderer1Control.SetUiItem(*render_args(item_1.stack().get_render_data()))
-        self.Renderer2Control.SetUiItem(*render_args(item_2.stack().get_render_data()))
+        self.GroupRenderData = (render_args(item_1.stack().get_render_data()),
+                                render_args(item_2.stack().get_render_data()))
 
-        self.SetItemStack(item_1.stack(count=1))
-        # 经 native_str 收敛: 模板是 unicode(见 constants/texts.py), name 来自
-        # 引擎也可能是 unicode —— 拼出来的 unicode 直接进 hover 绑定的话,
+        self.SetItemStack(item_1.stack(count=1))  # 经 SetUiItem 一起画上两个小图标
+        # 组名是 .lang 的键（AddGroup(group, name=...)，缺省是组的 id）：取本地化文字，取不到写键本身。
+        # 经 native_str 收敛: 模板是 unicode(见 constants/texts.py) —— 拼出来的 unicode 直接进 hover 绑定的话,
         # 引擎不抛不报只是取不到东西(引擎结论 §2), 表现为分组悬浮文本空白
-        self.ItemHoverText = native_str(ItemText.GroupHover.format(name, length))
+        self.ItemHoverText = native_str(ItemText.GroupHover.format(localize(name), length))
+
+    def SetUiItem(self):  # type: () -> bool
+        """
+        分组头还要画组里前两样（两个小渲染器）：建格子时与格子重建后（ItemsGrid 重设图标走的就是 SetUiItem，引擎结论 §46）
+        一起画 —— 不然行列数一变，分组头只剩底色
+        """
+        suc = ItemPanel.SetUiItem(self)
+        if self.IsGroupHead:
+            for control, args in zip((self.Renderer1Control, self.Renderer2Control), self.GroupRenderData):
+                if control is not None:
+                    control.SetUiItem(*args)
+        return suc
 
     def OnPrimaryClick(self, _):
         """
@@ -147,6 +161,8 @@ class GroupItemPanel(ItemPanel):
 
     def HideGroupControls(self):
         """ 隐藏所有GroupItem相关的控件 """
+        self.IsGroupHead = False
+        self.IsGroupItem = False
         self.HideBorders()
         self.LabelVisible = False
         self.GroupRendererVisible = False

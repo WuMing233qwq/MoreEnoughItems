@@ -100,6 +100,7 @@ class TypeTabNav(object):
         for index, item in enumerate(self._page.all_items):
             if self.KeyOf(item) == key:
                 self._selected = index
+                self.__SyncPageToSelection()
                 return True
         return False
 

@@ -80,7 +80,9 @@ class VanillaExtension(MeiExtension):
         policy_cls = getattr(module, "POLICY", None)
         if policy_cls is not None:
             category.SetTransferPolicy(policy_cls())
-        ctx.Registry.SourceRegistry.RegisterCategory(category)
+        if not ctx.Registry.SourceRegistry.RegisterCategory(category):
+            ctx.Log.warn("原版类型 {} 注册不上（同名的类型已经在了），跳过它的来源与配方页".format(category.Id))
+            return
         ctx.Registry.SourceRegistry.RegisterSource(source)
         ctx.Registry.RecipeUIManager.RegisterScript(category.Id, module.UI_SCRIPT)
         self.Sources.append(source)

@@ -242,6 +242,13 @@ class __ItemManager(object):
         """ 物品表版本；派生物拿它判断自己有没有过期 """
         return self._version
 
+    def Touch(self):  # type: () -> None
+        """
+        旁表（ItemOrganizer 的分组、标签、分类）变了：作废内部缓存、撞版本号 —— 物品栏的分页按版本自愈、
+        按标签搜的结果缓存（SearchByCondition）也跟着清。物品本身没变，只是归属变了
+        """
+        self.__Touch()
+
     def LoadItemIds(self, item_ids, hidden_ids=None):  # type: (list, list or None) -> None
         """ 收下引擎的 id 表；hidden_ids 是其中隐藏的那部分 """
         # 只动 id 表, 不碰已注册的物品 —— 清物品是 Reset 的事, 调用序是

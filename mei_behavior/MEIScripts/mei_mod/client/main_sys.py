@@ -152,15 +152,11 @@ class MainSys(ClientSystem):
         # 索引不到的游离 Item(物品书签反查踩过). 可见集由 GetBrowsableItems 过滤
         ItemManager.Reset()
         ItemManager.RegItemFromIdList(item_list)
-        # 上一个世界的搜索结果页（开物品栏时会还原它）里是旧的 Item 实例
-        CacheManager.ClearSearchData()
-
-        # 配方查询缓存: 注入 + 清空.
-        # **必须清** —— 重进世界会重建全部 Item 对象, 而缓存键是值语义的 Item,
+        # 上一个世界的东西全清：搜索结果页（开物品栏时会还原它）、最近浏览、配方页的返回栈里都是旧的 Item 实例；
+        # 配方查询缓存**必须清** —— 重进世界会重建全部 Item 对象, 而缓存键是值语义的 Item,
         # 旧世界的条目会"匹配上"新世界的物品, 拿到的却是上一个世界的 Recipe 对象.
-        query_cache = CacheManager.GetRecipeQueryCache()
-        query_cache.Clear()
-        RecipeManager.SetQueryCache(query_cache)
+        CacheManager.ResetWorld()
+        RecipeManager.SetQueryCache(CacheManager.GetRecipeQueryCache())
 
         # 扩展装配点：内置的 vanilla 与已排队的第三方在这里一起起来。
         # 重进世界会再次走到这里, 先卸再装, 否则重复注册会被管理器拒绝。

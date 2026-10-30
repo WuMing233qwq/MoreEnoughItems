@@ -89,6 +89,9 @@ class Slider(Setting):
     def Coerce(self, value):  # type: (any) -> int or float
         if not _is_number(value):
             raise TypeError("slider wants a number, got {}".format(type(value).__name__))
+        if value != value or value in (_INF, -_INF):
+            # 盘上写着 1e999 / Infinity / NaN（json 读成无穷大、非数）：后面 int(round(...)) 会抛 OverflowError
+            raise ValueError("slider wants a finite number, got {!r}".format(value))
         return self.FromPosition(self.ToPosition(value))
 
     def ToPosition(self, value):  # type: (any) -> float
@@ -185,6 +188,9 @@ class Action(Setting):
 
     def Coerce(self, value):
         raise TypeError("action has no value")
+
+
+_INF = float("inf")
 
 
 def _is_number(value):  # type: (any) -> bool

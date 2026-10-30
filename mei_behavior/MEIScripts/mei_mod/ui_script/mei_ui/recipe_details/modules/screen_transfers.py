@@ -36,8 +36,9 @@ MEI 算好清单（TransferRequest：每一格要什么、背包里凑得出多�
 构造期不碰引擎
 """
 from MEIScripts.common.classes.types.transfer import TransferError
+from MEIScripts.constants.texts import TransferText
 from MEIScripts.utils.log import logger
-from MEIScripts.utils.text import error_text, native_str
+from MEIScripts.utils.text import error_text, native_str, to_unicode
 
 
 class LegacyHandler(object):
@@ -86,7 +87,8 @@ class ScreenTransfer(object):
     @property
     def Hint(self):  # type: () -> str
         hint = getattr(self.Handler, "HINT", "")
-        return hint if isinstance(hint, basestring) else ""
+        # 第三方 py2 源文件里写的 "§7…" 是 utf-8 字节串：拼进 u"" 之前先解开，不然非 ASCII 的一碰就抛
+        return to_unicode(hint) if isinstance(hint, basestring) else u""
 
 
 def grid_of(handler):  # type: (any) -> tuple or None
@@ -115,15 +117,19 @@ def _categories(value):  # type: (any) -> frozenset or None
 
 
 def _as_error(result):  # type: (any) -> TransferError or None
-    """ 检查的返回值 -> TransferError：None / 真是能点；False 是不收；一句话是不收、说这句话；TransferError 原样 """
+    """
+    检查的返回值 -> TransferError：None / 真是能点；False 是不收；一句话是不收、说这句话；TransferError 原样。
+    原因一律收成 unicode（第三方给的多半是 utf-8 字节串，拼进 u"" 模板会抛）
+    """
     if result is None or result is True:
         return None
     if isinstance(result, TransferError):
+        result.Message = to_unicode(result.Message) if result.Message else u""
         return result
     if result is False:
         return TransferError()
     if isinstance(result, basestring):
-        return TransferError(message=result)
+        return TransferError(message=to_unicode(result))
     return None
 
 
@@ -186,6 +192,8 @@ class __ScreenTransfers(object):  # noqa
         抛了当不收
         """
         recipe = getattr(request, "Recipe", None)
+        if not getattr(request, "Fits", True):
+            return TransferError(message=TransferText.TooBig)
         if target.Accept is not None:
             try:
                 if not target.Accept(recipe):
@@ -211,10 +219,8 @@ class __ScreenTransfers(object):  # noqa
         except Exception as e:  # noqa
             self.__Warn(target, "Transfer", e)
             return False, None
-        if isinstance(result, TransferError):
-            return False, result
-        if isinstance(result, basestring):
-            return False, TransferError(message=result)
+        if isinstance(result, (TransferError, basestring)):
+            return False, _as_error(result)
         return bool(result), None
 
     def Reset(self):

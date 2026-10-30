@@ -175,11 +175,11 @@ class TransferRequest(object):
     数量按一份算（Times）；玩家要「尽量多」时 Max 为真，背包最多够几份问 MaxTimes()。
     """
 
-    __slots__ = ("Recipe", "CategoryId", "ScreenDef", "Slots", "Catalysts", "Times", "Max", "_max_times")
+    __slots__ = ("Recipe", "CategoryId", "ScreenDef", "Slots", "Catalysts", "Times", "Max", "Fits", "_max_times")
 
     def __init__(self, recipe, category_id="", screen_def="", slots=None, catalysts=None, times=1,
-                 wants_max=False, max_times=None):
-        # type: (any, str, str, list, list, int, bool, any) -> None
+                 wants_max=False, max_times=None, fits=True):
+        # type: (any, str, str, list, list, int, bool, any, bool) -> None
         self.Recipe = recipe              # type: any
         self.CategoryId = category_id     # type: str
         self.ScreenDef = screen_def       # type: str   # 当前开着的界面（就是登记时给的那个）
@@ -187,6 +187,7 @@ class TransferRequest(object):
         self.Catalysts = list(catalysts or ())  # type: list  # TransferSlot（Catalyst 为真）
         self.Times = max(1, int(times or 1))  # type: int
         self.Max = bool(wants_max)        # type: bool  # 玩家要「尽量多」
+        self.Fits = bool(fits)            # type: bool  # 配方摊得进处理器的 GRID（没给 GRID 恒真）；假的时候 Slots 少了摊不进的那些
         self._max_times = max_times       # type: any   # int，或者第一次问时才算的 fn() -> int
 
     def MaxTimes(self):  # type: () -> int

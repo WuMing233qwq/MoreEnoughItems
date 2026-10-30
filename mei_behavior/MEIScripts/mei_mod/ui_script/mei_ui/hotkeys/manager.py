@@ -183,7 +183,10 @@ def _run(main, hotkey_id, target, step):  # type: (any, str, any, int) -> bool
         logger.error("[MEI/hotkeys] 快捷键 {} 处理失败: {}".format(hotkey_id, error_text(e)))
         return False
     if changed:
-        _refresh(main)
+        try:
+            _refresh(main)
+        except Exception as e:  # noqa  重排收藏栏出错只少刷一次，不能把这一下按键的处理带出去（在按键事件、定时器的回调里）
+            logger.error("[MEI/hotkeys] 快捷键 {} 改完重排收藏栏失败: {}".format(hotkey_id, error_text(e)))
     return bool(changed)
 
 

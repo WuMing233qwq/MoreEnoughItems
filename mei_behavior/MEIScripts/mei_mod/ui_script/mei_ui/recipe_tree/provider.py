@@ -37,7 +37,7 @@ from MEIScripts.mei_mod.state import PinManager
 from MEIScripts.mei_mod.transfer import index_supply
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import DescribeItem
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
-from MEIScripts.registry import ItemManager, RecipeManager
+from MEIScripts.registry import ItemFactory, ItemManager, RecipeManager
 from MEIScripts.registry.transfer import TransferRegistry
 from MEIScripts.utils.text import error_text, native_str
 
@@ -220,7 +220,7 @@ class TreeProvider(object):
                 item = getattr(self.__Stacks.get(key), "Item", None)
             if item is None and ItemManager.LookUpItem(item_id):
                 try:
-                    item = ItemManager.GetItem(ItemId=item_id, AuxValue=aux)
+                    item = ItemFactory.GetItem(ItemId=item_id, AuxValue=aux)
                 except Exception:  # noqa
                     item = None
         self.__Items[key] = item

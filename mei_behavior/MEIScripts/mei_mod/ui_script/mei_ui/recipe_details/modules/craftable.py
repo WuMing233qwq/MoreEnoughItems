@@ -43,7 +43,9 @@ from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.transfer_request
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
 from MEIScripts.registry.transfer import TransferRegistry
 from MEIScripts.utils.log import logger
-from MEIScripts.utils.text import error_text
+from MEIScripts.utils.text import error_text, to_unicode
+
+_POLICY_WARNED = set()  # type: set  # 转移策略算挂了的类型：同一个类型只记一行（预检每帧回读）
 
 
 class CraftableCache(object):
@@ -134,7 +136,14 @@ class CraftableCache(object):
         if recipe_id in self._verdict:
             return self._verdict[recipe_id]
 
-        verdict = self.__Compute(category, recipe)
+        try:
+            verdict = self.__Compute(category, recipe)
+        except Exception as e:  # noqa  策略算挂了按做不了缓存：不缓存的话 + 每帧每行都要再算一遍、记一行
+            category_id = getattr(category, "Id", "")
+            if category_id not in _POLICY_WARNED:
+                _POLICY_WARNED.add(category_id)
+                logger.error("[MEI/transfer] {} 的转移策略预检出错: {}".format(category_id, error_text(e)))
+            verdict = False
         self._verdict[recipe_id] = verdict
         return verdict
 
@@ -168,7 +177,7 @@ class CraftableCache(object):
             lines.append(TransferText.Missing.format(describe_missing(verdict.Missing)))
         if not lines:
             lines.append(TransferText.Rejected)
-        return u"\n".join(lines)
+        return u"\n".join(to_unicode(line) for line in lines)
 
     def __PolicyHover(self, category, recipe):  # type: (any, any) -> unicode
         policy = getattr(category, "Transfer", None) if category is not None else None
@@ -238,7 +247,12 @@ def CraftableIds(result):  # type: (dict) -> set
             recipe_id = getattr(recipe, "Id", None)
             if recipe_id is None or recipe_id in craftable:
                 continue
-            mapped = policy.MapRecipe(ctx, recipe)
-            if mapped and reachable(mapped, supply) and can_fulfill(mapped, copy_supply(supply)):
-                craftable.add(recipe_id)
+            try:
+                mapped = policy.MapRecipe(ctx, recipe)
+                if mapped and reachable(mapped, supply) and can_fulfill(mapped, copy_supply(supply)):
+                    craftable.add(recipe_id)
+            except Exception as e:  # noqa  一条算挂了只当它做不了，不能让配方页开不出来
+                if crafting_type not in _POLICY_WARNED:
+                    _POLICY_WARNED.add(crafting_type)
+                    logger.error("[MEI/transfer] {} 的转移策略排序时出错: {}".format(crafting_type, error_text(e)))
     return craftable

@@ -36,7 +36,8 @@ class __ExtensionLoader(object):  # noqa
 
     def __init__(self):
         self._pending = []      # type: list  # 尚未装配的扩展类
-        self._loaded = []       # type: list  # 已装配的实例，按装配顺序
+        self._loaded = []       # type: list  # 已装配的实例，按装配顺序（实例化成功就算：某个阶段抛了只跳过那一阶段，卸载照样要卸）
+        self._tick_warned = set()  # type: set  # OnTick 抛过异常的扩展 ID：每帧路径，同一个扩展只记一行
         self._contexts = {}     # type: dict  # id(ext) -> ExtensionContext
         self._booted = False
 
@@ -86,6 +87,7 @@ class __ExtensionLoader(object):  # noqa
         instance = self._Instantiate(extension_cls)
         if instance is None:
             return False
+        self._loaded.append(instance)
         for phase in PHASES:
             self._Drive(instance, phase)
         return True
@@ -97,10 +99,13 @@ class __ExtensionLoader(object):  # noqa
             return len(self._loaded)
 
         from . import EXTENSIONS
+        builtins = []
         for name in EXTENSIONS:
             cls = self._ImportBuiltin(name)
             if cls is not None and self._Accept(cls):
-                self._pending.append(cls)
+                builtins.append(cls)
+        # 内置的排在最前：第三方在第一次 Boot 之前就注册了的话，不这样排第一个世界与之后的装配顺序不一样（类型的先后跟着翻）
+        self._pending = builtins + [cls for cls in self._pending if cls not in builtins]
 
         # 第三方名册补回来 —— 重进世界时它们不会重新注册, 见 _external 的注释
         for cls in self._external:
@@ -112,6 +117,7 @@ class __ExtensionLoader(object):  # noqa
             instance = self._Instantiate(cls)
             if instance is not None:
                 instances.append(instance)
+                self._loaded.append(instance)
         self._pending = []
         self._booted = True
 
@@ -131,7 +137,9 @@ class __ExtensionLoader(object):  # noqa
             try:
                 instance.OnTick(self._ContextOf(instance))
             except Exception as e:  # noqa  一个扩展的每帧逻辑炸了不能拖垮整帧
-                logger.error("[MEI/ext] {} 的 OnTick 抛异常: {}".format(instance.ID, error_text(e)))
+                if instance.ID not in self._tick_warned:
+                    self._tick_warned.add(instance.ID)
+                    logger.error("[MEI/ext] {} 的 OnTick 抛异常（之后同样的不再记）: {}".format(instance.ID, error_text(e)))
 
     def Shutdown(self):
         """ 逆序卸载全部扩展，供热重载与重进世界 """
@@ -148,6 +156,7 @@ class __ExtensionLoader(object):  # noqa
         # 扩展没撤的旧函数不留到下一个世界，重复的 Id 也就不会挡住它下次的登记
         ItemFilters.Reset()
         self._loaded = []
+        self._tick_warned = set()
         self._contexts = {}
         self._booted = False
         # **`_external` 不清** —— 它是第三方名册，清了就等于下次 Boot 只剩内置扩展。
@@ -162,8 +171,14 @@ class __ExtensionLoader(object):  # noqa
             return False
 
         ext_id = getattr(extension_cls, "ID", "")
-        if not ext_id or ":" not in ext_id:
+        if not isinstance(ext_id, basestring) or not ext_id or ":" not in ext_id:
             logger.error("[MEI/ext] 拒绝: ID {!r} 必须带命名空间前缀, 形如 yourmod:xxx".format(ext_id))
+            return False
+        try:
+            ext_id.encode("ascii") if isinstance(ext_id, unicode) else ext_id.decode("ascii")  # noqa  py2 的 unicode
+        except UnicodeError:
+            # 日志前缀、存档的键都按 str 拼：非 ASCII 的 ID 一拼就抛 UnicodeError，连异常隔离的那一行日志都会再抛一次
+            logger.error("[MEI/ext] 拒绝: ID {!r} 只能用 ASCII 字符".format(ext_id))
             return False
 
         required = getattr(extension_cls, "MIN_API_VERSION", 1)
@@ -230,8 +245,6 @@ class __ExtensionLoader(object):  # noqa
         except Exception as e:  # noqa
             logger.error("[MEI/ext] {} 的 {} 抛异常: {}".format(instance.ID, phase, error_text(e)))
             return False
-        if phase == PHASES[0] and instance not in self._loaded:
-            self._loaded.append(instance)
         return True
 
 

@@ -223,6 +223,8 @@ class TreeMenu(object):
         # 配方预览（preview.py）：建齐之前菜单先不排（Pending 记着要排的那一份），每帧 Tick 开始建、问它好了没有
         self.Preview = TreePreview(screen, TreePath.MenuPreview, self.OnPreviewSlot)
         self.Pending = None  # type: tuple or None  # (model, anchor, 开始建了没有)
+        # 不用的预览先藏起来，拆（解绑定）留到下一帧的 Tick：Hide / 换成配方条多在按钮回调里（引擎结论 §27-2）
+        self.StopPending = False  # type: bool
         for index in range(len(self.Buttons)):
             binder.Bind(self.__Handler(index), ViewBinder.BF_ButtonClickUp, TreeConst.MenuButtonName.format(index))
         for prev, nxt in TreeConst.MenuIcons:
@@ -275,10 +277,20 @@ class TreeMenu(object):
 
     # 显示
 # ======================================================================================================================
+    def Freeze(self):
+        """ 树在重新解算：按钮先不响应（动作抓着的是上一版的格子），解算、重画完脚本的 RenderMenu 再排一份 """
+        self.ButtonActions = [None] * len(self.Buttons)
+        self.IconActions = {}
+
+    def __DropPreview(self):
+        """ 不用配方预览了：当场藏起来、不再算亮着，拆脚本与绑定排到下一帧的 Tick（这里多半在按钮回调里）"""
+        self.Preview.Shelve()
+        self.StopPending = True
+
     def Hide(self):
         self.Open = False
         self.Pending = None
-        self.Preview.Stop()
+        self.__DropPreview()
         self.ButtonActions = [None] * len(self.Buttons)
         self.IconActions = {}
         if self.Host is not None:
@@ -287,6 +299,7 @@ class TreeMenu(object):
     def Destroy(self):
         """ 关配方树：预览的脚本、绑定、控件一起拆 """
         self.Pending = None
+        self.StopPending = False
         self.Preview.Destroy()
 
     def Tick(self):
@@ -294,6 +307,10 @@ class TreeMenu(object):
         每帧（脚本的 OnTick）：Show 记下的配方预览在这里开始建（建控件、挂绑定不在按钮回调里做）；
         建齐了就排菜单、拉回不透明；等太久（0.5 秒）、脚本接坏了或建不出来就用配方条
         """
+        if self.StopPending:
+            # 先拆上一份再建这一份：Hide 之后马上又 Show 同一条时，Begin 看到的是拆干净的预览、从头建
+            self.StopPending = False
+            self.Preview.Stop()
         if self.Pending is None:
             return
         model, anchor, started = self.Pending
@@ -380,7 +397,7 @@ class TreeMenu(object):
         if preview_pos is not None:
             self.Preview.Reveal(preview_pos)
         else:
-            self.Preview.Stop()
+            self.__DropPreview()
         if info_pos is not None:
             self.Info.SetPosition(info_pos)
             self.Info.asLabel().SetText(native_str(model.Info))

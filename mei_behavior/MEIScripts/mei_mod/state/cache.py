@@ -226,6 +226,18 @@ class __CacheManager(object):
     def ClearSearchData(self):
         return self.set(self.SEARCH_DATA_KEY, None)
 
+    def ResetWorld(self):
+        """
+        进世界（SyncLoadedItems）时调：上一个世界的 Item / Recipe 实例全作废 —— 最近浏览、物品栏的分页、搜索结果页、
+        配方页的返回栈、配方查询缓存一起清（物品表、扩展、配方都可能换了；值语义的旧 Item 还能「匹配上」新世界的物品，
+        最近浏览里会留着新世界没有的东西、配方页的「返回」会回到上一个世界的配方）。返回栈与查询缓存原地清，持有它们的不用换
+        """
+        self.set(self.HISTORY_KEY, LRUHistory(maxsize=self.MaxHistorySize))
+        self.set(self.ITEMS_PAGE_KEY, None)
+        self.set(self.SEARCH_DATA_KEY, None)
+        self.GetRecipeNav().Reset()
+        self.GetRecipeQueryCache().Clear()
+
     def GetRecipeNav(self):  # type: () -> RecipeNav
         return self.get(self.RECIPE_NAV_KEY)
 

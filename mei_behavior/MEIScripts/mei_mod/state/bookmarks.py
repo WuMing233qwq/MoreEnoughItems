@@ -141,7 +141,7 @@ def item_data(item, amount=1):  # type: (any, int) -> dict or None
         return None
     try:
         _id, aux = keys.make_key(item_id, getattr(item, "AuxValue", 0))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
     data = {"id": item_id, "aux": aux}
     fields = attr_fields(getattr(item, "Attr", None))
@@ -161,7 +161,7 @@ def item_key(data):  # type: (any) -> str
         return ""
     try:
         key = keys.key_to_str(keys.make_key(item_id, data.get("aux", 0)))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):  # 盘上 aux 写着 1e999：读成无穷大，int 抛 OverflowError
         return ""
     attr = data.get("attr")
     if isinstance(attr, dict) and attr:
@@ -323,7 +323,7 @@ def _normalize_tab(raw):  # type: (any) -> dict
 def _parse_gid(key):  # type: (any) -> int or None
     try:
         gid = int(key)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
     return gid if gid >= 0 else None
 
@@ -780,7 +780,7 @@ class __BookmarkManager(object):  # noqa
             return False
         try:
             count = max(1, min(int(count), MAX_COUNT))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return False
         if count == entry_count(entry):
             return False

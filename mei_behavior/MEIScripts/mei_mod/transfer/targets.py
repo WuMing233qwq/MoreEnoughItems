@@ -143,7 +143,7 @@ class PlayerSlotTarget(SlotTarget):
     def Restore(self, previous):  # type: (any) -> bool
         """ 写回 previous、不退回背包（needBack=False）：撤回刚放进来的那些 """
         try:
-            return bool(_item_comp().SetPlayerUIItem(self.PlayerId, self.Slot, previous or None, False))
+            return bool(_item_comp().SetPlayerUIItem(self.PlayerId, self.Slot, to_native(previous) if previous else None, False))
         except Exception as e:  # noqa
             logger.error("[MEI/transfer] 撤回玩家槽位 {} 失败: {}".format(self.Slot, error_text(e)))
             return False

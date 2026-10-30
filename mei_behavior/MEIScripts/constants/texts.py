@@ -56,6 +56,7 @@ class TransferText(object):
     Rejected = u"§7当前界面不收这一条配方"
     Failed = u"§c没能转移这条配方"
     NothingMoved = u"§c没有放进去任何东西"
+    Partial = u"§c只放进去了一部分"
     WrongScreen = u"§7当前界面不能转移这一类配方"
     TooBig = u"§7这条配方放不进当前的合成格"
 

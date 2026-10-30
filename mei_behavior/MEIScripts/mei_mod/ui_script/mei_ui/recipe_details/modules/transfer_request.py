@@ -28,7 +28,8 @@ from MEIScripts.common.classes.types import keys
 from MEIScripts.common.classes.types.transfer import TransferRequest, TransferSlot
 from MEIScripts.constants.texts import TransferText
 from MEIScripts.mei_mod.transfer.matcher import candidate_keys, copy_supply, max_multiplier, plan_entries
-from .slots import resolve_input_slot
+from MEIScripts.utils.text import to_unicode
+from .slots import flatten_inputs, resolve_input_slot
 
 MISSING_SHOWN = 4
 """ 悬停里最多列几样缺的东西，多的写「等 N 样」"""
@@ -87,14 +88,27 @@ def _pick(ingredient, key, need):  # type: (any, tuple, int) -> any
 
 
 def _leftover(ingredient, supply):  # type: (any, dict) -> tuple
-    """ 凑不齐的一格：它的候选在剩下的供给里一共还有多少，以及剩得最多的那个候选的键 """
-    total, best_key, best = 0, None, 0
+    """ 凑不齐的一格：它的候选里剩得最多的那一种还有多少、是哪一种（一格只用一种候选，几种加起来不算，同 matcher）"""
+    best_key, best = None, 0
     for key in candidate_keys(ingredient):
         count = sum(int(entry[0] or 0) for entry in supply.get(key, ()))
-        total += count
         if count > best:
             best_key, best = key, count
-    return total, best_key
+    return best, best_key
+
+
+def fits(recipe, grid):  # type: (any, tuple) -> bool
+    """ 配方摊得进 grid (列, 行) 吗：有序配方看宽高，无序配方看摊平后几格；没给 grid 一律算摊得进 """
+    if not grid:
+        return True
+    columns, rows = grid
+    try:
+        shape = recipe.GetShape()
+    except Exception:  # noqa  别人的配方类没有形状当无序
+        shape = None
+    if shape:
+        return int(shape[0]) <= columns and int(shape[1]) <= rows
+    return len(flatten_inputs(_listed(recipe, "GetInputs"))) <= columns * rows
 
 
 def match_slots(pairs, supply, catalyst=False):  # type: (list, dict, bool) -> list
@@ -141,7 +155,7 @@ def build_request(recipe, supply, grid=None, category_id="", screen_def="", want
     catalysts = match_slots(catalysts_of(recipe), work, catalyst=True)
     return TransferRequest(
         recipe, category_id=category_id or "", screen_def=screen_def or "", slots=slots, catalysts=catalysts,
-        times=1, wants_max=wants_max, max_times=lambda: max_multiplier(inputs, supply))
+        times=1, wants_max=wants_max, max_times=lambda: max_multiplier(inputs, supply), fits=fits(recipe, grid))
 
 
 def stack_name(stack):  # type: (any) -> unicode
@@ -153,8 +167,7 @@ def stack_name(stack):  # type: (any) -> unicode
         name = item.Info.ItemName
     except Exception:  # noqa  Info 是惰性字段，取不到不该带走悬停文字
         name = None
-    name = name or item.ItemId or u"?"
-    return name.decode("utf-8") if isinstance(name, str) else name
+    return to_unicode(name or item.ItemId or u"?")
 
 
 def describe_missing(slots, limit=MISSING_SHOWN):  # type: (list, int) -> unicode

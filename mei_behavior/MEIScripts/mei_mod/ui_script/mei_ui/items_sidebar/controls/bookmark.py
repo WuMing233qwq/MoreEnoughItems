@@ -134,9 +134,9 @@ class BookmarkItemPanel(ItemPanel):
         self.LabelText = format_amount(cell.Amount)
         if cell.Entry.get("k") == KIND_RECIPE and cell.Role in (ROLE_RECIPE, ROLE_OUTPUT):
             self.SetLore(BookmarkText.RecipeLore)
-            # 类型有预览（缺省就有）就出配方预览；找不回的配方、建不出来的预览显示时才知道，那时改回原版名，见 ResolveRecipe
-            preview_def = RecipeManager.GetPreviewDef(cell.Entry.get("cat"))
-            self.RecipePreview = bool(preview_def) and preview_def not in TooltipRecipeView.BROKEN
+            # 类型能预览（有预览、建得出来、注册了配方页脚本 —— 和显示时同一个判断）就出配方预览；
+            # 找不回的配方、建不出来的预览显示时才知道，那时改回原版名，见 ResolveRecipe
+            self.RecipePreview = TooltipRecipeView.CanPreviewType(cell.Entry.get("cat"))
         elif self.IsTreeCell():
             self.SetLore(BookmarkText.TreeLore)
 

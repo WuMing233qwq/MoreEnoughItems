@@ -60,6 +60,14 @@ _LAYOUT = {
 """ screen_def -> (首格, 列数, 行数)。**只有本模块认识这张表**，框架不认识 """
 
 
+def _shaped(recipe):  # type: (any) -> bool
+    """ 有序配方（有宽高）；配方类没有形状的当无序 """
+    try:
+        return bool(recipe.GetShape())
+    except Exception:  # noqa
+        return False
+
+
 class CraftingTransferPolicy(object):
     """
     工作台/背包合成栏的转移策略
@@ -72,7 +80,6 @@ class CraftingTransferPolicy(object):
 
     SCREEN_HINT = u"§7不可用的合成站"
     """ 当前界面不是工作台 / 背包时 + 的悬停文字（可选）"""
-    """ 槽位归玩家（关掉界面材料退回背包），故走 SetPlayerUIItem 那条路 """
 
     def CanTransfer(self, ctx):  # type: (any) -> bool
         """ 当前开着的界面能不能转移 """
@@ -98,8 +105,19 @@ class CraftingTransferPolicy(object):
         **形状换算走 resolve_input_slot** —— 与配方页渲染用的是同一个函数，
         所以"界面上摆在哪"与"材料放进哪一格"天然一致：
         2x2 的有序配方在 3 列网格里落在 0/1/3/4，不是 0/1/2/3；
-        无序配方按 Amount 摊平，一格一个。
+        无序配方按 Amount 摊平，一格一个，**按这个容器自己的列数从第一格顺着放**（没有形状，不必对着配方页的 3 列摆）。
         """
+        if not _shaped(recipe):
+            # 按配方页的 3 列算的话第 3 样落到第 3 列，背包 2×2 就放不下 3、4 样的无序配方（火焰弹、书……）
+            layout = self.__Layout(ctx)
+            if layout is None:
+                return None
+            base, columns, rows = layout
+            cells = [resolve_input_slot(recipe, ui_index, DISPLAY_COLUMNS) for ui_index in range(DISPLAY_CELLS)]
+            cells = [ingredient for ingredient in cells if ingredient is not None]
+            if not cells or len(cells) > columns * rows:
+                return None
+            return [(base + index, ingredient) for index, ingredient in enumerate(cells)]
         mapped = []
         for ui_index in range(DISPLAY_CELLS):
             ingredient = resolve_input_slot(recipe, ui_index, DISPLAY_COLUMNS)

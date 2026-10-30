@@ -49,6 +49,7 @@ class __RecipeManager(object):  # noqa
 
     def __init__(self):
         self._query_cache = None  # type: any
+        self._cache_revision = None  # type: int or None  # 查询缓存里的结果是按哪一版类型 / 来源表查的（SourceRegistry.Revision）
 
     def SetQueryCache(self, cache):
         """ 注入查询缓存(装配层调用), 传 None 即关闭缓存 """
@@ -135,6 +136,11 @@ class __RecipeManager(object):  # noqa
 
         cache = self._query_cache
         if cache is not None:
+            revision = SourceRegistry.Revision()
+            if revision != self._cache_revision:
+                # 类型、来源变了（第三方晚到的注册、扩展热重载）：记下的结果里没有新来源的配方、还有撤掉的来源的
+                cache.Clear()
+                self._cache_revision = revision
             hit = cache.Get(item, query_by, types)
             if hit is not None:
                 return hit, set()

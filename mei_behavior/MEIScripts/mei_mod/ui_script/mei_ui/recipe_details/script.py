@@ -46,6 +46,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.host import (
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.ordering import SortResult
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.typetab import TypeTabNav
 from MEIScripts.mei_mod.ui_script.proxy.focus.search import contains, control_rect
+from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
 from MEIScripts.registry import RecipeUIManager, RecipeManager
 from MEIScripts.registry.sources import SourceRegistry
 from MEIScripts.utils import utilities
@@ -53,7 +54,7 @@ from MEIScripts.utils.binder import ScreenBinder
 from MEIScripts.utils.events import EventListener
 from MEIScripts.utils.page import BuildPage
 from MEIScripts.utils.sequence import recipe_id
-from MEIScripts.utils.text import error_text, native_str
+from MEIScripts.utils.text import error_text, native_str, to_unicode
 
 ViewBinder = clientApi.GetViewBinderCls()
 
@@ -405,6 +406,7 @@ class RecipeDetailsScript(object):
         self.RecipesResult = []
         self.RawRecipesResult = []
         self.PendingFocusId = None
+        self.Notice = None
         self.ScanPending = []
         self.ScanEntry = None
         self.RecipesGridControl = None
@@ -653,6 +655,10 @@ class RecipeDetailsScript(object):
             self.ShowNotice(TransferText.NothingMoved)
             return
         self.Craftable.Invalidate()
+        if result.Failed > 0:
+            # 放进去了几格、中途有一格没放成（服务端逐格提交，停在那一格）：不关页，说一声
+            self.ShowNotice(TransferText.Partial)
+            return
         # 不在回执回调里同步关: 这条回调来自引擎事件, 而 Close 会拆掉整棵控件树.
         # 与置顶重建行控件是同一条教训(回调里不同步拆建控件, 引擎结论 §10)
         self.GameComp.AddTimer(0.0, self.Close)
@@ -835,7 +841,7 @@ class RecipeDetailsScript(object):
             page_index = RecipeText.Scanning.format(page_index)
         notice = getattr(self, "Notice", None)
         if notice is not None:
-            page_index = RecipeText.Notice.format(page_index, notice[0])
+            page_index = RecipeText.Notice.format(page_index, to_unicode(notice[0]))
         self.TopLine2LabelControl.SetText(native_str(page_index))
 
     NOTICE_SECONDS = 3.0
@@ -845,7 +851,8 @@ class RecipeDetailsScript(object):
         """ 页码后面挂一句话（点了 + 没成的原因），NOTICE_SECONDS 秒后节拍里收掉 """
         if not text:
             return
-        self.Notice = (text, time.time() + self.NOTICE_SECONDS)
+        # 第三方给的原因多半是 utf-8 字节串：先解开，不然挂着的这 3 秒里每次刷新页码都抛（在 #visible 回调里就带走了绑定）
+        self.Notice = (to_unicode(text), time.time() + self.NOTICE_SECONDS)
         try:
             self.UpdateTopLine2Label()
         except Exception as e:  # noqa  页面还没建好时只是这次不显示
@@ -923,7 +930,9 @@ class RecipeDetailsScript(object):
             self.RecipesPage = None
         self.UpdateRecipesGrid()
         if update_page:
-            self.BuildRecipesPage()
+            if self.BuildRecipesPage():
+                # 翻到了要定位的那一页（最后一页可能不满）：行数按这一页的条数重推，不然多出几行空壳
+                self.UpdateRecipesGrid()
             self.UpdateTopLine1Label()
             self.UpdateTypeTabsGrid()
         self.UpdateTopLine2Label()
@@ -974,16 +983,19 @@ class RecipeDetailsScript(object):
 
 
     def BuildRecipesPage(self):
-        """ 更新配方分页显示；有待定位的配方就翻到它所在的那一页 """
+        """ 更新配方分页显示；有待定位的配方就翻到它所在的那一页。翻了页给 True """
         self.RecipesPage = BuildPage(self.CurrentRecipes, self.MaxRecipesInPage)
         focus, self.PendingFocusId = self.PendingFocusId, None
         if not focus:
-            return
+            return False
         for index, recipe in enumerate(self.CurrentRecipes):
             if native_str(recipe_id(recipe)) == focus:
                 size = self.RecipesPage.page_size
-                self.RecipesPage.index = (index // size) * size
-                return
+                start = (index // size) * size
+                moved = start != self.RecipesPage.index
+                self.RecipesPage.index = start
+                return moved
+        return False
 
     def PrepareRecipeUIScript(self):
         """ 准备配方 UI Script 实例 """
@@ -1067,6 +1079,10 @@ class RecipeDetailsScript(object):
     def OnMouseWheel(self, args):
         if WheelTaken():
             return  # 按着修饰键、正好有滚轮类的快捷键：这一下归快捷键（hotkeys/binds.py），不翻页
+        if not self.RecipesPage or self.RecipesPage.total_page <= 1:
+            return  # 只有一页：翻过去还是这一页，不必整页重建
+        if self.__Covered():
+            return  # 配方页被盖住了（从配方行开了配方树）：滚轮是上面那个界面的
         mouse_x, _ = utilities.GetMousePosInt()
         content_x, _ = utilities.GetControlPosInt(self.MainContentControl)
 
@@ -1075,6 +1091,15 @@ class RecipeDetailsScript(object):
                 self.RecipesPageDown()
             else:
                 self.RecipesPageUp()
+
+    def __Covered(self):  # type: () -> bool
+        """ 配方页所在的界面不是当前界面（被 PushScreen 的界面盖住）；问不出来当没盖住 """
+        current = ProxyManager.GetCurrentScreen()
+        try:
+            own = self.MainNode.GetScreenDef()
+        except Exception:  # noqa
+            return False
+        return bool(current) and bool(own) and current != own
 
     def Close(self, _=None):
         """ 关闭配方界面；已经关过（+ 成交后排的下一拍关、紧接着又按了 ESC）就什么都不做 """

@@ -34,6 +34,14 @@ class __SourceRegistry(object):  # noqa
         # 必须有序：类别顺序即 TypeTab 的排列与默认选中项
         self.categories = OrderedDict()  # type: OrderedDict
         self.sources = {}  # type: dict
+        self.revision = 0  # type: int  # 类型、来源每变一次加一：按它作废查询缓存、收藏找回的缓存（Revision）
+
+    def Revision(self):  # type: () -> int
+        """
+        类型表、来源表的版本：注册 / 反注册 / 清空都加一。派生物（RecipeManager 的查询缓存、BookmarkResolver 记下的
+        「找不回」）拿它判断自己过期没有 —— 第三方晚到的注册、热重载换了来源，旧的查询结果里没有它的配方
+        """
+        return self.revision
 
     # 类别
 # ======================================================================================================================
@@ -48,6 +56,7 @@ class __SourceRegistry(object):  # noqa
             return False
         self.categories[category.Id] = category
         self.sources.setdefault(category.Id, [])
+        self.revision += 1
         return True
 
     def UnRegisterCategory(self, category_id):  # type: (str) -> bool
@@ -56,6 +65,7 @@ class __SourceRegistry(object):  # noqa
             return False
         del self.categories[category_id]
         self.sources.pop(category_id, None)
+        self.revision += 1
         return True
 
     def GetCategory(self, category_id):  # type: (str) -> RecipeCategory or None
@@ -93,6 +103,7 @@ class __SourceRegistry(object):  # noqa
         if source in entries:
             return False
         entries.append(source)
+        self.revision += 1
         return True
 
     def UnRegisterSource(self, source):  # type: (RecipeSource) -> bool
@@ -100,6 +111,7 @@ class __SourceRegistry(object):  # noqa
         if not entries or source not in entries:
             return False
         entries.remove(source)
+        self.revision += 1
         return True
 
     def GetSources(self, category_id):  # type: (str) -> list
@@ -109,6 +121,7 @@ class __SourceRegistry(object):  # noqa
     def Reset(self):
         self.categories = OrderedDict()
         self.sources = {}
+        self.revision += 1
 
 
 SourceRegistry = __SourceRegistry()

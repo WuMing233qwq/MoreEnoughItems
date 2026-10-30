@@ -201,6 +201,9 @@ class RecipeTreeScript(object):
         self.Solver = Solver(self.Provider, self.State, self.Prefs)
         self.SolveAnchor = anchor
         self.SolveReset = reset
+        if self.Menu is not None:
+            # 菜单还亮着，按钮抓着的是上一版的格子（下标、父格子都对不上新的这一版）：解算、重画完 RenderMenu 再排一份
+            self.Menu.Freeze()
         self.__SetLabel("status", TreeText.Solving.format(1))
 
     def __OnSolved(self):
@@ -333,6 +336,8 @@ class RecipeTreeScript(object):
             self.State.Fold = set()
             self.Draw(self.__CanvasTarget())
         elif name == "fold2":
+            if self.Solver is None or not self.Solver.Done:
+                return  # 解算中 Nodes 只有一部分：折出来的不全，解算完画的就是这一份
             self.State.Fold = set(node.Sig for node in self.Solver.Nodes if node.State == STATE_OK and node.Depth == 2)
             self.Draw(self.__CanvasTarget())
         elif name == "back":
@@ -388,7 +393,8 @@ class RecipeTreeScript(object):
         return finder(self.State.Root) if finder is not None and self.State is not None else None
 
     def Save(self):
-        if self.Summary is None or self.State is None:
+        # 解算中 Summary 还是上一版的（数量、选择已经改了）：存进去的展开对不上这棵树
+        if self.Summary is None or self.State is None or self.Solver is None or not self.Solver.Done:
             return
         entry = self.State.ToEntry(self.Summary.Raw)
         result = BookmarkManager.SaveTree(entry)
@@ -475,7 +481,7 @@ class RecipeTreeScript(object):
                     model = self.__WsMenu(node) if kind == TARGET_WS else self.__NodeMenu(node)
         except Exception as e:  # noqa
             logger.error("[MEI/tree] 排菜单出错: {}".format(error_text(e)))
-        if model is None:
+        if model is None or not self.__TargetShown(target):
             self.CloseMenu()
             return
         self.Menu.Show(model, self.__AnchorRect(target))
@@ -483,6 +489,18 @@ class RecipeTreeScript(object):
         self.SummaryPanel.Select(ident if kind == TARGET_SUM else None)
         if self.RootCell is not None:
             self.RootCell.SetSelected(target == (TARGET_NODE, ROOT_SIG))
+
+    def __TargetShown(self, target):  # type: (tuple) -> bool
+        """
+        菜单跟着的那一格还画着吗：画布画完了却找不到它（顶栏「折两层」把它折了进去），汇总里那一格不在这一页了（刷新后它不缺了）——
+        这时退回点开时的那个格子控件，摆的是池里别的格子的位置。画布正画着的时候池里还是上一版，等画完（__OnDrawn 再排一次）再判
+        """
+        kind, ident = target
+        if kind == TARGET_SUM:
+            return any(c.Target == ident for c in self.SummaryPanel.Cells)
+        if target == (TARGET_NODE, ROOT_SIG) or self.Canvas.IsDrawing():
+            return True
+        return self.Canvas.CellOf(target) is not None
 
     def __AnchorRect(self, target):  # type: (tuple) -> tuple
         """ 点开菜单的那一格在界面根面板里的矩形：重画后按 target 找新格子，找不到用点的那一格 """
@@ -508,6 +526,8 @@ class RecipeTreeScript(object):
 
     def OnStripClick(self, target):
         if target[0] == STRIP_STATION:
+            if self.Solver is None or not self.Solver.Done:
+                return
             node = self.Solver.Find(self.MenuTarget[1]) if self.MenuTarget is not None else None
             if node is not None and node.Type:
                 self.SetStation(node.Type, target[1])
@@ -574,9 +594,10 @@ class RecipeTreeScript(object):
                                lambda: self.SetDefault(node, None if is_default else recipe),
                                enabled=is_default or not candidate.Stuck),
             ]))
-        if not is_root and len(node.Choices) > 1:
-            index = node.Choices.index(node.Key) if node.Key in node.Choices else 0
-            rows.append(stepper(TreeText.SecPick, TreeText.Value.format(index + 1, len(node.Choices)),
+        picks = self.__PickChoices(node) if not is_root else []
+        if len(picks) > 1:
+            index = picks.index(node.Key) if node.Key in picks else 0
+            rows.append(stepper(TreeText.SecPick, TreeText.Value.format(index + 1, len(picks)),
                                 lambda: self.StepPick(node, -1), lambda: self.StepPick(node, 1)))
         expand = []
         if not is_root:
@@ -748,18 +769,36 @@ class RecipeTreeScript(object):
         self.MenuBrowse = None
         self.Resolve((TARGET_NODE, node.Sig))
 
+    def __Parent(self, node):  # type: (any) -> any
+        """ 父格子：按签名找（签名是「父格子的签名/格位:物品键」），不按 node.Parent 的下标 —— 下标只在算出它的那一版里对 """
+        if self.Solver is None or not self.Solver.Done or node.Parent is None or "/" not in node.Sig:
+            return None
+        return self.Solver.Find(node.Sig.rsplit("/", 1)[0])
+
+    def __PickChoices(self, node):  # type: (any) -> list
+        """
+        这一格能换成的候选：从根到父格子的路上已经有的不算 —— 选了它就绕回自己，解算器不用它（换成第一个不在路上的），
+        菜单还会按新键找那一格、找不到就收起；全在路上的话照全部（解算器那时也只能用第一个）
+        """
+        choices = list(node.Choices or ())
+        parent = self.__Parent(node)
+        if parent is None:
+            return choices
+        return [key for key in choices if key not in parent.Path] or choices
+
     def StepPick(self, node, step):
         """ 换候选：多候选的原料（标签）这棵树里用哪一个（树里同一组候选都跟着换）"""
-        choices = node.Choices
+        parent = self.__Parent(node)
+        choices = self.__PickChoices(node)
+        if parent is None or len(choices) < 2:
+            return
         index = choices.index(node.Key) if node.Key in choices else 0
         new_key = choices[(index + step) % len(choices)]
-        self.State.Picks[choice_sig(choices)] = new_key
-        parent = self.Solver.Nodes[node.Parent] if node.Parent is not None else None
-        if parent is not None:
-            # 格子的路径签名带着物品键：换了候选签名就变了，菜单跟着新的那一格
-            self.MenuTarget = (TARGET_NODE, "{}/{}:{}".format(parent.Sig, node.Slot, new_key))
+        self.State.Picks[choice_sig(node.Choices)] = new_key
+        # 格子的路径签名带着物品键：换了候选签名就变了，菜单跟着新的那一格
+        self.MenuTarget = (TARGET_NODE, "{}/{}:{}".format(parent.Sig, node.Slot, new_key))
         self.MenuBrowse = None
-        self.Resolve((TARGET_NODE, parent.Sig) if parent is not None else None)
+        self.Resolve((TARGET_NODE, parent.Sig))
 
     def ToggleStop(self, node):
         """ 这棵树里不再展开 / 恢复展开（树里同一个物品都跟着）"""

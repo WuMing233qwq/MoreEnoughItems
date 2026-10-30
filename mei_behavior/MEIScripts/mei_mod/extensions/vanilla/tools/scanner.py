@@ -202,6 +202,8 @@ class __RecipeScanner(object):  # noqa
             failed = None
             try:
                 found = source.QueryByInput(item) if direction == INPUT else source.QueryByOutput(item)
+                # 在 try 里摊开：给了生成器、遍历到一半抛的、误给单条配方的，都只少这一格（抛到外面游标就不走了，每帧卡在这一格）
+                found = list(found or ())
             except Exception as e:  # noqa  一个物品问炸了只少这一格，不能让整趟扫描停下
                 found, failed = None, e
             scan.Queries += 1

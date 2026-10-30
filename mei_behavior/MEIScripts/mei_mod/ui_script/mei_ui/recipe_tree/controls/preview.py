@@ -246,6 +246,18 @@ class TreePreview(object):
         if tip is not None:
             tip.SetAlpha(1.0)
 
+    def Shelve(self):
+        """
+        先只收起来：插槽藏、全透明，不再算亮着 / 建着（Showing、Building 都不认它了）；脚本与绑定还挂着，等 Stop 拆 ——
+        菜单在按钮回调里收起、换成配方条时用它，拆的那一步由菜单的 Tick 做（回调里不解绑定，引擎结论 §27-2）
+        """
+        self.RecipeId, self.Ready, self.Ticks = None, False, 0
+        tip = self.Screen.GetBaseUIControl(self.Path) if self.Path is not None else None
+        if tip is not None:
+            tip.SetAlpha(0.0)
+        if self.Slot is not None:
+            self.Slot.SetVisible(False)
+
     def Stop(self):
         """ 收起：拆脚本、绑定器、节拍；控件藏着留给下一次同一类型（全透明） """
         self.View.Hide()

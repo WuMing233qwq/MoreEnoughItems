@@ -808,7 +808,10 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
 > ② **蔚蓝**：机件加工台接上（发加工台自己的请求）、样板改用处理器（标签原料挑背包里有的）、`Workstation.json` 打开 +；③ **放置目标改进**（`modes.md` §12：复查出七条缺陷）：accepts、回调返回 False / 一句话是不收（手里的东西不放下、tip 提示），蔚蓝的工具模式按改进后的写法恢复（selectors、样板两个放置目标，公共小工具 `ui_access.py`）；
 > ④ 探针共用的 `_boot.py` 关掉了字节码写入（探针导入蔚蓝的模块会在蔚蓝仓留 .pyc，挂在它的 git status 里；本轮又清了一次）。离线探针全过，待实机。
 > **10-30 第三十八轮**：作者实机第三十七轮「其他基本没问题」—— ① **方块容器那条路删了**（作者：还没正式发布，抓紧少创造遗留问题）：`BlockSlotTarget`、`KIND_*` 与「种类」、清单上的坐标维度；旧的快捷合成接口（`ctx.Registry.TransferRegistry`、`ctx.Types` 的 `ItemSource` / `SlotTarget` / `TransferPlan` 等）收回成内部的（`quick_craft.md` §10.9）；
-> ② 提交「refactor: 重构配方转移处理器」（第三十六 ~ 三十八轮）并打 tag `v0.0.1`；③ 之后全仓审查一次（不含蔚蓝，`docs/architecture/README.md` §8「第三十八轮全仓审查」）。
+> ② 提交「refactor: 重构配方转移处理器」（第三十六 ~ 三十八轮）并打 tag `v0.0.1`；③ 之后全仓审查一次（不含蔚蓝，`docs/architecture/README.md` §8「第三十八轮全仓审查」）：
+> 34 条、没有阻断级的，除两条小的都改了（未提交）—— 快捷合成一格只用一种候选、处理器的 GRID 摊不进就灰掉（`TransferRequest.Fits`）、只放进去一部分不关页、背包 2×2 放得下 3、4 格的无序配方（`quick_craft.md` §10.10）；
+> 配方树解算中冻结旧菜单、换候选跳过路上的、预览的解绑挪到每帧（`recipe_tree.md` §0.7）；类型 / 来源一变作废查询缓存与收藏找回（`SourceRegistry.Revision`）、分组写入撞物品表版本（`ItemManager.Touch`）；
+> 存储的原文没备份成就只读、盘上的无穷大不再抛（`persistence.md` §9）；扩展 ID 只收 ASCII、内置扩展排最前、阶段抛了照样卸载（`extensions.md` §5.2）；工具模式的放置目标看外层显隐（`modes.md` §12.4）。离线探针全过，待实机。
 > **蔚蓝扩展列入待办**（2026-10-26 起不主动推进）。next 适配已提交在蔚蓝仓 `mei-next`
 > （`0b1605e4`，未推送），剩下的：
 > ① ~~作者按 `docs/thirdparty/skybluetech.md` §8.8 逐台实机 review~~（第二十二 ~ 二十四轮换成新界面后逐页实机过了，作者「完成」）；
