@@ -584,15 +584,13 @@ class RecipeDetailsScript(object):
     @RecipeAction.Visible(actions.PLUS)
     def CanTransferRecipe(self, _row, recipe):  # type: (int, any) -> bool
         """
-        类型不支持转移就整个不渲染；支持但材料不够是**灰掉**，那是 Enabled 的事。
-        当前界面登记了接这一类配方的转移目标（ctx.UI.Transfers，样板、编码器这类）时照样出：+ 把配方交给它
+        这一类配方根本转移不了（类型没有转移策略、也没有哪个界面登记收它）才不渲染。
+        能转移、只是当前界面不收或者材料不够，一律**灰掉**（Enabled，悬停写原因）——
+        开着哪个界面是运行时的条件，藏起来玩家就不知道有这个功能（engineering.md §5.1f）
         """
         if recipe is None:
             return False
-        if self.Craftable.TransferTarget(recipe, self.CurrentType) is not None:
-            return True
-        category = self.__CurrentCategory()
-        return category is not None and category.Transfer is not None
+        return self.Craftable.Transferable(self.__CurrentCategory(), recipe, self.CurrentType)
 
     @RecipeAction.Enabled(actions.PLUS)
     def IsRecipeCraftable(self, _row, recipe):  # type: (int, any) -> bool

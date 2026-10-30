@@ -94,6 +94,7 @@ class PatternHandler(object):          # 也可以继承 ctx.Types.TransferHandl
     GRID = (3, 3)                       # 配方按 3×3 摊：有序配方照形状摆、无序一格一个（和配方页、原版工作台同一个摊法）；不写按配方输入的顺序
     CONSUMES = False                    # 只记配方、不拿东西：材料够不够都能点（真：缺省的检查材料不够就灰掉）
     HINT = "§7把这条配方写进样板"          # + 能点时的悬停文字
+    SCREEN_HINT = "§7打开样板后可用"        # 可选：玩家不在你的界面时 + 灰着，悬停写它
 
     def Check(self, request):           # 可选。None 是能点；一句话 / TransferError 说为什么不行
         return None if request.Recipe.GetShape() != (4, 4) else "§7样板只有 3×3"
@@ -133,6 +134,8 @@ def OnRegister(self, ctx):
 - **检查的返回值**：None / 真是能点；False、一句话、`TransferError(message, missing, blocking=True)` 是灰掉（悬停写原因和缺的东西）；
   `blocking=False` 是能点、悬停把原因和缺的写出来。不写 Check：`CONSUMES` 真的材料不够就灰掉，假的一律能点。结论 MEI 按 `Recipe.Id` 缓存，翻页、换类型、转移成了以后重问。
   `HINT`、那句话写 py2 源文件里的字面量（utf-8 字节串）也行，MEI 收成 unicode 再拼。
+- **玩家不在你的界面时**：你登记的那几类配方，+ 照样出、**灰着**（悬停写 `SCREEN_HINT`，没写是「当前界面不能转移这一类配方」）——
+  玩家看得到这条配方能转移，只是要先打开你的界面。没有任何界面收、类型也没有转移策略的，+ 才不出（2026-10-30 起；原来不在你的界面时整个藏起来）。
 - **`ctx.UI.Transfers.Request(recipe, grid=None)`**：不经过 + 也能拿到同一种清单（按背包现在有的东西算）—— 比如拿着一样物品点到你的「产物格」、要照它的配方写满格子。
 - **老写法照样认**：第二个参数给一个函数 `callback(Recipe)`（写成了返回 True），当作不拿东西、按配方输入顺序的处理器；`accepts(Recipe) -> bool` 两种写法都能再筛一道。
   想兼顾老版本 MEI，处理器对象自己写个 `__call__(recipe)`：新 MEI 认 `Transfer`，老 MEI 当它是回调。

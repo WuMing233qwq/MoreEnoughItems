@@ -31,6 +31,7 @@
 排序发生在查询结果上，而缓存紧接着就会被页面重建清掉，进缓存等于白算。
 
 当前界面登记了转移处理器（ctx.UI.Transfers）的，+ 亮不亮由处理器的检查说了算（Verdict，同样按 Recipe.Id 缓存）；
+别的界面才收这一类配方的（当前界面不是它），+ 照样出、灰着（Transferable 管出不出）。
 悬停文字（PlusHover）也在这里拼：能点时写点了会怎样，不能点写为什么、缺什么。
 """
 from MEIScripts.common.classes.types.transfer import TransferContext, TransferError
@@ -77,6 +78,16 @@ class CraftableCache(object):
         category = getattr(recipe, "Type", None) or category_id
         return ScreenTransfers.Find(ProxyManager.GetCurrentScreen(), category)
 
+    @staticmethod
+    def Transferable(category, recipe, category_id=None):  # type: (any, any, str) -> bool
+        """
+        这一类配方能不能转移，不看当前开着哪个界面：类型挂了转移策略，或者有哪个界面登记了收它（ctx.UI.Transfers）。
+        决定 + 出不出；当前界面不收、材料不够都是灰掉（CanCraft / Allows），悬停写原因（PlusHover）
+        """
+        if category is not None and getattr(category, "Transfer", None) is not None:
+            return True
+        return ScreenTransfers.Covering(getattr(recipe, "Type", None) or category_id) is not None
+
     def Supply(self):  # type: () -> dict
         """ 这一次会话采集的供给表（物品键 -> 来源），第一次问时采集 """
         return self.__Supply(self.MakeContext())
@@ -111,7 +122,7 @@ class CraftableCache(object):
                 if target is not None:
                     text = self.__HandlerHover(target, recipe, category_id)
                 else:
-                    text = self.__PolicyHover(category, recipe)
+                    text = self.__PolicyHover(category, recipe, category_id)
             except Exception as e:  # noqa  悬停文字出错不能带走这条绑定
                 logger.error("[MEI/transfer] + 的悬停文字算不出来: {}".format(error_text(e)))
                 text = ""
@@ -179,10 +190,14 @@ class CraftableCache(object):
             lines.append(TransferText.Rejected)
         return u"\n".join(to_unicode(line) for line in lines)
 
-    def __PolicyHover(self, category, recipe):  # type: (any, any) -> unicode
+    def __PolicyHover(self, category, recipe, category_id):  # type: (any, any, str) -> unicode
         policy = getattr(category, "Transfer", None) if category is not None else None
         if policy is None:
-            return u""
+            # 类型没有转移策略、只有别的界面收这一类（ctx.UI.Transfers）：当前界面不是它，+ 灰着
+            covering = ScreenTransfers.Covering(getattr(recipe, "Type", None) or category_id)
+            if covering is None:
+                return u""
+            return covering.ScreenHint or TransferText.WrongScreen
         ctx = self.MakeContext()
         if not policy.CanTransfer(ctx):
             return getattr(policy, "SCREEN_HINT", u"") or TransferText.WrongScreen

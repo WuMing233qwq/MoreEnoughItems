@@ -283,7 +283,7 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 
 | 方法 | 说明 |
 |---|---|
-| `Register(screen_def, handler, categories=None, accepts=None)` → 记号 or None | `screen_def` 是你的界面（要先能挂上 MEI，[§6.4](#ui-screens)）；`handler` 是转移处理器（`ctx.Types.TransferHandler` 的子类，或有 `Transfer` 方法的对象；老写法给函数 `callback(Recipe)` 也认）；`categories` 是收哪些类型（类型 Id 的列表，一个字符串也行，不给是全部）；`accepts(Recipe) -> bool` 再筛一道（不收的 + 灰掉）|
+| `Register(screen_def, handler, categories=None, accepts=None)` → 记号 or None | `screen_def` 是你的界面（要先能挂上 MEI，[§6.4](#ui-screens)）；`handler` 是转移处理器（`ctx.Types.TransferHandler` 的子类，或有 `Transfer` 方法的对象；老写法给函数 `callback(Recipe)` 也认）；`categories` 是收哪些类型（类型 Id 的列表，一个字符串也行，不给是全部）；`accepts(Recipe) -> bool` 再筛一道（不收的 + 灰掉）。登记了的类型，在别的界面里 + 也出、灰着（2026-10-30 起；原来是藏起来）|
 | `Request(recipe, grid=None)` → `TransferRequest` | 按背包现在有的东西给一条配方算清单（和 + 交给处理器的同一种）；`grid=(列, 行)` 按格子摊 |
 | `Unregister(token)` → `bool` | 撤一个 |
 | `UnregisterAll()` → `int` | 撤掉记在你名下的全部（扩展卸载时 MEI 也会兜底撤）|
@@ -295,6 +295,7 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 | `GRID` | `(列, 行)`：配方按格子摊（`resolve_input_slot`）；缺省 None 按配方输入的顺序 |
 | `CONSUMES` | 缺省真：要拿背包里的东西（缺省的检查材料不够就灰掉）；假：只记配方 |
 | `HINT` | + 能点时的悬停文字 |
+| `SCREEN_HINT` | 可选。玩家**不在你的界面**时这一类配方的 + 灰着，悬停写它；不写是「当前界面不能转移这一类配方」（2026-10-30 起，探测）|
 | `Check(request)` | 可选。None / 真是能点；False / 一句话 / `TransferError` 说为什么（`blocking=False` 是能点、只把原因和缺的写在悬停里）|
 | `Transfer(request)` | 玩家点了 +：成了返回 True（MEI 关掉配方页）；False / 一句话 / `TransferError` 是没成（原因写在配方页顶上几秒）|
 

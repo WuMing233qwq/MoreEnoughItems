@@ -246,6 +246,7 @@
   > 只放清单这一条要的东西；**搬的带着附魔 / 耐久 / 自定义名字 / userData 原样过去**（原来只写 id、aux、数量 —— 损坏的工具搬进合成格就成了新的、
   > 潜影盒里的东西没了）；背包扣不掉就撤回目标格（`SlotTarget.Restore`）。回归位 `probe_transfer.py` T-7。
   > **第三十六轮定 1.0 之后大改**（`quick_craft.md` §10，未施工）：玩家侧留着；方块容器那条删；不搬物品的界面走 ItemRenderer 标准；往模组机器里搬交给模组自己的处理器。
+  > **第四十一轮**：不在对应界面时 + 原来被藏起来（`CanTransferRecipe` 只认当前界面登记了的），改成**有哪个界面登记收这一类就出、当前界面不是它就灰掉**（`ScreenTransfers.Covering` / `CraftableCache.Transferable`，悬停写处理器可选的 `SCREEN_HINT` 或「当前界面不能转移这一类配方」，`quick_craft.md` §10.11）。
   > **第三十七轮**：转移处理器落地（`quick_craft.md` §10.8）—— `TransferHandler` / `TransferRequest` / `TransferSlot` / `TransferError`（`ctx.Types`），`ctx.UI.Transfers.Register(界面, 处理器)` 与 `Request(recipe, grid)`；老写法 `callback(Recipe)` 照样认；+ 的悬停文字、点了没成的原因挂在页码后面。ItemRenderer 标准作者定不做，样板这类也走处理器（`CONSUMES` 假）。
 - **槽位控件基件化**（`mei_resource/ui/mei/mei_common.json`）：
   `slot_base`（根：全部派生绑定名 + `#visible` 集合绑定）/
@@ -834,6 +835,7 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
 > **10-30 第三十九轮**：作者让按 tag 查换成 3.10 的接口、单独一个提交 —— `registry/tags.py` 的 `TagLookup`，组表里的标签记录与 `TagConst` 删了（上面「已落地」那一条，提交「chore: 使用3.10新的tags相关接口替换原tags查询设计」）；
 > ② **物品分组**（作者：一直有这项功能、现在才有补全的物品表，照同类型分组）—— 创造栏的物品组 + 那四族 + MEI 补的 20 个同类组，组里照创造栏的顺序；搜索时的分组显示作者定照旧（上面「已落地」的「物品分组」、`item_model.md` §10）；接着作者让加设置「启用物品分组」（通用 → 布局设置，默认开），并给蔚蓝也分组（并进原版的组 + 蔚蓝自己的组，`item_model.md` §10.5 / §10.6，蔚蓝仓 `external/mei/groups.py`，新接口 `ItemOrganizer.RemoveGroupItem`）。离线探针全过，待实机（提交「feat(ext, ui, registry): 新增分组和分组相关设置与 RemoveGroupItem 接口」并推送）。
 > **10-30 第四十轮**：第一次自测上架被机审拦下（引擎结论 §50）—— 两处 `__import__` 换成 `clientApi.ImportModule`、`utilities.py` 的 ViewBinder 改成 `clientApi.GetViewBinderCls()`、配方页的提示不再对 `getattr(…, None)` 的结果取下标（拆成 `NoticeText` / `NoticeUntil`）、`LogPatcher` 不再 import `mod_log.engine_logger`；新探针 `probe_review.py`（机审会拦的写法，设 `MEI_PYLINT` 连 pylint 一起跑）。提交「fix: 修复机审失败问题」。
+> **10-30 第四十一轮**：作者实机发现不在对应界面时配方转移按钮被藏起来 —— 根因是 + 的 `Visible` 只认当前界面登记了的转移目标，只靠界面登记的类型（蔚蓝机件加工台）离开那个界面就不渲染；改成有哪个界面登记收这一类就出、当前界面不是它就灰掉（`quick_craft.md` §10.11），提交「fix: 修复配方转移按钮状态不正确问题」。宣传图换上作者新截的五张（`docs/design/promo/`）；视频作者自己录。
 > **蔚蓝扩展列入待办**（2026-10-26 起不主动推进）。next 适配已提交在蔚蓝仓 `mei-next`
 > （`0b1605e4`，未推送），剩下的：
 > ① ~~作者按 `docs/thirdparty/skybluetech.md` §8.8 逐台实机 review~~（第二十二 ~ 二十四轮换成新界面后逐页实机过了，作者「完成」）；

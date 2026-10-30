@@ -86,9 +86,18 @@ class ScreenTransfer(object):
 
     @property
     def Hint(self):  # type: () -> str
-        hint = getattr(self.Handler, "HINT", "")
-        # 第三方 py2 源文件里写的 "§7…" 是 utf-8 字节串：拼进 u"" 之前先解开，不然非 ASCII 的一碰就抛
-        return to_unicode(hint) if isinstance(hint, basestring) else u""
+        return _text_attr(self.Handler, "HINT")
+
+    @property
+    def ScreenHint(self):  # type: () -> str
+        """ 不在这个界面时 + 灰着的悬停文字（处理器可选的 SCREEN_HINT，和类型转移策略的同名属性一个意思）"""
+        return _text_attr(self.Handler, "SCREEN_HINT")
+
+
+def _text_attr(handler, name):  # type: (any, str) -> unicode
+    """ 处理器上的一句字；第三方 py2 源文件里写的 "§7…" 是 utf-8 字节串，拼进 u"" 之前先解开，不然非 ASCII 的一碰就抛 """
+    text = getattr(handler, name, "")
+    return to_unicode(text) if isinstance(text, basestring) else u""
 
 
 def grid_of(handler):  # type: (any) -> tuple or None
@@ -183,6 +192,16 @@ class __ScreenTransfers(object):  # noqa
             return None
         for target in reversed(self._targets):
             if target.ScreenDef == screen_def and target.Takes(category_id):
+                return target
+        return None
+
+    def Covering(self, category_id):  # type: (str) -> ScreenTransfer or None
+        """
+        有没有哪个界面登记了收这一类配方（不管它现在开没开）；后登记的优先，没有给 None。
+        配方页拿它决定 + 出不出：有就出，当前界面不是它就灰掉。每帧被问 —— 只做比较
+        """
+        for target in reversed(self._targets):
+            if target.Takes(category_id):
                 return target
         return None
 
