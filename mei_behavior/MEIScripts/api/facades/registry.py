@@ -27,12 +27,16 @@ from MEIScripts.registry import (
 # 搜索索引刻意不进 registry 门面(包门面急加载那条债), 从模块直取
 from MEIScripts.registry.filters import ItemFilter, ItemFilters, ItemSort
 from MEIScripts.registry.search import ItemSearchIndex
+from MEIScripts.registry.tags import TagLookup
 
 __all__ = [
     "ItemFactory", "ItemFilter", "ItemFilters", "ItemManager", "ItemOrganizer", "ItemSearchIndex", "ItemSort",
-    "RecipeManager", "RecipeUIManager", "SourceRegistry",
+    "RecipeManager", "RecipeUIManager", "SourceRegistry", "TagLookup",
 ]
-""" ItemFilters 是物品栏筛选与排序的登记处，ItemFilter / ItemSort 是登记用的两个类（纯新增，第三方用 getattr 探测）"""
+"""
+ItemFilters 是物品栏筛选与排序的登记处，ItemFilter / ItemSort 是登记用的两个类；TagLookup 按 tag 查物品 / 方块
+（3.10 起问引擎）。都是纯新增，第三方用 getattr 探测
+"""
 
 
 class RegistryFacade(object):
@@ -51,3 +55,4 @@ class RegistryFacade(object):
         self.ItemFilters = ItemFilters
         self.ItemFilter = ItemFilter
         self.ItemSort = ItemSort
+        self.TagLookup = TagLookup

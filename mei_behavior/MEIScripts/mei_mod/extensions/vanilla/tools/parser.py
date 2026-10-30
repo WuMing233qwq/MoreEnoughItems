@@ -24,7 +24,7 @@ import mod.client.extraClientApi as clientApi
 
 from MEIScripts.api.facades.types import Ingredient
 from MEIScripts.api.facades.types import RecipeSource
-from MEIScripts.api.facades.registry import ItemFactory, ItemManager
+from MEIScripts.api.facades.registry import ItemFactory, TagLookup
 
 from .answers import INPUT, OUTPUT, EngineAnswers
 from .scanner import RecipeScanner
@@ -38,21 +38,12 @@ def _tags_of(stack):  # type: (any) -> set or None
         return None
 
 
-def _tag_members(tag):  # type: (str) -> set
-    """ 物品表里带这个 tag 的物品 (id, aux)；按 tag 放在 ItemManager 的搜索缓存里（物品表一变就清）"""
-    def has_tag(item):
-        try:
-            return tag in (item.Info.Tags or ())
-        except Exception:  # noqa
-            return False
-    return set((item.ItemId, item.AuxValue) for item in ItemManager.SearchByCondition(has_tag, "tag:" + tag))
-
-
 def common_tag(stacks):  # type: (list) -> str or None
     """
     引擎展开成 list 的原料（它把配方里写的 tag 展开成了物品列表）原本是哪个 tag：候选的 tag 求交集 ——
-    正好一个就是它；好几个就挑「物品表里带这个 tag 的正好是这些」的那个；一个都没有（或者有候选取不到 tag）给 None。
-    只看缓存的 Info.Tags，不调引擎（GetItemTags 与 GetItemBasicInfo 的 tags 一模一样，CLAUDE.md 引擎结论 §44）
+    正好一个就是它；好几个就挑「带这个 tag 的物品正好是这些」的那个（按 tag 查走 TagLookup，3.10 起问引擎）；
+    一个都没有（或者有候选取不到 tag）给 None。候选物品的 tag 看缓存的 Info.Tags（GetItemTags 与 GetItemBasicInfo 的 tags 一模一样，
+    CLAUDE.md 引擎结论 §44）
     """
     shared = None
     for stack in stacks:
@@ -65,8 +56,8 @@ def common_tag(stacks):  # type: (list) -> str or None
     if not shared:
         return None
     if len(shared) > 1:
-        members = set((stack.Item.ItemId, stack.Item.AuxValue) for stack in stacks)
-        shared = [tag for tag in shared if _tag_members(tag) == members]
+        members = set(stack.Item.ItemId for stack in stacks)
+        shared = [tag for tag in shared if TagLookup.ItemIds(tag) == members]
         if len(shared) != 1:
             return None
     tag = next(iter(shared))

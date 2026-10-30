@@ -25,11 +25,12 @@
 燃料 = 物品表里燃料时长大于 0 的（物品类燃料：煤、木炭、木棍、木制工具、岩浆桶、烈焰棒……）
      + 按 tag 补的方块类燃料（方块类燃料的燃料时长给 0，CLAUDE.md 引擎结论 §11 / §44）：
        minecraft:logs_that_burn 正好是能烧的原木；minecraft:planks / minecraft:wooden_slabs 去掉下界木（绯红 / 诡异也带这两个 tag，只能按名字排除）。
-楼梯、栅栏、工作台、箱子这些没有 tag 的 3.8 上补不了，先缺着；3.10 起有原生的 tag 查找，那时换这一处。
-tag 就在注册物品时缓存的 Info.Tags 里：不调引擎、不另建索引；结果放在 ItemManager 的搜索缓存里（物品表一变就清）。
+按 tag 认走 TagLookup（3.10 起问引擎的 LookupItemsByItemTag：模组在 netease_tags 里把自己的木头注册进这几个 tag 的也认；
+之前的版本退回物品信息里的 tags）。楼梯、栅栏、工作台、箱子这些原版没给 tag 的补不了，先缺着。
+全部燃料放在 ItemManager 的搜索缓存里（物品表一变就清）。
 """
 from MEIScripts.api.facades.types import Ingredient
-from MEIScripts.api.facades.registry import ItemManager
+from MEIScripts.api.facades.registry import ItemManager, TagLookup
 
 BURNING_TAGS = ("minecraft:logs_that_burn",)
 """ 带它就是燃料 """
@@ -51,18 +52,27 @@ SMELT_SECONDS = 10.0
 """ 熔炉烧一个物品要 10 秒（高炉、烟熏炉快一倍，燃料也烧得快一倍，能烧的个数一样）"""
 
 
+def tag_of(item, tags):  # type: (any, tuple) -> str or None
+    """ 这个物品带 tags 里的哪一个（按顺序，第一个带的）；都不带给 None。按 tag 查走 TagLookup，每个 tag 只问一次 """
+    item_id = getattr(item, "ItemId", None)
+    if not item_id:
+        return None
+    for tag in tags:
+        if item_id in TagLookup.ItemIds(tag):
+            return tag
+    return None
+
+
 def is_fuel(item):  # type: (any) -> bool
-    """ 这个物品能不能当熔炉燃料（看缓存的 Info：燃料时长、tag）"""
+    """ 这个物品能不能当熔炉燃料：燃料时长（缓存的 Info）、tag（TagLookup）"""
     try:
-        info = item.Info
-        if (info.FuelDuration or 0) > 0:
+        if (item.Info.FuelDuration or 0) > 0:
             return True
-        tags = info.Tags or ()
     except Exception:  # noqa  惰性字段取不到：不算燃料
         return False
-    if any(tag in tags for tag in BURNING_TAGS):
+    if tag_of(item, BURNING_TAGS):
         return True
-    if any(tag in tags for tag in WOODEN_TAGS):
+    if tag_of(item, WOODEN_TAGS):
         name = (getattr(item, "ItemId", "") or "").split(":")[-1]
         return not any(wood in name for wood in NETHER_WOODS)
     return False
@@ -73,17 +83,13 @@ def burn_seconds(item):  # type: (any) -> float or None
     if not is_fuel(item):
         return None  # 和「能燃烧」筛选一个口径：下界木的木板、台阶带着 planks / wooden_slabs 的 tag，却烧不了
     try:
-        info = item.Info
-        duration = float(info.FuelDuration or 0)
-        tags = info.Tags or ()
+        duration = float(item.Info.FuelDuration or 0)
     except Exception:  # noqa  惰性字段取不到：认不出时长
         return None
     if duration > 0:
         return duration
-    for tag, seconds in TAG_SECONDS:
-        if tag in tags:
-            return seconds
-    return None
+    tag = tag_of(item, tuple(tag for tag, _seconds in TAG_SECONDS))
+    return dict(TAG_SECONDS).get(tag) if tag else None
 
 
 def fuel_items():  # type: () -> list

@@ -23,9 +23,7 @@ from mod_log import logger
 
 from MEIScripts.common.classes.types import Item, ItemInfo, ItemAttr, ItemSpec
 from MEIScripts.common.classes.types import keys
-from MEIScripts.utils.sequence import dedupe
 from MEIScripts.utils.text import error_text
-from .organizer import ItemOrganizer
 
 _BROWSABLE_CACHE_KEY = "default_visible_items"
 """ GetBrowsableItems 的结果缓存键，沿用旧实现的键名 """
@@ -244,8 +242,8 @@ class __ItemManager(object):
 
     def Touch(self):  # type: () -> None
         """
-        旁表（ItemOrganizer 的分组、标签、分类）变了：作废内部缓存、撞版本号 —— 物品栏的分页按版本自愈、
-        按标签搜的结果缓存（SearchByCondition）也跟着清。物品本身没变，只是归属变了
+        旁表（ItemOrganizer 的分组、分类）变了：作废内部缓存、撞版本号 —— 物品栏的分页按版本自愈、
+        SearchByCondition 的结果缓存也跟着清。物品本身没变，只是归属变了
         """
         self.__Touch()
 
@@ -301,15 +299,15 @@ class __ItemManager(object):
         return result
 
     def ResolveTag(self, tag):  # type: (str) -> list
-        """ 获取标签对应的已注册物品列表 """
-        item_ids = ItemOrganizer.GetTagItems(tag)
+        """
+        带这个物品 tag 的物品（物品表的顺序，同一个 id 的变体都在）。tag 由引擎记：3.10 起问 LookupItemsByItemTag
+        （netease_tags 注册的、# 引用的、几个模组合并的都认，没注册的原版 tag 也能查），之前的版本退回物品信息里的 tags（registry/tags.py）
+        """
+        from .tags import TagLookup  # 惰性：tags 也要 import 本模块
+        item_ids = TagLookup.ItemIds(tag)
         if not item_ids:
             return []
-        items = []
-        for item_id in item_ids:
-            items.extend(self.GetItemsById(item_id))
-        # 按实例身份去重：同一个 Item 实例可能被多个 id 索引到
-        return dedupe(items, key=id)
+        return [item for item in self.items if item.ItemId in item_ids]
 
     # 造物路径 —— 经 ItemFactory 造实例、入池、建索引。依赖 L1(id 表)与惰性加载
 # ======================================================================================================================

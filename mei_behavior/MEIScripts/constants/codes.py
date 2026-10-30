@@ -41,11 +41,6 @@ class QueryConst(object):
     Output = "output"
     Input = "input"
 
-class TagConst(object):
-    # 内建 tag 的 id. 值进了 Recipe.Id 的 canonical, 改动即改变所有相关配方的身份.
-    # Fuels: MEI 自己不用 (燃料不进配方本身) —— 留着是因为 ctx.Const.TagConst 是对外门面, 删掉算不兼容改动
-    Fuels = "mei:fuels"
-
 class StorageConst(object):
     # 落盘用的 configName. 引擎侧只认字母/数字/下划线, 且改名等于丢弃已存数据.
     PrefsConfigName = "mei_prefs"

@@ -80,28 +80,10 @@ class ItemGroup(object):
 
     def AddGroupItemFromList(self, group: str, lst: List[Item]):...
 
-class ItemTag(object):
-
-    def __init__(self):
-        self.item_tags: OrderedDict[str: Set[str]] = OrderedDict()
-
-    def GetAllTags(self) -> OrderedDict[str: Set[str]]:...
-
-    def AddTag(self, tag: str) -> bool:...
-
-    def RemoveTag(self, tag: str) -> bool:...
-
-    def AddTagItem(self, tag: str, item: str) -> bool:...
-
-    def AddTagFromList(self, tag: str, lst: List[str]):...
-
-    def GetTagItems(self, tag: str) -> Set[str]:...
-
-class __ItemOrganizer(ItemGroup, ItemCategory, ItemTag):
-    """ 整合了对物品分组/分类/标签的管理 """
+class __ItemOrganizer(ItemGroup, ItemCategory):
+    """ 整合了对物品分组 / 分类的管理；标签由引擎记，按 tag 查走 registry/tags.py 的 TagLookup """
     def __init__(self):
         ItemGroup.__init__(self)
         ItemCategory.__init__(self)
-        ItemTag.__init__(self)
 
 ItemOrganizer: __ItemOrganizer

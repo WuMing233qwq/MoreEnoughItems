@@ -20,7 +20,7 @@
 """
 常量：命名空间、查询方向、UI 路径与集合名。
 """
-from MEIScripts.constants.codes import NameConst, QueryConst, TagConst
+from MEIScripts.constants.codes import NameConst, QueryConst
 from MEIScripts.constants.ui import (
     BindingConst, CollectionConst, ItemsBrowserPath, ItemsSidebarPath, ModeConst, PanelProtoConst,
     RecipeDetailsPath, UiPathConst,
@@ -28,7 +28,7 @@ from MEIScripts.constants.ui import (
 
 __all__ = [
     "BindingConst", "CollectionConst", "ItemsBrowserPath", "ItemsSidebarPath", "ModeConst", "NameConst",
-    "PanelProtoConst", "QueryConst", "RecipeDetailsPath", "TagConst", "UiPathConst",
+    "PanelProtoConst", "QueryConst", "RecipeDetailsPath", "UiPathConst",
 ]
 
 

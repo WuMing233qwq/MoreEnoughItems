@@ -183,6 +183,13 @@
   > **悬停文字的缓存按物品实例记**（10-30 第三十五轮，作者报 `#保护` 出来全部附魔书、别的附魔名搜不出来）：原来按 (id, aux) 记，
   > 41 本附魔书同是 `enchanted_book:0`、共用了第一本的字。**名字索引收全部物品**（藏着的也收，平时的结果里滤掉）：物品栏的「隐藏物品」筛选要搜得到它们
   > （`Search(query, include_hidden)`）。
+- **按 tag 查物品、方块（2026-10-30 第三十九轮，单独提交，待实机）**：MEI 自己不记 tag —— 组表里的标签记录（`ItemOrganizer.AddTag` 一族）与 `TagConst` 删了，
+  tag 由引擎记（模组在 netease_tags 里注册，或物品的 `minecraft:tags` 组件）。`registry/tags.py` 的 `TagLookup`（对外 `ctx.Registry.TagLookup`）：
+  `ItemIds(tag)` / `BlockNames(tag)` 3.10 起问引擎的 `LookupItemsByItemTag`（物品组件）/ `LookupBlocksByBlockTag`（方块信息组件），`getattr` 探测；
+  引擎没有（3.10 之前）、给的结果认不出、调用出错时，物品退回物品表里缓存的 `Info.Tags`（每种只记一行），方块给空；每个 tag 只问一次，物品表换了版本就作废。
+  走它的：`ItemManager.ResolveTag`、熔炉的燃料表（`furnace/fuels.py`）、list 原料的公共 tag（`tools/parser.common_tag` 里「带这个 tag 的正好是这些」那一步，
+  候选 tag 仍看 `Info.Tags`）。返回值的样子官方文档还没有，按更新说明写的（引擎结论 §49），回归位 `probe_tags.py`。
+
 - **UI 栈**：`mei_ui/core`（`UIScriptMain` / `UIMainNode` / `context` 主节点单例
   + `adaptive/` 自适应布局三件套 geometry/registry/rules）、
   `items_browser`（可翻页物品浏览器）、`items_sidebar`（侧栏）、
@@ -565,13 +572,13 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
 > **熔炉燃料的来回**（别再照旧说法理解）：2026-08-22 改成 `mei:fuels` tag + 分帧扫描，
 > **2026-09-01 撤回** —— 当时的理由「点熔炉产物会击穿全表惰性 `Info`」被证伪
 > （物品注册时 `__AppendToIndex` 已读过每个物品的 `Info`），现在燃料是**字面展开**
-> （`furnace/source.py:80`）。`TagConst.Fuels` 因此零引用。
+> （`furnace/source.py:80`）。`TagConst.Fuels` 因此零引用（第三十九轮连同组表里的标签记录一起删了）。
 > ⚠ 撤回的只是**性能**理由；tag 折叠还有一个**身份**理由没被证伪：catalysts 计入
 > `Recipe.Id`，字面展开的燃料让**每条熔炉配方的 Id 都绑着当前全部燃料物品**，
 > 装卸任何带燃料的模组都会让它们全部变 Id。见下「路线图」的上线前硬门槛。
 > **2026-10-29 作者定了最后的做法：燃料不进配方本身**（驱动机器的东西不是配方的内容 —— 能量、燃料都一样，第三方的机器也照这个规矩），
 > 配方页的燃料格问熔炉扩展的燃料表（`extensions/vanilla/furnace/fuels.py`）：`FuelDuration > 0` ∪ `minecraft:logs_that_burn` ∪ 木板 / 木台阶去掉下界木，
-> 只看已缓存的 `Info.Tags`、不另建索引（3.10 起换原生的 tag 查找，只动这一处）。**同日写完**，`FurnaceRecipe` 不带燃料，熔炉配方的 Id 不再绑燃料。
+> 原先只看已缓存的 `Info.Tags`；**第三十九轮起按 tag 认走 `TagLookup`**（`registry/tags.py`，3.10 问引擎的 `LookupItemsByItemTag`，模组注册进这几个 tag 的木头也认）。**同日写完**，`FurnaceRecipe` 不带燃料，熔炉配方的 Id 不再绑燃料。
 >
 > 通用规则仍然成立：`Ingredient.to_canonical()` 对 tag **折叠不展开**
 > （tag 成员是异步到的，展开会让同一条配方前后算出两个 Id，见 `tasks_s2b.md` §2）。
@@ -619,9 +626,9 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
   `types/` 若再被拖回客户端依赖会立刻失败。
   （各处顶层的 `ViewBinder = clientApi.GetViewBinderCls()` 是取类，不算违例。）
 - ~~`utils/codec.py` 的 `Codec._register_defaults()` 空实现~~ —— **10-29 偿还**：照 `persistence.md` §3.3 删了空钩子、留着 Codec 本体。
-- **三处「原版专属物残留在核心层」**（2026-09-02 扫出；①③ 已偿还，② 留着）：
+- **三处「原版专属物残留在核心层」**（2026-09-02 扫出；三处都偿还了，② 第三十九轮）：
   ① ~~`registry/items.py` 的 `_SPAWN_EGG_IDS`~~ —— **10-29 删了**（零使用的死代码）；
-  ② `constants/codes.py` 的 `TagConst.Fuels`（`"mei:fuels"`）—— MEI 自己零使用（10-29 燃料不进配方本身），**但留着**：`ctx.Const.TagConst` 是对外门面；
+  ② ~~`constants/codes.py` 的 `TagConst.Fuels`（`"mei:fuels"`）~~ —— **第三十九轮删了**（连同组表里的标签记录；还没正式发布，不升 `API_VERSION`）；
   ③ ~~`constants/proxy.py` 的 `ProxyScreenDefs`（23 个原版屏幕）~~ —— **2026-10-28 已偿还**（作者：按规范内置进原版扩展）：
   搬到 `extensions/vanilla/screens.py`，经新门面 `ctx.UI.Screens` 登记。
   > 配方子类（`ShapedRecipe` 等）已于同日迁出，见 `docs/migration/tasks_s4.md` §8.5。
@@ -812,6 +819,7 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
 > 34 条、没有阻断级的，除两条小的都改了（未提交）—— 快捷合成一格只用一种候选、处理器的 GRID 摊不进就灰掉（`TransferRequest.Fits`）、只放进去一部分不关页、背包 2×2 放得下 3、4 格的无序配方（`quick_craft.md` §10.10）；
 > 配方树解算中冻结旧菜单、换候选跳过路上的、预览的解绑挪到每帧（`recipe_tree.md` §0.7）；类型 / 来源一变作废查询缓存与收藏找回（`SourceRegistry.Revision`）、分组写入撞物品表版本（`ItemManager.Touch`）；
 > 存储的原文没备份成就只读、盘上的无穷大不再抛（`persistence.md` §9）；扩展 ID 只收 ASCII、内置扩展排最前、阶段抛了照样卸载（`extensions.md` §5.2）；工具模式的放置目标看外层显隐（`modes.md` §12.4）。离线探针全过，待实机。
+> **10-30 第三十九轮**：作者让按 tag 查换成 3.10 的接口、单独一个提交 —— `registry/tags.py` 的 `TagLookup`，组表里的标签记录与 `TagConst` 删了（上面「已落地」那一条，提交「chore: 使用3.10新的tags相关接口替换原tags查询设计」）。
 > **蔚蓝扩展列入待办**（2026-10-26 起不主动推进）。next 适配已提交在蔚蓝仓 `mei-next`
 > （`0b1605e4`，未推送），剩下的：
 > ① ~~作者按 `docs/thirdparty/skybluetech.md` §8.8 逐台实机 review~~（第二十二 ~ 二十四轮换成新界面后逐页实机过了，作者「完成」）；
@@ -1331,6 +1339,13 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
    > 蔚蓝机器界面的颜色绑定（`BF_BindColor`）一律返回三元组 `(r, g, b)`，网易的颜色接口都是 RGBA 四元组（`GetFogColor`、告示牌颜色……）——
    > 引擎多半按四个分量读、第四个取空，`PyFloat_AsDouble(NULL)` 设的正是这句 `bad argument type for built-in operation`（推断，未单独实证）。
    > 蔚蓝那边返回 `(r, g, b, 1.0)` 应该就没了（`docs/thirdparty/skybluetech.md` §8.14）；MEI 这边已经接住，不影响。
+
+49. **3.10 的按 tag 查接口**（2026-10-30 第三十九轮，**未实证** —— 官方网页文档、MC Studio 的接口提示、SDK 源码副本里都还没有，照作者贴的更新说明写的）：
+   「新增方块tag查询接口 `LookupBlocksByBlockTag`（服务端 / 客户端），根据 netease_tags 中注册的方块 tag 名查找该 tag 下所有方块，支持 # 引用的标签自动展开；
+   同一 tag 名被多个模组注册时自动合并去重；未注册的原版 tag 也可直接查询」，物品的 `LookupItemsByItemTag` 同理。
+   MEI 的写法（`registry/tags.py`）：物品在物品组件（`CreateItem`，和 `GetItemTags` 一处）、方块在方块信息组件（`CreateBlockInfo`，再试 `CreateBlock`）上找，
+   `getattr` 探测；返回值认名字的列表、带名字的字典（`itemName` / `name` / `identifier` / `blockName`）、「id:附加值」、字典的键，None 当空，别的写法退回物品信息里的 tags。
+   ⇒ 片段 `debug/ingame/tag_lookup_probe.py`（输出带 `[MEI/tl]`）跑一次，看挂在哪个组件上、返回值长什么样、和 `GetItemTags` 对不对得上，再把这一条改成实测的。
 
 ## 架构关键点
 
