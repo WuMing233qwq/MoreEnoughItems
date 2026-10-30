@@ -20,7 +20,8 @@ from collections import OrderedDict
 # ----------------------------------------------------------------------
 
 import mod.client.extraClientApi as clientApi
-from mod.client.ui.viewBinder import ViewBinder
+
+ViewBinder = clientApi.GetViewBinderCls()
 
 def GetItemPanelBindingConfigs():
     return  [

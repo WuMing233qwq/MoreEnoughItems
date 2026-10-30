@@ -208,12 +208,16 @@ class __ExtensionLoader(object):  # noqa
         return None
 
     def _ImportBuiltin(self, name):  # type: (str) -> type or None
-        """ 内置扩展与 MEI 同在一个 addon，普通 import 即可 """
+        """ 内置扩展与 MEI 同在一个 addon：按模块路径导入（引擎的 ImportModule，只认已加载的 mod 里的模块）"""
+        import mod.client.extraClientApi as clientApi
+        path = "MEIScripts.mei_mod.extensions." + name
         try:
-            module = __import__(
-                "MEIScripts.mei_mod.extensions." + name, {}, {}, ["EXTENSION"])
+            module = clientApi.ImportModule(path)
         except Exception as e:  # noqa  一个内置扩展炸了不该带走其余的
             logger.error("[MEI/ext] 内置扩展 {} 导入失败: {}".format(name, error_text(e)))
+            return None
+        if module is None:
+            logger.error("[MEI/ext] 内置扩展 {} 导入失败: 找不到模块 {}".format(name, path))
             return None
         cls = getattr(module, "EXTENSION", None)
         if cls is None:

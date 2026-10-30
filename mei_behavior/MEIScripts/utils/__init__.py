@@ -17,7 +17,7 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 
 # 注意: 这里**不要**写 `import utilities`.
-# utilities.py 顶层 `from mod.client.ui.viewBinder import ViewBinder`,
+# utilities.py 顶层就要客户端引擎 (`ViewBinder = clientApi.GetViewBinderCls()`),
 # 一旦在包门面里急加载, 任何 import 本包子模块的人(例如 types/item.py 只想要
 # hashable)都会被迫拉起客户端引擎 —— 这曾使整个 types 包在服务端/离线环境
 # 无法 import, 违反 engineering.md §2「数据模型可独立 compileall、

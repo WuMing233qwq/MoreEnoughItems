@@ -832,7 +832,8 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
 > 配方树解算中冻结旧菜单、换候选跳过路上的、预览的解绑挪到每帧（`recipe_tree.md` §0.7）；类型 / 来源一变作废查询缓存与收藏找回（`SourceRegistry.Revision`）、分组写入撞物品表版本（`ItemManager.Touch`）；
 > 存储的原文没备份成就只读、盘上的无穷大不再抛（`persistence.md` §9）；扩展 ID 只收 ASCII、内置扩展排最前、阶段抛了照样卸载（`extensions.md` §5.2）；工具模式的放置目标看外层显隐（`modes.md` §12.4）。离线探针全过，待实机。
 > **10-30 第三十九轮**：作者让按 tag 查换成 3.10 的接口、单独一个提交 —— `registry/tags.py` 的 `TagLookup`，组表里的标签记录与 `TagConst` 删了（上面「已落地」那一条，提交「chore: 使用3.10新的tags相关接口替换原tags查询设计」）；
-> ② **物品分组**（作者：一直有这项功能、现在才有补全的物品表，照同类型分组）—— 创造栏的物品组 + 那四族 + MEI 补的 20 个同类组，组里照创造栏的顺序；搜索时的分组显示作者定照旧（上面「已落地」的「物品分组」、`item_model.md` §10）；接着作者让加设置「启用物品分组」（通用 → 布局设置，默认开），并给蔚蓝也分组（并进原版的组 + 蔚蓝自己的组，`item_model.md` §10.5 / §10.6，蔚蓝仓 `external/mei/groups.py`，新接口 `ItemOrganizer.RemoveGroupItem`）。离线探针全过，待实机。
+> ② **物品分组**（作者：一直有这项功能、现在才有补全的物品表，照同类型分组）—— 创造栏的物品组 + 那四族 + MEI 补的 20 个同类组，组里照创造栏的顺序；搜索时的分组显示作者定照旧（上面「已落地」的「物品分组」、`item_model.md` §10）；接着作者让加设置「启用物品分组」（通用 → 布局设置，默认开），并给蔚蓝也分组（并进原版的组 + 蔚蓝自己的组，`item_model.md` §10.5 / §10.6，蔚蓝仓 `external/mei/groups.py`，新接口 `ItemOrganizer.RemoveGroupItem`）。离线探针全过，待实机（提交「feat(ext, ui, registry): 新增分组和分组相关设置与 RemoveGroupItem 接口」并推送）。
+> **10-30 第四十轮**：第一次自测上架被机审拦下（引擎结论 §50）—— 两处 `__import__` 换成 `clientApi.ImportModule`、`utilities.py` 的 ViewBinder 改成 `clientApi.GetViewBinderCls()`、配方页的提示不再对 `getattr(…, None)` 的结果取下标（拆成 `NoticeText` / `NoticeUntil`）、`LogPatcher` 不再 import `mod_log.engine_logger`；新探针 `probe_review.py`（机审会拦的写法，设 `MEI_PYLINT` 连 pylint 一起跑）。提交「fix: 修复机审失败问题」。
 > **蔚蓝扩展列入待办**（2026-10-26 起不主动推进）。next 适配已提交在蔚蓝仓 `mei-next`
 > （`0b1605e4`，未推送），剩下的：
 > ① ~~作者按 `docs/thirdparty/skybluetech.md` §8.8 逐台实机 review~~（第二十二 ~ 二十四轮换成新界面后逐页实机过了，作者「完成」）；
@@ -1359,6 +1360,14 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
    MEI 的写法（`registry/tags.py`）：物品在物品组件（`CreateItem`，和 `GetItemTags` 一处）、方块在方块信息组件（`CreateBlockInfo`，再试 `CreateBlock`）上找，
    `getattr` 探测；返回值认名字的列表、带名字的字典（`itemName` / `name` / `identifier` / `blockName`）、「id:附加值」、字典的键，None 当空，别的写法退回物品信息里的 tags。
    ⇒ 片段 `debug/ingame/tag_lookup_probe.py`（输出带 `[MEI/tl]`）跑一次，看挂在哪个组件上、返回值长什么样、和 `GetItemTags` 对不对得上，再把这一条改成实测的。
+
+50. **上架机审：api_check 与 code_check**（2026-10-30 第四十轮，第一次自测上架被拦，错误码 18；回归位 `probe_review.py`，守则 `engineering.md` §7-21）：
+   - **api_check 不许 `__import__`**（报了三条，仓里只有两处：装配器导内置扩展、原版扩展导类型子包；第三条没找到对应，多半是同一处按打包的变体重复计了）⇒ 动态导入一律 `clientApi.ImportModule(路径)` / `serverApi.ImportModule`（SDK 2.8 起；内部就是 `importlib.import_module`，只认已加载的 mod 里的模块，不在就给 None，导入时抛的照样抛）。
+   - **code_check 是 pylint 的错误级检查**，带一套 `mod` 的存根：`from mod.client.ui.viewBinder import ViewBinder` 报 E0401 / E0611（机审的存根里没有这个模块 —— 本机装的 mc_netease_sdk 3.4 倒是有，以机审为准）⇒ **引擎只从公开入口 import**（`mod.client.extraClientApi`、`mod.server.extraServerApi`、`mod.common.mod`、`mod_log` 的 `logger`），ViewBinder 用 `clientApi.GetViewBinderCls()` 取（EterniaModCore 也这么取）。
+   - **E1136 unsubscriptable-object**：`notice = getattr(self, "Notice", None)`，判了空再 `notice[0]` 也被拦 —— astroid 推断 `getattr` 只拿那个属性**第一次赋的值**（`__init__` 里的 None），认定 `notice` 就是 None。直接读 `self.Notice` 不拦（几处赋值推出几个值，不确定就不报），最稳的是**不对可能是 None 的东西取下标、解包**：拆成单独的字段（配方页的提示拆成了 `NoticeText` / `NoticeUntil`）。
+   - 本地 pylint 1.9.5 报、机审没报的：E1111（存根里的接口都只有 `pass`）、E1102 / E1101（推断成 None 的可调用、抽象基类上的 `__eq__`）—— 机审没开这几种。
+   - **本地复现**：`C:\Python27\python.exe -m pip install --target <目录> pylint==1.9.5`（py2 的最后一版），设 `MEI_PYLINT=<目录>` 跑 `probe_review.py`（只开 E0401 / E0611 / E1136 / E0633）；拿旧代码试过，它报的 E1136 与机审同一行。
+   - 机审过了不等于接口开放：MEI 还用着 `ScreenNode._process_collection` 一族（动态绑定，`utils/binder.py`，和 EterniaModCore 的 ScreenTool 同一个做法）、覆写 `process_unbinding`（MEI 自己的界面、配方树）、`mod_log.engine_logger`（`LogPatcher` 批量绑定时静音 SDK 每条绑定一行的 info；第四十轮改成用到时 `getattr` 取、取不到就不静音，不再 `from mod_log import engine_logger`）—— 这次都没被拦。
 
 ## 架构关键点
 

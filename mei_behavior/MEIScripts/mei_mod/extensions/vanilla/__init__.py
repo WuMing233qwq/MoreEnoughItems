@@ -183,11 +183,14 @@ class VanillaExtension(MeiExtension):
 
     @staticmethod
     def _ImportType(name):  # type: (str) -> any
-        """ 惰性导入类型子包；它们顶层拉引擎，不能在本模块顶层 import """
+        """ 惰性导入类型子包（引擎的 ImportModule）；它们顶层拉引擎，不能在本模块顶层 import """
         # 装配器可能在引擎就绪前 import 本模块来探测 EXTENSION
-        return __import__(
-            "MEIScripts.mei_mod.extensions.vanilla." + name, {}, {},
-            ["CATEGORY", "SOURCE", "UI_SCRIPT", "POLICY"])
+        import mod.client.extraClientApi as clientApi
+        path = "MEIScripts.mei_mod.extensions.vanilla." + name
+        module = clientApi.ImportModule(path)
+        if module is None:
+            raise ImportError("找不到模块 {}".format(path))
+        return module
 
 
 EXTENSION = VanillaExtension

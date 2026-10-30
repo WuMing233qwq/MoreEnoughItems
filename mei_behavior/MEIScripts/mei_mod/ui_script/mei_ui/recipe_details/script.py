@@ -83,8 +83,9 @@ class RecipeDetailsScript(object):
         self.RecipeActionBind = None
         self.Craftable = CraftableCache()
         """ 可合成性预检缓存，一次会话算一次；转移成功后失效 """
-        self.Notice = None  # type: tuple or None
-        """ (文字, 到期时刻)：点了 + 没成时挂在页码后面几秒（ShowNotice），节拍里到期收掉 """
+        self.NoticeText = None  # type: unicode or None
+        """ 点了 + 没成时挂在页码后面的一句话（ShowNotice），到 NoticeUntil 那一刻节拍里收掉 """
+        self.NoticeUntil = 0.0
         self.RecipesPage = None
         self.RecipeUIScriptCls = None
 
@@ -376,7 +377,7 @@ class RecipeDetailsScript(object):
         try:
             self.ExpireNotice()
         except Exception as e:  # noqa
-            self.Notice = None
+            self.NoticeText = None
             logger.error("[MEI/ui] 配方页提示收不掉: {}".format(error_text(e)))
 
 
@@ -406,7 +407,7 @@ class RecipeDetailsScript(object):
         self.RecipesResult = []
         self.RawRecipesResult = []
         self.PendingFocusId = None
-        self.Notice = None
+        self.NoticeText = None
         self.ScanPending = []
         self.ScanEntry = None
         self.RecipesGridControl = None
@@ -839,9 +840,9 @@ class RecipeDetailsScript(object):
         page_index = "{}/{}".format(self.RecipesPage.current_page_number, self.RecipesPage.total_page)
         if self.CurrentType in self.ScanPending:
             page_index = RecipeText.Scanning.format(page_index)
-        notice = getattr(self, "Notice", None)
-        if notice is not None:
-            page_index = RecipeText.Notice.format(page_index, to_unicode(notice[0]))
+        notice = getattr(self, "NoticeText", None)
+        if notice:
+            page_index = RecipeText.Notice.format(page_index, notice)
         self.TopLine2LabelControl.SetText(native_str(page_index))
 
     NOTICE_SECONDS = 3.0
@@ -852,7 +853,8 @@ class RecipeDetailsScript(object):
         if not text:
             return
         # 第三方给的原因多半是 utf-8 字节串：先解开，不然挂着的这 3 秒里每次刷新页码都抛（在 #visible 回调里就带走了绑定）
-        self.Notice = (to_unicode(text), time.time() + self.NOTICE_SECONDS)
+        self.NoticeText = to_unicode(text)
+        self.NoticeUntil = time.time() + self.NOTICE_SECONDS
         try:
             self.UpdateTopLine2Label()
         except Exception as e:  # noqa  页面还没建好时只是这次不显示
@@ -860,9 +862,9 @@ class RecipeDetailsScript(object):
 
     def ExpireNotice(self):  # type: () -> bool
         """ 节拍里调：提示到期了收掉、把页码写回去 """
-        if self.Notice is None or time.time() < self.Notice[1]:
+        if self.NoticeText is None or time.time() < self.NoticeUntil:
             return False
-        self.Notice = None
+        self.NoticeText = None
         self.UpdateTopLine2Label()
         return True
 
