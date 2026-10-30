@@ -47,7 +47,7 @@ class VanillaExtension(MeiExtension):
     NAME = "mei.ext.vanilla.name"
     DESCRIPTION = "mei.ext.vanilla.desc"
     AUTHOR = "WuMing233qwq"
-    VERSION = "0.1.0"
+    VERSION = "1.0.0"
     MIN_API_VERSION = 2
 
     def __init__(self):

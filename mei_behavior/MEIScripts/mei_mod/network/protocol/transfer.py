@@ -40,7 +40,7 @@ class TransferService(object):
     **客户端报的一律不可信** —— 清单里的 handle 与数量都要由来源在服务端重新核对。
     但这不构成提权面：玩家手动把背包里的东西拖进合成格本来就能做，
     服务端只是在替他做同一件事(quick_craft.md §6.4)。所以：只认引擎给的发起者（ctx.Trusted）、
-    方块容器的清单不收、整张清单先核对再动格子（executor.check）、搬的东西原样带着附魔与 userData（targets._to_dict）
+    只往玩家侧的格子里放（targets）、整张清单先核对再动格子（executor.check）、搬的东西原样带着附魔与 userData（targets._to_dict）
     """
 
     @Handler(REQUEST_TRANSFER)
@@ -54,7 +54,5 @@ class TransferService(object):
         except Exception as e:  # noqa  客户端给的看不懂（槽位不是数字、缺字段）：什么都不动
             logger.warn("[MEI/transfer] 清单看不懂: {}".format(error_text(e)))
             return TransferResult(0, 0, REASON_BAD_PLAN).to_dict()
-        context = TransferContext(
-            player_id=ctx.PlayerId, side="server",
-            dimension=plan.Dimension, position=plan.Position)
+        context = TransferContext(player_id=ctx.PlayerId, side="server")
         return Execute(context, plan).to_dict()

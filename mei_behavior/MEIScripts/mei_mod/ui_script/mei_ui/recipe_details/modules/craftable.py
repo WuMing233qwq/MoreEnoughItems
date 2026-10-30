@@ -29,10 +29,17 @@
 
 排序另有一条**一次性**的路（CraftableIds），它不进缓存 ——
 排序发生在查询结果上，而缓存紧接着就会被页面重建清掉，进缓存等于白算。
+
+当前界面登记了转移处理器（ctx.UI.Transfers）的，+ 亮不亮由处理器的检查说了算（Verdict，同样按 Recipe.Id 缓存）；
+悬停文字（PlusHover）也在这里拼：能点时写点了会怎样，不能点写为什么、缺什么。
 """
-from MEIScripts.common.classes.types.transfer import TransferContext
+from MEIScripts.common.classes.types.transfer import TransferContext, TransferError
+from MEIScripts.constants.texts import TransferText
 from MEIScripts.mei_mod.transfer import can_fulfill, copy_supply, index_supply, reachable
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.screen_transfers import ScreenTransfers
+from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.transfer_request import (
+    build_request, describe_missing, match_slots,
+)
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
 from MEIScripts.registry.transfer import TransferRegistry
 from MEIScripts.utils.log import logger
@@ -49,13 +56,15 @@ class CraftableCache(object):
     def __init__(self):
         self._verdict = {}   # type: dict  # Recipe.Id -> bool
         self._supply = None  # type: dict  # 供给表快照，None 表示还没采集过
-        self._accepts = {}   # type: dict  # (转移目标的记号, Recipe.Id) -> bool：按界面登记的转移目标收不收这一条
+        self._checks = {}    # type: dict  # (转移目标的记号, Recipe.Id) -> TransferError 或 None：处理器的检查结论
+        self._hovers = {}    # type: dict  # (转移目标的记号或 None, Recipe.Id) -> + 的悬停文字
 
     def Invalidate(self):
         """ 丢弃全部结论。**转移成功后必须调** —— 那时玩家的物品真的变了 """
         self._verdict = {}
         self._supply = None
-        self._accepts = {}
+        self._checks = {}
+        self._hovers = {}
 
     @staticmethod
     def TransferTarget(recipe, category_id=None):  # type: (any, str) -> any
@@ -66,13 +75,46 @@ class CraftableCache(object):
         category = getattr(recipe, "Type", None) or category_id
         return ScreenTransfers.Find(ProxyManager.GetCurrentScreen(), category)
 
-    def Accepts(self, target, recipe):  # type: (any, any) -> bool
-        """ 那个转移目标收不收这一条（+ 亮不亮）：不看材料，只问它；同样每帧回读，按 Recipe.Id 缓存 """
-        recipe_key = getattr(recipe, "Id", None) or id(recipe)
-        key = (target.Token, recipe_key)
-        if key not in self._accepts:
-            self._accepts[key] = ScreenTransfers.Accepts(target, recipe)
-        return self._accepts[key]
+    def Supply(self):  # type: () -> dict
+        """ 这一次会话采集的供给表（物品键 -> 来源），第一次问时采集 """
+        return self.__Supply(self.MakeContext())
+
+    def Request(self, target, recipe, category_id=None, wants_max=False):  # type: (any, any, str, bool) -> any
+        """ 交给转移处理器的清单（TransferRequest）：按处理器要的格子摊、拿开页时采集的供给配 """
+        category = getattr(recipe, "Type", None) or category_id or ""
+        return build_request(recipe, self.__Supply(self.MakeContext()), grid=target.Grid,
+                             category_id=category, screen_def=target.ScreenDef, wants_max=wants_max)
+
+    def Verdict(self, target, recipe, category_id=None):  # type: (any, any, str) -> TransferError or None
+        """ 处理器对这一条的检查结论（None 是能点）；每帧回读，按（记号, Recipe.Id）缓存，算清单出错当不收 """
+        key = (target.Token, _recipe_key(recipe))
+        if key not in self._checks:
+            try:
+                self._checks[key] = ScreenTransfers.Check(target, self.Request(target, recipe, category_id))
+            except Exception as e:  # noqa  算清单出错只灰掉这一条
+                logger.error("[MEI/transfer] 给转移处理器算清单失败: {}".format(error_text(e)))
+                self._checks[key] = TransferError()
+        return self._checks[key]
+
+    def Allows(self, target, recipe, category_id=None):  # type: (any, any, str) -> bool
+        """ + 能不能点：处理器说能，或者只是提醒（Blocking 为假）"""
+        verdict = self.Verdict(target, recipe, category_id)
+        return verdict is None or not verdict.Blocking
+
+    def PlusHover(self, target, category, recipe, category_id=None):  # type: (any, any, any, str) -> unicode
+        """ + 的悬停文字：交给转移处理器的问它，否则问类型的转移策略（原版合成格）。按（记号, Recipe.Id）缓存 """
+        key = (target.Token if target is not None else None, _recipe_key(recipe))
+        if key not in self._hovers:
+            try:
+                if target is not None:
+                    text = self.__HandlerHover(target, recipe, category_id)
+                else:
+                    text = self.__PolicyHover(category, recipe)
+            except Exception as e:  # noqa  悬停文字出错不能带走这条绑定
+                logger.error("[MEI/transfer] + 的悬停文字算不出来: {}".format(error_text(e)))
+                text = ""
+            self._hovers[key] = text
+        return self._hovers[key]
 
     def MakeContext(self):  # type: () -> TransferContext
         """ 造一个客户端侧的转移环境，带上当前屏幕供策略判断 """
@@ -113,6 +155,36 @@ class CraftableCache(object):
         # copy_supply: 匹配会就地扣减配额, 每条配方都得从同一份原始供给重新算
         return can_fulfill(mapped, copy_supply(self.__Supply(ctx)))
 
+    def __HandlerHover(self, target, recipe, category_id):  # type: (any, any, str) -> unicode
+        verdict = self.Verdict(target, recipe, category_id)
+        if verdict is None:
+            return target.Hint or TransferText.Default
+        lines = []
+        if not verdict.Blocking:
+            lines.append(target.Hint or TransferText.Default)
+        if verdict.Message:
+            lines.append(verdict.Message)
+        if verdict.Missing:
+            lines.append(TransferText.Missing.format(describe_missing(verdict.Missing)))
+        if not lines:
+            lines.append(TransferText.Rejected)
+        return u"\n".join(lines)
+
+    def __PolicyHover(self, category, recipe):  # type: (any, any) -> unicode
+        policy = getattr(category, "Transfer", None) if category is not None else None
+        if policy is None:
+            return u""
+        ctx = self.MakeContext()
+        if not policy.CanTransfer(ctx):
+            return getattr(policy, "SCREEN_HINT", u"") or TransferText.WrongScreen
+        mapped = policy.MapRecipe(ctx, recipe)
+        if not mapped:
+            return TransferText.TooBig
+        missing = [slot for slot in match_slots(mapped, copy_supply(self.__Supply(ctx))) if slot.Missing > 0]
+        if missing:
+            return TransferText.Missing.format(describe_missing(missing))
+        return getattr(policy, "HINT", u"") or TransferText.Default
+
     def __Supply(self, ctx):  # type: (any) -> dict
         if self._supply is None:
             try:
@@ -121,6 +193,10 @@ class CraftableCache(object):
                 logger.error("[MEI/transfer] 采集物品来源失败: {}".format(error_text(e)))
                 self._supply = {}
         return self._supply
+
+
+def _recipe_key(recipe):  # type: (any) -> any
+    return getattr(recipe, "Id", None) or id(recipe)
 
 
 def CraftableIds(result):  # type: (dict) -> set

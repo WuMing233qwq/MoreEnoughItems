@@ -21,24 +21,21 @@
 数据模型：构造配方与物品。零引擎依赖，扩展的 <type>/types.py 可放心 import。
 """
 from MEIScripts.common.classes.types.transfer import (
-    TransferContext, TransferEntry, TransferPlan, TransferResult,
+    TransferError, TransferHandler, TransferRequest, TransferSlot,
 )
-from MEIScripts.common.classes.base import ItemSource, SlotTarget
 from MEIScripts.common.classes.base import RecipeSource
 from MEIScripts.common.classes.sources import StaticRecipeSource
 from MEIScripts.common.classes.types import (
     Ingredient, Item, ItemAttr, ItemInfo, ItemSpec, ItemStack,
-    KIND_BLOCK, KIND_PLAYER, Recipe,
+    Recipe,
     RecipeCategory, Stack, get_recipe_class, keys, register_recipe_class,
 )
 from MEIScripts.common.classes.types.ingredient import IngredientLike
 
 __all__ = [
     "Ingredient", "IngredientLike", "Item", "ItemAttr", "ItemInfo", "ItemStack",
-    "ItemSource", "ItemSpec", "KIND_BLOCK", "KIND_PLAYER", "Recipe", "RecipeCategory",
-    "SlotTarget",
-    "RecipeSource", "Stack", "TransferContext", "TransferEntry",
-    "TransferPlan", "TransferResult",
+    "ItemSpec", "Recipe", "RecipeCategory",
+    "RecipeSource", "Stack", "TransferError", "TransferHandler", "TransferRequest", "TransferSlot",
     "StaticRecipeSource", "get_recipe_class", "keys", "register_recipe_class",
 ]
 

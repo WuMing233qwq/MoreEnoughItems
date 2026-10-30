@@ -21,7 +21,7 @@
 搬运的**派发者** —— 服务端。它自己不搬东西。
 
 职责只有三件：
-  1. 造目标槽位（决定走玩家侧还是方块侧）；
+  1. 造目标槽位（玩家侧的格子，targets.make_target）；
   2. 把「你的 handle 那份，搬 N 个到这个 target」派给对应的 ItemSource；
   3. 数成功了几格。
 
@@ -32,7 +32,7 @@
 所以是**逐格提交**：某格失败就停下，前面成功的保持原样。
 """
 from MEIScripts.common.classes.base import SlotTarget
-from MEIScripts.common.classes.types.transfer import KIND_PLAYER, TransferResult
+from MEIScripts.common.classes.types.transfer import TransferResult
 from MEIScripts.registry.transfer import TransferRegistry
 from MEIScripts.utils.log import logger
 from MEIScripts.utils.text import error_text, native_str
@@ -43,19 +43,13 @@ REASON_NO_SOURCE = "no_source"
 """ 清单里点名的来源没注册 —— 客户端与服务端的来源表不一致 """
 
 REASON_NO_TARGET = "no_target"
-""" 造不出目标槽位，通常是方块目标缺坐标 """
+""" 造不出目标槽位 """
 
 REASON_PUT_FAILED = "put_failed"
 """ 来源报告搬了 0 个。容器被关了、材料被别人抢先拿走都会走到这 """
 
 REASON_EMPTY = "empty"
 """ 清单是空的 """
-
-REASON_UNSUPPORTED = "unsupported"
-"""
-方块容器的清单（KIND_BLOCK）：坐标是客户端给的，服务端核对不了「这个玩家开着这个容器」——
-收了就是谁都能清空、塞满任意一个加载着的箱子（targets.BlockSlotTarget）。MEI 自己只用玩家侧，先不收
-"""
 
 REASON_BAD_PLAN = "bad_plan"
 """ 清单本身不对：太长、槽位不是整数或越界、要写的格子不在要清的那片里、数量不是正数、清单看不懂 """
@@ -105,11 +99,9 @@ def _slot_ok(slot):  # type: (any) -> bool
 
 def check(plan):  # type: (any) -> str
     """
-    动任何格子之前把整张清单核对一遍，返回失败原因（没问题给空串）：只收玩家侧；条数、清的格数有上限；
-    槽位是范围内的整数；每一条点名的来源服务端登记过、写的格子在要清的那片里、数量是正数
+    动任何格子之前把整张清单核对一遍，返回失败原因（没问题给空串）：条数、清的格数有上限；
+    槽位是玩家侧范围内的整数；每一条点名的来源服务端登记过、写的格子在要清的那片里、数量是正数
     """
-    if plan.Kind != KIND_PLAYER:
-        return REASON_UNSUPPORTED
     clear = plan.ClearSlots
     if len(plan.Entries) > MAX_SLOTS or len(clear) > MAX_SLOTS or not all(_slot_ok(slot) for slot in clear):
         return REASON_BAD_PLAN
@@ -155,9 +147,7 @@ class _Expected(SlotTarget):
 def _clear_all(ctx, plan):  # type: (any, any) -> None
     """ 整片清空。玩家侧由引擎把原有物品退回背包，背包满则掉在脚下（原版行为）"""
     for slot in plan.ClearSlots:
-        target = make_target(ctx, plan.Kind, slot)
-        if target is not None:
-            target.Clear()
+        make_target(ctx, slot).Clear()
 
 
 def _fill_one(ctx, plan, entry):  # type: (any, any, any) -> tuple
@@ -167,7 +157,7 @@ def _fill_one(ctx, plan, entry):  # type: (any, any, any) -> tuple
         logger.error("[MEI/transfer] 清单点名了未注册的来源: {}".format(entry.SourceId))
         return False, REASON_NO_SOURCE
 
-    target = make_target(ctx, plan.Kind, entry.Slot)
+    target = make_target(ctx, entry.Slot)
     if target is None:
         return False, REASON_NO_TARGET
 

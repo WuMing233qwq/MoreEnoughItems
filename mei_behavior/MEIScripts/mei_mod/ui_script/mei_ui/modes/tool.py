@@ -22,8 +22,8 @@
 
 - 点格子（ModeManager.Intercept）只记下，下一帧才拿起（点击回调里不动控件）。PC 上拿起的物品跟着光标（follows_cursor 的宿主一直亮着），
   触屏上摆在点的那一格上、往上抬一点。都比格子里的图标大一圈（JSON 里写 24）。
-- 拿着的时候整屏一层透明的捕获层（layer 96，悬浮窗在它上面）收下一下点击：点中登记过的放置目标 → 回调它、放下；
-  点中 MEI 别的物品格 → 换成拿那一样；别的地方 → 放下，什么都不触发。
+- 拿着的时候整屏一层透明的捕获层（layer 96，悬浮窗在它上面）收下一下点击：点中登记过的放置目标 → 回调它，收下了就放下、
+  不收就接着拿着（它说了原因就用引擎的 tip 消息提示）；点中 MEI 别的物品格 → 换成拿那一样；别的地方 → 放下，什么都不触发。
 - **显隐全走绑定**（"#mei.tool.*"，每帧回读「拿着没有」）；绑定挂上之前、拆掉之后脚本把这几个控件写回藏着
   （界面状态跨开关存活，引擎结论 §22：关界面时拿着的，下次开不能留一层透明的捕获层挡住点击）。脚本只设图标、摆触屏那一格的位置。
 - 模式按钮的颜色也在这里每帧对一下 ModeManager.Revision（变了才染），被盖住的界面露出来、收藏栏后建出来都对得上
@@ -184,7 +184,8 @@ class ToolHost(object):
 
     def Drop(self, x, y):  # type: (float, float) -> str
         """
-        点在 (x, y)：放置目标 → 回调、放下（给 "drop"）；MEI 别的物品格 → 换成拿它（"swap"）；别的 → 放下（"release"）
+        点在 (x, y)：放置目标 → 回调，收下了放下（给 "drop"），不收接着拿着（"rejected"，说了原因就提示）；
+        MEI 别的物品格 → 换成拿它（"swap"）；别的 → 放下（"release"）
         """
         held = self.Held
         if held is None:
@@ -193,11 +194,15 @@ class ToolHost(object):
             self.Release()
             return "release"
         main = self.MainNode
-        target = DropTargets.Find(main.GetScreenDef(), main.ScreenNode.GetBaseUIControl, x, y)
+        target = DropTargets.Find(main.GetScreenDef(), main.ScreenNode.GetBaseUIControl, x, y, held)
         if target is not None:
-            self.Release()
-            DropTargets.Deliver(target, held, (x, y))
-            return "drop"
+            accepted, reason = DropTargets.Deliver(target, held, (x, y))
+            if accepted:
+                self.Release()
+                return "drop"
+            if reason:
+                self.Tip(reason)
+            return "rejected"
         panel = main.PanelAt(x, y)
         if self.Lift(stack_of(panel), panel):  # 和点格子时同一个认法：组头、不是物品的不拿；配方收藏拿它显示的那一样
             return "swap"
@@ -207,6 +212,16 @@ class ToolHost(object):
     def Release(self):
         """ 放下（显隐由绑定跟着变）"""
         self.Held = None
+
+    @staticmethod
+    def Tip(message):  # type: (unicode) -> None
+        """ 放置目标不收时说的原因：引擎的 tip 消息（物品栏上方）。开着容器界面时看不看得见没有验证过，看不见也只是少一句话 """
+        logger.info("[MEI/tool] 放置目标不收: {}".format(native_str(message)))
+        try:
+            comp = clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId())
+            comp.SetTipMessage(native_str(message))
+        except Exception as e:  # noqa
+            logger.warn("[MEI/tool] 提示不出来: {}".format(error_text(e)))
 
     def __PlaceTouch(self, panel):
         """ 触屏：摆在点的那一格上、往上抬一点；量不出那一格就摆在屏幕正中 """

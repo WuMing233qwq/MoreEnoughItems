@@ -18,6 +18,7 @@
 # ----------------------------------------------------------------------
 
 import math
+import time
 
 import mod.client.extraClientApi as clientApi
 from mod_log import logger
@@ -25,7 +26,7 @@ from mod_log import logger
 from MEIScripts.common.classes.base import BaseRecipeUIScript
 from MEIScripts.constants.ui import BindingConst, CollectionConst, RecipeDetailsPath
 from MEIScripts.constants.codes import NameConst, QueryConst
-from MEIScripts.constants.texts import RecipeText
+from MEIScripts.constants.texts import RecipeText, TransferText
 from MEIScripts.mei_mod.state import BookmarkManager, CacheManager, PinManager
 from MEIScripts.mei_mod.ui_script.controls.item import ItemsGrid
 from MEIScripts.mei_mod.ui_script.controls.item import ItemPanel
@@ -81,6 +82,8 @@ class RecipeDetailsScript(object):
         self.RecipeActionBind = None
         self.Craftable = CraftableCache()
         """ 可合成性预检缓存，一次会话算一次；转移成功后失效 """
+        self.Notice = None  # type: tuple or None
+        """ (文字, 到期时刻)：点了 + 没成时挂在页码后面几秒（ShowNotice），节拍里到期收掉 """
         self.RecipesPage = None
         self.RecipeUIScriptCls = None
 
@@ -369,6 +372,11 @@ class RecipeDetailsScript(object):
         except Exception as e:  # noqa  刷新失败只少一次刷新，不能停掉整页的节拍
             self.ScanPending = []
             logger.error("[MEI/ui] 扫描完成后刷新工作站的用途失败: {}".format(error_text(e)))
+        try:
+            self.ExpireNotice()
+        except Exception as e:  # noqa
+            self.Notice = None
+            logger.error("[MEI/ui] 配方页提示收不掉: {}".format(error_text(e)))
 
 
     def DestroyScript(self):
@@ -514,6 +522,10 @@ class RecipeDetailsScript(object):
         """ 拿不到 Recipe.Id 的行没法收藏(键就是 Id), 那一行不渲染星号 """
         return bool(BookmarkManager.RecipeKey(recipe))
 
+    @RecipeAction.Hover(actions.STAR)
+    def StarHoverText(self, _row, recipe):  # type: (int, any) -> unicode
+        return RecipeText.UnstarHover if BookmarkManager.HasRecipe(recipe) else RecipeText.StarHover
+
     @RecipeAction.State(actions.TOP)
     def IsRecipePinned(self, _row, recipe):  # type: (int, any) -> bool
         """ 置顶号亮不亮 = 这条配方是否已置顶，每帧回读，走内存索引 O(1) """
@@ -539,6 +551,14 @@ class RecipeDetailsScript(object):
     def CanPinRecipe(self, _row, recipe):  # type: (int, any) -> bool
         """ 拿不到 Recipe.Id 的行没法置顶(键就是 Id), 那一行不渲染置顶号 """
         return bool(PinManager.RecipeKey(recipe))
+
+    @RecipeAction.Hover(actions.TOP)
+    def PinHoverText(self, _row, recipe):  # type: (int, any) -> unicode
+        return RecipeText.UnpinHover if PinManager.HasRecipe(recipe) else RecipeText.PinHover
+
+    @RecipeAction.Hover(actions.TREE)
+    def TreeHoverText(self, _row, _recipe):  # type: (int, any) -> unicode
+        return RecipeText.TreeHover
 
     # 配方树 —— docs/architecture/recipe_tree.md
 # ======================================================================================================================
@@ -581,8 +601,16 @@ class RecipeDetailsScript(object):
         """
         target = self.Craftable.TransferTarget(recipe, self.CurrentType)
         if target is not None:
-            return self.Craftable.Accepts(target, recipe)
+            return self.Craftable.Allows(target, recipe, self.CurrentType)
         return self.Craftable.CanCraft(self.__CurrentCategory(), recipe)
+
+    @RecipeAction.Hover(actions.PLUS)
+    def PlusHoverText(self, _row, recipe):  # type: (int, any) -> unicode
+        """ + 的悬停文字：能点写点了会怎样，灰着写为什么、缺什么（转移处理器的检查、原版合成格的材料）。同样走缓存 """
+        if recipe is None:
+            return u""
+        target = self.Craftable.TransferTarget(recipe, self.CurrentType)
+        return self.Craftable.PlusHover(target, self.__CurrentCategory(), recipe, self.CurrentType)
 
     @RecipeAction.Button(actions.PLUS)
     def OnTransferRecipe(self, ctx):
@@ -597,9 +625,17 @@ class RecipeDetailsScript(object):
             return
         target = self.Craftable.TransferTarget(ctx.Recipe, self.CurrentType)
         if target is not None:
-            # 交给当前界面登记的转移目标（不搬材料）：写成了关掉配方页回到那个界面；不在按钮回调里同步关（引擎结论 §10）
-            if ScreenTransfers.Deliver(target, ctx.Recipe):
+            # 交给当前界面登记的转移处理器：MEI 算好清单，处理器自己做。写成了关掉配方页回到那个界面；
+            # 不在按钮回调里同步关（引擎结论 §10）。没成就把原因挂在页码后面。
+            # 清单按点下去这一刻的背包算（开页时采的供给可能已经过时），顺带让 + 的结论重问
+            self.Craftable.Invalidate()
+            request = self.Craftable.Request(target, ctx.Recipe, self.CurrentType, wants_max=True)
+            done, error = ScreenTransfers.Deliver(target, request)
+            if done:
+                self.Craftable.Invalidate()
                 self.GameComp.AddTimer(0.0, self.Close)
+            else:
+                self.ShowNotice((error.Message if error is not None else u"") or TransferText.Failed)
             return
         category = self.__CurrentCategory()
         if category is None or category.Transfer is None:
@@ -612,8 +648,9 @@ class RecipeDetailsScript(object):
         SendTransfer(plan, self.__OnTransferDone)
 
     def __OnTransferDone(self, result):  # type: (any) -> None
-        """ 服务端回执。成功就关掉配方页 —— 玩家的下一步是回工作台按合成 """
+        """ 服务端回执。成功就关掉配方页 —— 玩家的下一步是回工作台按合成；一格都没放进去就在页码后面说一声 """
         if result.Filled <= 0:
+            self.ShowNotice(TransferText.NothingMoved)
             return
         self.Craftable.Invalidate()
         # 不在回执回调里同步关: 这条回调来自引擎事件, 而 Close 会拆掉整棵控件树.
@@ -796,7 +833,31 @@ class RecipeDetailsScript(object):
         page_index = "{}/{}".format(self.RecipesPage.current_page_number, self.RecipesPage.total_page)
         if self.CurrentType in self.ScanPending:
             page_index = RecipeText.Scanning.format(page_index)
+        notice = getattr(self, "Notice", None)
+        if notice is not None:
+            page_index = RecipeText.Notice.format(page_index, notice[0])
         self.TopLine2LabelControl.SetText(native_str(page_index))
+
+    NOTICE_SECONDS = 3.0
+    """ 点了 + 没成时，原因在页码后面挂几秒 """
+
+    def ShowNotice(self, text):  # type: (unicode) -> None
+        """ 页码后面挂一句话（点了 + 没成的原因），NOTICE_SECONDS 秒后节拍里收掉 """
+        if not text:
+            return
+        self.Notice = (text, time.time() + self.NOTICE_SECONDS)
+        try:
+            self.UpdateTopLine2Label()
+        except Exception as e:  # noqa  页面还没建好时只是这次不显示
+            logger.error("[MEI/ui] 配方页提示写不上: {}".format(error_text(e)))
+
+    def ExpireNotice(self):  # type: () -> bool
+        """ 节拍里调：提示到期了收掉、把页码写回去 """
+        if self.Notice is None or time.time() < self.Notice[1]:
+            return False
+        self.Notice = None
+        self.UpdateTopLine2Label()
+        return True
 
     def UpdateTypeTabsGrid(self):
         """ 更新合成方法选择网格 """

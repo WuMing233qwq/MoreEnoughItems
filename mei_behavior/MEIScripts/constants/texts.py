@@ -35,6 +35,29 @@ class RecipeText(object):
     NoRecipesForInput = u"没有用到 {} 的配方"
     # 配方页第二行: 查工作站的用途时这个类型的全表还在扫. {} 是页码 (1/37).
     Scanning = u"{} · 扫描中"
+    # 配方页第二行: 点了 + 没成时挂在页码后面几秒. {} 依次是页码、原因.
+    Notice = u"{} · {}"
+    # 配方行动作按钮的悬停文字（星标、置顶两种状态各一句）.
+    StarHover = u"收藏这条配方"
+    UnstarHover = u"取消收藏"
+    PinHover = u"置顶这条配方"
+    UnpinHover = u"取消置顶"
+    TreeHover = u"查看配方树"
+
+
+class TransferText(object):
+    # 配方行 + 的悬停文字与点了没成时的提示（转移处理器、原版合成格共用）.
+    # 「缺少: 铁锭 ×2、木棍 ×1 等 3 样」: {} 是 describe_missing 拼好的那一串.
+    Missing = u"§c缺少: {}"
+    MissingItem = u"{} ×{}"
+    Separator = u"、"
+    More = u" 等 {} 样"
+    Default = u"§7点击转移这条配方"
+    Rejected = u"§7当前界面不收这一条配方"
+    Failed = u"§c没能转移这条配方"
+    NothingMoved = u"§c没有放进去任何东西"
+    WrongScreen = u"§7当前界面不能转移这一类配方"
+    TooBig = u"§7这条配方放不进当前的合成格"
 
 class ItemText(object):
     # 物品分组面板的悬浮文本. {} 依次为分组名、物品数量.

@@ -169,13 +169,12 @@ class SlotTarget(object):
     """
     一个可写的目标槽位 —— **物品搬过去之后落在哪**
 
-    存在的理由：让 ItemSource 能自己完成整次搬运，而不必认识
-    SetPlayerUIItem / SpawnItemToContainer 这些写入手段。
-    实现在 mei_mod/transfer/targets.py（那层才碰引擎），第三方工作站可以自带。
+    存在的理由：让 ItemSource 能自己完成整次搬运，而不必认识 SetPlayerUIItem 这些写入手段。
+    实现在 mei_mod/transfer/targets.py（那层才碰引擎）。MEI 内部用，不对外。
     """
 
     Slot = 0
-    """ 目标槽位号，含义由实现决定（玩家侧共享编号 / 方块容器内下标）"""
+    """ 目标槽位号（玩家侧共享编号：工作台 32~40、背包 2×2 28~31）"""
 
     __metaclass__ = abc.ABCMeta
 
@@ -202,7 +201,7 @@ class ItemSource(object):
     物品来源：既回答「玩家能拿到什么」，也**负责把东西搬过去**
 
     与 RecipeSource 同构：契约在这里(纯)，实现在各自的层。
-    内置背包来源在 mei_mod/transfer/inventory.py，第三方存储模组自己注册。
+    内置背包来源在 mei_mod/transfer/inventory.py。MEI 内部用，不对外（服务端的来源表第三方登记不进去）。
 
     **搬运由来源自己做，不是框架取出来再写进去。** 框架只派发
     「你的 handle 那份东西，搬 N 个到这个 target」——

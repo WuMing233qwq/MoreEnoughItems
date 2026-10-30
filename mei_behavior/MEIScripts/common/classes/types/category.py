@@ -78,10 +78,10 @@ class RecipeCategory(object):
 
         self.Transfer = None  # type: any
         """
-        转移策略（TransferPolicy），决定本类型能不能快捷合成、材料放到哪个槽位。
+        转移策略（TransferPolicy），决定本类型能不能快捷合成、材料放到哪个槽位（MEI 自己往玩家侧的合成格里放）。
 
-        None 表示**不支持转移**，plus 按钮对这个类型一律不亮。
-        由扩展在 OnRegister 里 SetTransferPolicy 挂上，见 quick_craft.md §7。
+        None 表示**不支持转移**，plus 按钮对这个类型一律不亮（当前界面登记了转移处理器的除外，ctx.UI.Transfers）。
+        原版扩展在装配时 SetTransferPolicy 挂上，见 quick_craft.md §5.5b。第三方的机器用 ctx.UI.Transfers 的转移处理器。
         """
 
         self._stations = []  # type: list
@@ -135,7 +135,7 @@ class RecipeCategory(object):
     # 转移策略
 # ======================================================================================================================
     def SetTransferPolicy(self, policy):  # type: (any) -> None
-        """ 挂上转移策略；传 None 表示撤掉（本类型不再支持快捷合成）"""
+        """ 挂上转移策略；传 None 表示撤掉（本类型不再支持快捷合成）。给 MEI 自己的原版合成格用，第三方用 ctx.UI.Transfers """
         self.Transfer = policy
 
     def CanTransfer(self, ctx):  # type: (any) -> bool

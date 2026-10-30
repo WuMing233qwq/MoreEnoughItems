@@ -78,7 +78,7 @@ from mod_log import logger
 
 from MEIScripts.utils.binder import ScreenBinder
 from MEIScripts.utils.bindname import make_binding_name
-from MEIScripts.utils.text import error_text
+from MEIScripts.utils.text import error_text, native_str
 
 ViewBinder = clientApi.GetViewBinderCls()
 
@@ -91,9 +91,12 @@ VIEW_REQUEST_REFRESH = getattr(_REQUEST_CLS(), "Refresh", 1) if _REQUEST_CLS els
 
 _UNSET = object()  # 推送缓存里「这一格原来没记过」
 
-BINDING_SUFFIXES = (".state", ".visible", ".toggle", ".enabled")
+BINDING_SUFFIXES = (".state", ".visible", ".toggle", ".enabled", ".hover")
 """
-一个动作按钮的四条绑定后缀 —— **代码层与 UI 层的统一契约**。
+一个动作按钮的五条绑定后缀 —— **代码层与 UI 层的统一契约**。
+
+`.hover` 是悬停文字：JSON 侧挂在按钮的悬停态（能点、灰掉两种都挂）里的 `common.hover_text`，
+`always_when_visible` —— 只有指着那个按钮时才被拉，平时不花钱；PC 悬停、触屏按住都出。
 
 `.enabled` 走的是**基类自带的那条绑定**(`$toggle_enabled_binding_name` ->
 `#enabled`)，不是我们手写的：`common_toggles` 的 toggle 模板里本来就留了这个口子，
@@ -129,11 +132,11 @@ class ActionButton(object):
     """
 
     __slots__ = ("Prefix", "Path", "GetState", "OnAction", "IsVisible", "IsEnabled",
-                 "Momentary")
+                 "Momentary", "HoverText", "HoverWarned")
 
     def __init__(self, prefix, get_state=None, on_action=None,
-                 is_visible=None, momentary=False, path=None, is_enabled=None):
-        # type: (str, any, any, any, bool, str, any) -> None
+                 is_visible=None, momentary=False, path=None, is_enabled=None, hover_text=None):
+        # type: (str, any, any, any, bool, str, any, any) -> None
         if not prefix:
             raise ValueError("prefix cannot be empty")
         self.Prefix = prefix         # type: str   # 绑定名前缀, 三条绑定名由它 + 后缀拼出
@@ -143,6 +146,8 @@ class ActionButton(object):
         self.IsVisible = is_visible  # type: any   # fn(row, recipe) -> bool
         self.IsEnabled = is_enabled  # type: any   # fn(row, recipe) -> bool; 假 = 渲染但不可点
         self.Momentary = momentary   # type: bool  # 真 = 无状态按钮
+        self.HoverText = hover_text  # type: any   # fn(row, recipe) -> str; 悬停文字, 不给就没有
+        self.HoverWarned = False     # type: bool  # 悬停文字取值失败只记第一次（指着按钮时每帧都问）
 
     @classmethod
     def toggle(cls, prefix, get_state, on_toggle, is_visible=None, path=None):
@@ -195,6 +200,19 @@ class ActionButton(object):
             logger.error("[MEI/action] {} 取可点性失败(行 {}): {}".format(
                 self.Prefix, row, error_text(e)))
             return True
+
+    def ResolveHover(self, row, recipe):  # type: (int, any) -> str
+        """ 悬停文字取值口：没有声明给空串（悬停时不出框）；交给引擎前收成 str """
+        if self.HoverText is None:
+            return ""
+        try:
+            return native_str(self.HoverText(row, recipe) or "")
+        except Exception as e:  # noqa
+            if not self.HoverWarned:
+                self.HoverWarned = True
+                logger.error("[MEI/action] {} 取悬停文字失败(行 {}): {}".format(
+                    self.Prefix, row, error_text(e)))
+            return ""
 
     def ResolveVisible(self, row, recipe):  # type: (int, any) -> bool
         """
@@ -297,6 +315,17 @@ class RecipeAction(object):
         return _decorator
 
     @staticmethod
+    def Hover(prefix):
+        """
+        悬停文字: fn(self, row, recipe) -> str. 不写则悬停时不出框
+
+        灰掉的按钮照样出 —— 正好用来说「为什么灰着」（缺什么材料、当前界面不收）。
+        """
+        def _decorator(func):
+            return RecipeAction.__Push(func, {"kind": "hover", "prefix": prefix})
+        return _decorator
+
+    @staticmethod
     def Collect(owner):  # type: (any) -> list
         """
         扫描 owner 的类, 把装饰器声明合成 ActionButton 列表.
@@ -338,6 +367,7 @@ class RecipeAction(object):
                 momentary=bool(part.get("momentary")) and part.get("state") is None,
                 path=part.get("path"),
                 is_enabled=part.get("enabled"),
+                hover_text=part.get("hover"),
             ))
         return buttons
 
@@ -486,6 +516,8 @@ class RecipeActionBind(object):
              lambda args, b=button: self.__Dispatch(b, args)),
             (".enabled", ViewBinder.BF_BindBool,
              lambda row, b=button: b.ResolveEnabled(row, self.__RecipeOf(row))),
+            (".hover", ViewBinder.BF_BindString,
+             lambda row, b=button: b.ResolveHover(row, self.__RecipeOf(row))),
         )
         for suffix, flag, callback in specs:
             name = self.BindingNameOf(button.Prefix, suffix)

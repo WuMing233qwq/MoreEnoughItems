@@ -76,6 +76,13 @@ def _candidates(ingredient):  # type: (any) -> list
     return found
 
 
+def candidate_keys(ingredient):  # type: (any) -> list
+    """ 一格的候选物品键（keys.make_key），按 Ingredient 给的顺序、去重；空格（没有候选）给空表 """
+    if ingredient is None:
+        return []
+    return _candidates(ingredient)
+
+
 def max_stack_of(ingredient):  # type: (any) -> int
     """
     这个格位放得下多少个 —— 取全部候选里**最小**的堆叠上限

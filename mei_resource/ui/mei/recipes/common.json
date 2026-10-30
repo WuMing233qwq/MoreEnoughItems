@@ -14,15 +14,20 @@
         "controls": [
             {
                 "toggle_button@mei_common.ore_style_toggle_button": {
+                    "$action_hover_binding_name": "('#' + $binding_name_prefix + '.hover')", 
                     "$action_state_binding_name": "('#' + $binding_name_prefix + '.state')", 
                     "$action_visible_binding_name": "('#' + $binding_name_prefix + '.visible')", 
                     "$button_content_control": "$action_icon", 
+                    "$checked_hover_control": "mei_recipe_common.action_pressed_hover", 
+                    "$checked_locked_hover_control": "mei_recipe_common.action_locked_hover", 
                     "$toggle_enabled_binding_condition": "always_when_visible", 
                     "$toggle_enabled_binding_name": "('#' + $binding_name_prefix + '.enabled')", 
                     "$toggle_enabled_binding_type": "collection", 
                     "$toggle_grid_collection_name": "$action_collection_name", 
                     "$toggle_name": "('#' + $binding_name_prefix + '.toggle')", 
                     "$toggle_state_binding_name": "#toggle_state", 
+                    "$unchecked_hover_control": "mei_recipe_common.action_hover", 
+                    "$unchecked_locked_hover_control": "mei_recipe_common.action_locked_hover", 
                     "anchor_from": "top_middle", 
                     "anchor_to": "top_middle", 
                     "bindings": [
@@ -58,6 +63,71 @@
         "layer": 1, 
         "size": "$action_button_size", 
         "type": "panel"
+    }, 
+    "action_hover@mei_common.ore_style_button_hover_wrapper": {
+        "controls": [
+            {
+                "button_content@$button_content_control": {
+                    "offset": [
+                        0, 
+                        -1
+                    ]
+                }
+            }, 
+            {
+                "hover_text@mei_recipe_common.action_hover_text": {}
+            }
+        ]
+    }, 
+    "action_hover_text@common.hover_text": {
+        "bindings": [
+            {
+                "binding_collection_name": "$action_collection_name", 
+                "binding_condition": "always_when_visible", 
+                "binding_name": "$action_hover_binding_name", 
+                "binding_name_override": "#hover_text", 
+                "binding_type": "collection"
+            }
+        ], 
+        "layer": 99, 
+        "property_bag": {
+            "#hover_text": ""
+        }
+    }, 
+    "action_locked_hover@mei_common.ore_style_button_disabled_wrapper": {
+        "controls": [
+            {
+                "button_content@$button_content_control": {
+                    "offset": [
+                        0, 
+                        0
+                    ]
+                }
+            }, 
+            {
+                "hover_text@mei_recipe_common.action_hover_text": {}
+            }
+        ]
+    }, 
+    "action_pressed_hover@mei_common.ore_style_button_pressed_hover_wrapper": {
+        "controls": [
+            {
+                "button_content@$button_content_control": {
+                    "color": [
+                        0.4824, 
+                        0.6078, 
+                        0.8667
+                    ], 
+                    "offset": [
+                        0, 
+                        0.5
+                    ]
+                }
+            }, 
+            {
+                "hover_text@mei_recipe_common.action_hover_text": {}
+            }
+        ]
     }, 
     "buttons_panel_horizontal": {
         "$action_button_size": [

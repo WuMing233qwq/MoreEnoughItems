@@ -72,9 +72,7 @@ def BuildPlan(category, recipe, ctx, multiplier=None):
     if missing:
         logger.info("[MEI/transfer] 材料不足, 缺 {} 个格位".format(len(missing)))
         return None
-    return TransferPlan(kind=policy.Kind, entries=entries,
-                        position=ctx.Position, dimension=ctx.Dimension,
-                        clear_slots=policy.AllSlots(ctx))
+    return TransferPlan(entries=entries, clear_slots=policy.AllSlots(ctx))
 
 
 def SendTransfer(plan, on_result):  # type: (TransferPlan, any) -> bool

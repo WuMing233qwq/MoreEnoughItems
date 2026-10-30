@@ -18,7 +18,7 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 """
-工作台的转移策略 —— 给第三方看的参考实现。
+工作台的转移策略：MEI 自己往玩家侧的合成格里放（第三方的机器用 ctx.UI.Transfers 的转移处理器，docs/modding/05-screens-and-tools.md §3）。
 
 槽位表是在游戏里打表得来的（`debug/ingame/ui_slot_scan.py`）：
 
@@ -28,7 +28,6 @@
 两段连续且共用一个编号空间，所以**同一个 ui_index 在两种容器下落到不同槽位** ——
 这就是 SlotOf 必须知道"当前开着哪个容器"的原因。
 """
-from MEIScripts.api.facades.types import KIND_PLAYER
 from MEIScripts.api.facades.ui.slots import resolve_input_slot
 
 CRAFT_BASE = 32
@@ -49,7 +48,7 @@ GRID_BASE = 28
 GRID_COLUMNS = 2
 
 SCREEN_CRAFTING = "crafting.crafting_screen"
-""" 工作台屏幕。判据默认用 screen_def，但整条策略可被第三方整个替换 """
+""" 工作台屏幕。判据用 screen_def """
 
 SCREEN_INVENTORY = "crafting.inventory_screen"
 """ 背包界面，它自带 2x2 合成栏 """
@@ -65,11 +64,14 @@ class CraftingTransferPolicy(object):
     """
     工作台/背包合成栏的转移策略
 
-    第三方要接自己的工作站，照这个形状写一个再 `category.SetTransferPolicy(...)` 即可：
-    框架只调 CanTransfer / SlotOf / Kind，别的都是本类自己的事。
+    框架只调 CanTransfer / MapRecipe / AllSlots / Capacity（配方页另外读可选的 HINT / SCREEN_HINT），别的都是本类自己的事。
     """
 
-    Kind = KIND_PLAYER
+    HINT = u"§7转移材料"
+    """ + 能点时的悬停文字（配方页读，可选）"""
+
+    SCREEN_HINT = u"§7不可用的合成站"
+    """ 当前界面不是工作台 / 背包时 + 的悬停文字（可选）"""
     """ 槽位归玩家（关掉界面材料退回背包），故走 SetPlayerUIItem 那条路 """
 
     def CanTransfer(self, ctx):  # type: (any) -> bool

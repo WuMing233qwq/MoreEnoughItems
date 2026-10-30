@@ -22,8 +22,8 @@ from .ingredient import IngredientLike
 from .item import Stack, ItemStack, Item, ItemInfo, ItemAttr, set_item_factory
 from .spec import ItemSpec
 from .transfer import (
-    KIND_BLOCK, KIND_PLAYER, TransferContext, TransferEntry, TransferPlan,
-    TransferResult,
+    TransferContext, TransferEntry, TransferError, TransferHandler, TransferPlan,
+    TransferRequest, TransferResult, TransferSlot,
 )
 from .recipe import (
     Ingredient, Recipe, register_recipe_class, get_recipe_class,
@@ -40,12 +40,14 @@ __all__ = [
     "ItemAttr",
     "set_item_factory",
     "ItemSpec",
-    "KIND_BLOCK",
-    "KIND_PLAYER",
     "TransferContext",
     "TransferEntry",
+    "TransferError",
+    "TransferHandler",
     "TransferPlan",
+    "TransferRequest",
     "TransferResult",
+    "TransferSlot",
     "Ingredient",
     "Recipe",
     "register_recipe_class",

@@ -1742,7 +1742,7 @@
     },
     "filter_hover_tip": {
         "type": "image",
-        "$filter_hover_text|default": "筛选与排序\n§7选了的条件会记住，和搜索一起用",
+        "$filter_hover_text|default": "筛选与排序\n§7支持与搜索混合使用",
         "anchor_from": "top_left",
         "anchor_to": "top_right",
         "offset": [

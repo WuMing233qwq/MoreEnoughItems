@@ -17,20 +17,12 @@
 # ----------------------------------------------------------------------
 from typing import Any, List, Optional, Tuple
 
-KIND_PLAYER: str
-KIND_BLOCK: str
-
-
 class TransferContext(object):
     PlayerId: str
     Side: str
-    Dimension: int
-    Position: Optional[Tuple[int, int, int]]
     Extra: dict
 
-    def __init__(self, player_id: str = "", side: str = "client", dimension: int = 0,
-                 position: Optional[Tuple[int, int, int]] = None,
-                 extra: Optional[dict] = None) -> None: ...
+    def __init__(self, player_id: str = "", side: str = "client", extra: Optional[dict] = None) -> None: ...
 
 
 class TransferEntry(object):
@@ -51,14 +43,10 @@ class TransferEntry(object):
 
 
 class TransferPlan(object):
-    Kind: str
     Entries: List[TransferEntry]
-    Position: Optional[Tuple[int, int, int]]
-    Dimension: int
     ClearSlots: List[int]
 
-    def __init__(self, kind: str = KIND_PLAYER, entries: Optional[List[TransferEntry]] = None,
-                 position: Optional[Tuple[int, int, int]] = None, dimension: int = 0,
+    def __init__(self, entries: Optional[List[TransferEntry]] = None,
                  clear_slots: Optional[List[int]] = None) -> None: ...
 
     def to_dict(self) -> dict: ...
@@ -80,3 +68,59 @@ class TransferResult(object):
 
     @classmethod
     def from_dict(cls, data: dict) -> TransferResult: ...
+
+
+class TransferSlot(object):
+    Index: int
+    Ingredient: Any
+    Need: int
+    Have: int
+    Stack: Any
+    Catalyst: bool
+
+    def __init__(self, index: int, ingredient: Any, need: int, have: int = 0, stack: Any = None,
+                 catalyst: bool = False) -> None: ...
+
+    @property
+    def Missing(self) -> int: ...
+
+
+class TransferRequest(object):
+    Recipe: Any
+    CategoryId: str
+    ScreenDef: str
+    Slots: List[TransferSlot]
+    Catalysts: List[TransferSlot]
+    Times: int
+    Max: bool
+
+    def __init__(self, recipe: Any, category_id: str = "", screen_def: str = "",
+                 slots: Optional[List[TransferSlot]] = None, catalysts: Optional[List[TransferSlot]] = None,
+                 times: int = 1, wants_max: bool = False, max_times: Any = None) -> None: ...
+
+    def MaxTimes(self) -> int: ...
+
+    def Cell(self, index: int) -> Optional[TransferSlot]: ...
+
+    def Missing(self) -> List[TransferSlot]: ...
+
+    def Complete(self) -> bool: ...
+
+
+class TransferError(object):
+    Message: str
+    Missing: List[TransferSlot]
+    Blocking: bool
+
+    def __init__(self, message: str = "", missing: Optional[List[TransferSlot]] = None,
+                 blocking: bool = True) -> None: ...
+
+
+class TransferHandler(object):
+    GRID: Optional[Tuple[int, int]]
+    CONSUMES: bool
+    HINT: str
+
+    def Check(self, request: TransferRequest) -> Optional[TransferError]: ...
+
+    def Transfer(self, request: TransferRequest) -> Any: ...

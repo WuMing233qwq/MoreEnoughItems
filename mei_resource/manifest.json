@@ -4,18 +4,18 @@
       "type": "resources",
       "uuid": "d82464be-2b2f-495b-8c57-6e5a9dfe65a4",
       "version": [
+        1,
         0,
-        0,
-        4
+        0
       ]
     }
   ],
   "header": {
     "uuid": "4976bdb3-b740-4294-b66a-afc3bb5a8ae6",
     "version": [
+      1,
       0,
-      0,
-      4
+      0
     ],
     "min_engine_version": [
       1,
