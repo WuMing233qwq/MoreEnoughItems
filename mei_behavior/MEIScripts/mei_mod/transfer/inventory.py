@@ -27,7 +27,7 @@
 handle 是**背包槽位号**（int）。它要过跨端边界，故必须是标量（引擎结论 §6）。
 """
 from MEIScripts.common.classes.base import ItemSource
-from MEIScripts.common.classes.types import Item, ItemStack
+from MEIScripts.common.classes.types import Item, ItemAttr, ItemStack
 from MEIScripts.utils.log import logger
 from MEIScripts.utils.text import error_text
 
@@ -79,11 +79,14 @@ class InventorySource(ItemSource):
         从背包第 handle 格搬 count 个到 target，返回实际搬了几个
 
         **先放后扣**：`target.Put` 是唯一会失败且原因不可控的一步(容器被关了)，
-        把它放前面，失败时玩家的背包还没动过。扣减 SetInvItemNum 只是改个数字，
-        实际上不会失败；万一失败会**物品复制**，所以那一行要大声报错。
+        把它放前面，失败时玩家的背包还没动过。扣减 SetInvItemNum 失败（抛异常或返回 False）的话，
+        目标格里多出来的就是复制出来的 —— 按放之前的样子写回去（Restore）；撤不回才大声报错。
+        搬的是这一格原样的东西：带 userData 读、附魔 / 耐久 / 自定义名字 / userData 原样写过去（targets._to_dict）
         """
         if ctx.Side != "server":
             logger.error("[MEI/transfer] MoveTo 只能在服务端调")
+            return 0
+        if isinstance(handle, bool) or not isinstance(handle, (int, long)):
             return 0
 
         slot = int(handle)
@@ -97,37 +100,44 @@ class InventorySource(ItemSource):
         if take <= 0:
             return 0
 
-        stack = self.__ToStack(item_dict)
+        stack = self.__ToStack(item_dict, with_attr=True)
         if stack is None:
             return 0
         stack.Count = take
 
+        previous = target.Peek()
         if not target.Put(stack):
             return 0
 
+        deducted = False
         try:
-            comp.SetInvItemNum(slot, have - take)
+            deducted = bool(comp.SetInvItemNum(slot, have - take))
         except Exception as e:  # noqa
-            # 到这一步物品已经进了目标槽位却没从背包扣掉 = **物品复制**.
-            # 无法自动修复(把目标槽位再清掉又是一次可能失败的写), 只能大声记下来
-            logger.error("[MEI/transfer] **扣减失败, 可能已复制物品** 槽位 {}: {}".format(slot, error_text(e)))
+            logger.error("[MEI/transfer] 扣减背包槽位 {} 抛异常: {}".format(slot, error_text(e)))
+        if deducted:
+            return take
+        if target.Restore(previous):
+            logger.error("[MEI/transfer] 背包槽位 {} 扣不掉，已撤回放进目标格的那些".format(slot))
+            return 0
+        logger.error("[MEI/transfer] **扣减失败、目标格也撤不回，可能已复制物品** 槽位 {}".format(slot))
         return take
 
     # 内部
 # ======================================================================================================================
     @staticmethod
     def __Read(comp, slot):  # type: (any, int) -> dict or None
+        """ 带 userData 读：搬过去的要和这一格一模一样 """
         try:
             import mod.server.extraServerApi as serverApi
             return comp.GetPlayerItem(
-                serverApi.GetMinecraftEnum().ItemPosType.INVENTORY, slot, False)
+                serverApi.GetMinecraftEnum().ItemPosType.INVENTORY, slot, True)
         except Exception as e:  # noqa
             logger.error("[MEI/transfer] 读背包槽位 {} 失败: {}".format(slot, error_text(e)))
             return None
 
     @staticmethod
-    def __ToStack(item_dict):  # type: (dict) -> any
-        """ 引擎 itemDict -> ItemStack。空气与零数量视为空格 """
+    def __ToStack(item_dict, with_attr=False):  # type: (dict, bool) -> any
+        """ 引擎 itemDict -> ItemStack。空气与零数量视为空格；with_attr 带上附魔、耐久、userData 这些（搬运时要原样写过去）"""
         if not item_dict:
             return None
         item_id = item_dict.get("newItemName") or item_dict.get("itemName")
@@ -137,7 +147,18 @@ class InventorySource(ItemSource):
         # 不走 ItemFactory.CreateItem: 那条要过 ItemManager.LookUpItem, 而服务端没有物品表.
         # 背包里真有的东西不需要 MEI 的表来认证(item_model.md §6 的同一条理由)
         aux = int(item_dict.get("newAuxValue", item_dict.get("auxValue", 0)) or 0)
-        return ItemStack(Item(item_id=item_id, aux_value=aux), count)
+        attr = None
+        if with_attr:
+            attr = ItemAttr(
+                user_data=item_dict.get("userData"),
+                show_in_hand=item_dict.get("showInHand", True) is not False,
+                enchant_data=item_dict.get("enchantData"),
+                mod_enchant_data=item_dict.get("modEnchantData"),
+                custom_tips=item_dict.get("customTips") or "",
+                extra_id=item_dict.get("extraId") or "",
+                durability=item_dict.get("durability") or 0,
+            )
+        return ItemStack(Item(item_id=item_id, aux_value=aux, attr=attr), count)
 
 
 EXPORT = InventorySource

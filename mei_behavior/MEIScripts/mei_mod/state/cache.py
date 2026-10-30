@@ -211,10 +211,17 @@ class __CacheManager(object):
         return cached[1]
 
     def CacheSearchData(self, keyword, result_page):  # type: (str, PageWithGroup) -> None
-        return self.set(self.SEARCH_DATA_KEY, (keyword, result_page))
+        """ 缓存搜索的结果页，连同当时的物品表版本一起存（同 CacheItemsPage）"""
+        from MEIScripts.registry import ItemManager
+        return self.set(self.SEARCH_DATA_KEY, (ItemManager.Version(), keyword, result_page))
 
     def GetSearchData(self):  # type: () -> (str, PageWithGroup) or None
-        return self.get(self.SEARCH_DATA_KEY)
+        """ (搜索字, 结果页)；物品表变过（加了变体、换了世界）就当没有 —— 结果页里是旧的 Item 实例 """
+        from MEIScripts.registry import ItemManager
+        cached = self.get(self.SEARCH_DATA_KEY)
+        if not cached or cached[0] != ItemManager.Version():
+            return None
+        return cached[1], cached[2]
 
     def ClearSearchData(self):
         return self.set(self.SEARCH_DATA_KEY, None)

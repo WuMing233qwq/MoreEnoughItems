@@ -33,10 +33,16 @@ class RecipeText(object):
     # 查询无结果时的提示. {} 为物品显示名.
     NoRecipesForOutput = u"没有能做出 {} 的配方"
     NoRecipesForInput = u"没有用到 {} 的配方"
+    # 配方页第二行: 查工作站的用途时这个类型的全表还在扫. {} 是页码 (1/37).
+    Scanning = u"{} · 扫描中"
 
 class ItemText(object):
     # 物品分组面板的悬浮文本. {} 依次为分组名、物品数量.
     GroupHover = u"物品分组: {}\n\n§7包含 {} 物品\n§7单击展开/收起"
+    # 悬停文字最后两行（设置「启用显示物品ID」「启用显示物品命名空间」）. {} 是英文 ID / 命名空间.
+    # 颜色照 Java 版: 高级提示框的 ID 是深灰 §8; JEI / REI 写模组名是蓝色斜体 §9§o. 开头的 §r 把上一行的格式清掉
+    IdLine = u"§r§8{}"
+    NamespaceLine = u"§r§9§o{}"
 
 class BookmarkText(object):
     # 收藏栏. Invalid / InvalidRecipe 的 {} 是存下来的物品 id 或配方 Id.
@@ -116,6 +122,27 @@ class MenuKindText(object):
     BookmarkTree = u"收藏 · 配方树"
     BookmarkInvalid = u"收藏 · 已失效"
     RecipePart = u"收藏 · 配方原料"  # 展开配方里的原料 / 工具格
+
+
+class ModeText(object):
+    # 收藏栏顶栏模式按钮的悬停文字（docs/architecture/modes.md）：模式名的颜色照按钮图标（工具金、作弊红），说明一行灰字
+    Normal = u"§f默认模式"
+    Tool = u"§6工具模式\n§7点击物品后可拖拽至支持的模组"
+    Cheat = u"§c作弊模式\n§7点击直接获取物品"
+
+
+class FilterText(object):
+    # 物品栏的筛选与排序菜单（mei_ui/filters/，docs/architecture/modes.md §8）
+    Title = u"筛选与排序"
+    FilterSection = u"筛选（按下的都要满足）"
+    SortSection = u"排序"
+    NoSort = u"不排序"
+    Ascending = u"升序"
+    Descending = u"降序"
+    Clear = u"清除"
+    Done = u"确定"
+    On = u"§b{}"  # 按下的那一项：名字染浅蓝（底图换成按下的样子）
+    Mute = u"§7{}"  # 不能点的（不排序时的升 / 降）
 
 
 class HotkeyText(object):
@@ -219,6 +246,7 @@ class TreeText(object):
     DefaultUnset = u"已取消首选"
     RawSet = u"已设为全局原料，其他配方树默认不会展开该材料"
     RawUnset = u"已取消全局原料"
+    PrefsFull = u"记满了（首选、全局原料各最多 1024 个），先取消一些"
     Bookmarked = u"已收藏"
     Unbookmarked = u"已取消收藏"
     BookmarkFull = u"收藏页签满了"

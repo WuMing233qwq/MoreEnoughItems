@@ -124,7 +124,9 @@ class Channel(object):
         payload = codec.restore(args or {})
         request_id = payload.get(req.KEY_ID, 0)
         name = payload.get(req.KEY_NAME, "")
-        player_id = payload.get("__from", "")
+        # 发起者：引擎自带的 "__id__" 优先（服务端收客户端事件时引擎填的发送方，冒充不了）；没有才用客户端自己写的 "__from"
+        engine_id = payload.get("__id__", "")
+        player_id = engine_id or payload.get("__from", "")
 
         func = self._handlers.get(name)
         if func is None:
@@ -133,7 +135,7 @@ class Channel(object):
                 request_id, name, False, None, req.ERR_NO_HANDLER), player_id)
             return
 
-        context = HandlerContext(name, request_id, player_id, self)
+        context = HandlerContext(name, request_id, player_id, self, trusted=bool(engine_id))
         try:
             body = func(context, payload.get(req.KEY_BODY))
         except Exception as e:  # noqa  处理器炸了要回执, 否则对面只能等超时

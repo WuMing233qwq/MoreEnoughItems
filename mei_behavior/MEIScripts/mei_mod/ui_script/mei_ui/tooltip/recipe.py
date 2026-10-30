@@ -101,8 +101,13 @@ class TooltipRecipeView(object):
             return False
 
         script_cls = RecipeUIManager.GetScriptData(category_id)[0]
+        try:
+            script = script_cls(recipe)
+        except Exception as e:  # noqa  第三方配方页脚本的构造抛了：这一条不出预览，调用方照「建不出来」处理、不每帧重试
+            logger.error("[MEI/tooltip] 类型 {} 的配方页脚本建不出来: {}".format(category_id, error_text(e)))
+            return False
         self.Binder = self.MakeBinder()
-        self.Script = script_cls(recipe)
+        self.Script = script
         self.Recipe = recipe
         self.VisibleWrapper = self.Bindings.Bind(
             self.GetPreviewVisible, ViewBinder.BF_BindBool, BindingConst.RecipeVisible, CollectionConst.TooltipRecipe)

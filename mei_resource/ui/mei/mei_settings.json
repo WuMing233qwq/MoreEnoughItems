@@ -232,6 +232,34 @@
                 }
             },
             {
+                "show_namespace@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.show_namespace",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.show_namespace",
+                    "$option_binding_name": "#mei.settings.show_namespace.state"
+                }
+            },
+            {
+                "show_namespace_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.show_namespace.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "show_item_id@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.show_item_id",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.show_item_id",
+                    "$option_binding_name": "#mei.settings.show_item_id.state"
+                }
+            },
+            {
+                "show_item_id_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.show_item_id.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
                 "float_group@settings_common.option_group_label": {
                     "$text": "options.mei.general.group.float",
                     "$main_header_text_color": [ 0.67, 0.67, 0.75 ]

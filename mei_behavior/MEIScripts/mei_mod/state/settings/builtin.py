@@ -42,6 +42,12 @@ ADVANCED_TOOLTIP = "advanced_tooltip"
 TOUCH_OPPOSITE = "touch_opposite"
 """ 触屏菜单摆到点的那一格的另一侧屏幕边上（方便两只手操作：右手点、左手按菜单）；关着照常按区域摆。开界面时读 """
 
+SHOW_NAMESPACE = "show_namespace"
+""" 物品的悬停文字最底下写命名空间（蓝色斜体，照 Java 版显示模组名的样子）；格子建出来时读 """
+
+SHOW_ITEM_ID = "show_item_id"
+""" 物品的悬停文字里写英文 ID（深灰，照 Java 版的高级提示框），在命名空间那一行上面；格子建出来时读 """
+
 FLOAT_MODE = "float_mode"
 """ 悬浮窗模式：支持 MEI 的界面也不展开 MEI，只显示悬浮窗（点 MEI 再展开）；开界面时读 """
 
@@ -75,6 +81,8 @@ def RegisterBuiltinSettings():  # type: () -> None
         Toggle(BOOKMARKS_WORLD, "options.mei.general.bookmarks_world", default=False),
         Toggle(ADVANCED_TOOLTIP, "options.mei.general.advanced_tooltip", default=True),
         Toggle(TOUCH_OPPOSITE, "options.mei.general.touch_opposite", default=False),
+        Toggle(SHOW_NAMESPACE, "options.mei.general.show_namespace", default=True),
+        Toggle(SHOW_ITEM_ID, "options.mei.general.show_item_id", default=False),
         Toggle(FLOAT_MODE, "options.mei.general.float_mode", default=False),
         Slider(FLOAT_THRESHOLD, "options.mei.general.float_threshold", 0, 11, step=1, default=0),
         Toggle(FLOAT_QUICK_COLLAPSE, "options.mei.general.float_quick_collapse", default=False),
@@ -114,6 +122,16 @@ def IsAdvancedTooltipEnabled():  # type: () -> bool
 def IsTouchOppositeSide():  # type: () -> bool
     """ 触屏菜单摆不摆到另一侧屏幕边上；设置项没登记时按不摆 """
     return SettingsManager.Get(TOUCH_OPPOSITE) is True
+
+
+def IsNamespaceShown():  # type: () -> bool
+    """ 悬停文字最底下写不写命名空间；设置项没登记时按写 """
+    return SettingsManager.Get(SHOW_NAMESPACE) is not False
+
+
+def IsItemIdShown():  # type: () -> bool
+    """ 悬停文字里写不写英文 ID；设置项没登记时按不写 """
+    return SettingsManager.Get(SHOW_ITEM_ID) is True
 
 
 def IsFindButtonEnabled():  # type: () -> bool

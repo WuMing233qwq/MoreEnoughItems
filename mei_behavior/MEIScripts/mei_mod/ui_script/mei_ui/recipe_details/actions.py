@@ -30,7 +30,7 @@
 改成数据驱动 grid —— 那是**嵌套 collection**，引擎支不支持还不清楚。
 
 第三方按钮**完全不受本表约束**：自带 prefix 与 path，爱放哪放哪，见
-docs/extension_api.md §4.5。
+docs/modding/02-recipes.md §6。
 """
 from collections import OrderedDict
 

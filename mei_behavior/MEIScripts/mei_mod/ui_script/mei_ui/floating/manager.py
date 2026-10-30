@@ -39,6 +39,17 @@ from MEIScripts.utils.text import error_text
 BACKDROP = "backdrop"
 
 
+def layer_of(control):  # type: (any) -> int or None
+    """ 控件的 GetLayer；没有控件、读不出、给的不是数（布尔也不算）给 None """
+    try:
+        layer = control.GetLayer() if control is not None else None
+    except Exception:  # noqa
+        return None
+    if isinstance(layer, bool) or not isinstance(layer, (int, long, float)):
+        return None
+    return int(layer)
+
+
 def side_layers(main):  # type: (any) -> tuple
     """
     两栏平时 / 悬浮窗管事时的层级（悬浮窗模式下调高）。值写在根控件
@@ -46,16 +57,10 @@ def side_layers(main):  # type: (any) -> tuple
     再和同在 MEI 根下、层级为 0 的第三个记号做差 —— GetLayer 给的是相对父控件的值还是一路累加的值，差都一样。
     读不到（记号没了、给的不是数）就给 (None, None)：不动层级
     """
-    values = []
-    for path in (UiPathConst.SideLayerZero, UiPathConst.SideLayerNormal, UiPathConst.SideLayerFloat):
-        control = main.GetUIControl(path)
-        try:
-            layer = control.GetLayer() if control is not None else None
-        except Exception:  # noqa
-            layer = None
-        if isinstance(layer, bool) or not isinstance(layer, (int, long, float)):
-            return None, None
-        values.append(int(layer))
+    values = [layer_of(main.GetUIControl(path))
+              for path in (UiPathConst.SideLayerZero, UiPathConst.SideLayerNormal, UiPathConst.SideLayerFloat)]
+    if None in values:
+        return None, None
     return values[1] - values[0], values[2] - values[0]
 
 
@@ -230,7 +235,8 @@ class FloatController(object):
     def Apply(self, quiet=False):
         """
         按 Mode 写显隐，两个方向都写：物品栏、收藏栏（还要看「显示左侧栏」）、黑底、悬浮窗与 MEI 按钮的按下样子；
-        两栏的层级也照样子写（悬浮窗管事时用根控件变量 $mei_float_side_layer，平时用 $mei_side_layer）。
+        露着的两栏层级照样子对一下（悬浮窗管事时用根控件变量 $mei_float_side_layer，平时用 $mei_side_layer；EnsureLayer：
+        一样就不写 —— SetLayer 要重算整个界面的层级，很贵）。收着时两栏藏着，层级不管。
         两栏显没显示也告诉脚本（主节点 ShowSides）：藏着时 grid 不自检，从藏着变成显示时当场补推（不等 1 秒的自检）。
         quiet 是开界面那一次；之后换样子时收起菜单、退出查找状态（它们指着的格子可能刚藏起来）
         """
@@ -246,8 +252,8 @@ class FloatController(object):
             if control is None:
                 continue
             control.SetVisible(on)
-            if side and layer is not None:
-                control.SetLayer(layer)
+            if side and on and layer is not None:
+                self.EnsureLayer(control, layer)
         self.Window.Show(self.Mode != MODE_EXPANDED)
         self.Window.SetActive(MEI, self.Mode == MODE_OVERLAY)
         sides = getattr(main, "ShowSides", None)
@@ -259,6 +265,19 @@ class FloatController(object):
         if menu is not None:
             menu.Close()
         self.Find.Exit()
+
+    def EnsureLayer(self, control, layer):  # type: (any, int) -> bool
+        """
+        一栏的层级对成 layer：现在就是它就不写（GetLayer 和零点记号做差，同 side_layers），读不出才照写。返回写没写。
+        SetLayer 要重算整个界面的层级（开着 MEI 的工作台两万多个控件），能不调就不调：两栏生下来的层级就是它们最常用的那一档
+        （支持的界面是平时那一档、别的界面是悬浮窗那一档），只有支持的界面在「照常展开」与「从悬浮窗点开」之间换的那一下才真写
+        """
+        zero = layer_of(self.MainNode.GetUIControl(UiPathConst.SideLayerZero))
+        now = layer_of(control)
+        if zero is not None and now is not None and now - zero == layer:
+            return False
+        control.SetLayer(layer)
+        return True
 
     def OnFindChanged(self, active):  # type: (bool) -> None
         """ 查找状态变了：两个查询按钮跟着变样子（悬浮窗的换贴图，顶栏的图标换颜色）"""

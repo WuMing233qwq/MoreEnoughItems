@@ -21,7 +21,7 @@ from collections import OrderedDict
 
 from mod_log import logger
 
-from MEIScripts.common.classes.base import BaseRecipeUIScript
+from MEIScripts.common.classes.base import BaseRecipeUIScript, RecipeSource
 from MEIScripts.common.classes.types import Item
 from MEIScripts.constants.codes import QueryConst
 from MEIScripts.utils.lang import localize
@@ -29,6 +29,20 @@ from MEIScripts.utils.sequence import dedupe, recipe_id
 from MEIScripts.utils.text import error_text
 
 from .sources import SourceRegistry
+
+FALLBACK_ICON = ("minecraft:book", 0)
+""" 类型既没声明图标、也没有工作站时 TypeTab 上画的 """
+
+
+def _builds_full_list(source):  # type: (RecipeSource) -> bool
+    """ 这个来源会不会凑出全表：能自报全量的会；覆写了 IsAllComplete 的是边扫边给（引擎来源靠扫描）；两样都不是的给不出 """
+    if getattr(source, "CAN_ENUMERATE", False):
+        return True
+    own = getattr(type(source), "IsAllComplete", None)
+    base = RecipeSource.IsAllComplete
+    # 比底下的函数对象：py2 的 unbound method 每次取属性都是新的包装，拿 is 比恒为假
+    return getattr(own, "__func__", own) is not getattr(base, "__func__", base)
+
 
 class __RecipeManager(object):  # noqa
     """ 配方查询编排：按类别取来源、合并、去重、缓存 """
@@ -64,9 +78,20 @@ class __RecipeManager(object):  # noqa
 
     @staticmethod
     def GetDisplayItemData(crafting_type):  # type: (str) -> tuple or None
-        """ 类别 tab 图标 (ItemId, AuxValue) """
+        """
+        类别 tab 图标 (ItemId, AuxValue)：类型自己声明的；没声明（RecipeCategory 的 icon 缺省是 None）用第一个工作站，
+        再没有用一本书 —— 给 None 的话这个类型进不了 TypeTab：内容是它、亮着的却是别的类型，也点不回它
+        """
         category = SourceRegistry.GetCategory(crafting_type)
-        return category.Icon if category else None
+        if category is None:
+            return None
+        if category.Icon:
+            return category.Icon
+        for stack in getattr(category, "Stations", None) or ():
+            item = getattr(stack, "Item", None)
+            if item is not None:
+                return item.ItemId, item.AuxValue
+        return FALLBACK_ICON
 
     @staticmethod
     def GetControlDef(crafting_type):  # type: (str) -> str or None
@@ -92,32 +117,82 @@ class __RecipeManager(object):  # noqa
 # ======================================================================================================================
     def QueryRecipe(self, item, query_by="output", types=None):
         # type: (Item, str, list or None) -> OrderedDict
-        """ 入口统一用 Item 传参，按类别聚合查询；命中缓存直接返回 """
+        """ 入口统一用 Item 传参，按类别聚合查询；命中缓存直接返回。查工作站的用途带上它服务的类型的全部配方（QueryRecipeFull）"""
+        return self.QueryRecipeFull(item, query_by, types)[0]
+
+    def QueryRecipeFull(self, item, query_by="output", types=None):
+        # type: (Item, str, list or None) -> tuple
+        """
+        按类别聚合查询，返回 (结果, 还没凑齐全表的类型集合)。
+
+        **查工作站的用途**（query_by="input"，物品在某些类型的 RecipeCategory.Stations 里）：这些类型排在最前，
+        每个类型里先是真用到它的配方，后面接这个类型的全部配方（QueryAll）—— JEI / EMI 查工作台的用途就是整个合成表。
+        全表要靠来源自己凑（引擎来源靠分帧扫描），还在凑的类型（IsCategoryBuilding）进第二个返回值：这样的结果**不进查询缓存**，
+        凑齐后再查一次就全了。别的查询第二个返回值恒为空。
+        """
         if not isinstance(item, Item):
-            return OrderedDict()
+            return OrderedDict(), set()
 
         cache = self._query_cache
         if cache is not None:
             hit = cache.Get(item, query_by, types)
             if hit is not None:
-                return hit
+                return hit, set()
 
         if query_by not in (QueryConst.Output, QueryConst.Input):
             raise TypeError("Invalid query_by")
 
         result = OrderedDict()
+        pending = set()
         # **不要重绑定 types** —— 它要原样用作缓存键. 展开成全集后再回写,
         # Get(None) 与 Put(全集) 的键就永远对不上了.
         wanted = types if types else self.GetAllCraftingTypes()
+        stations = self.StationCategories(item, wanted) if query_by == QueryConst.Input else []
 
-        for category_id in wanted:
+        for category_id in stations + [one for one in wanted if one not in stations]:
             recipes = self._QueryCategory(category_id, item, query_by)
+            if category_id in stations:
+                everything, _complete = self.QueryAll(category_id)
+                if self.IsCategoryBuilding(category_id):
+                    pending.add(category_id)
+                recipes = dedupe(recipes + everything, key=recipe_id)
             if recipes:
                 result[category_id] = recipes
 
-        if cache is not None:
+        if cache is not None and not pending:
             cache.Put(item, query_by, result, types)
-        return result
+        return result, pending
+
+    @staticmethod
+    def StationCategories(item, wanted=None):  # type: (Item, list or None) -> list
+        """ 这个物品是哪些类型的工作站（按 SortIndex）；给了 wanted 就只要其中的 """
+        found = SourceRegistry.FindCategoriesByStation(item)
+        return [category_id for category_id in found if wanted is None or category_id in wanted]
+
+    def PendingCategories(self, item, query_by):  # type: (Item, str) -> list
+        """
+        查这个物品时哪些类型的全表还在凑：只有查工作站的用途才会有（它服务的类型还在扫）。
+        不碰引擎、不排扫描（IsCategoryBuilding），配方页拿它决定写不写「扫描中」、凑齐了要不要刷新
+        """
+        if query_by != QueryConst.Input or not isinstance(item, Item):
+            return []
+        return [category_id for category_id in self.StationCategories(item) if self.IsCategoryBuilding(category_id)]
+
+    @staticmethod
+    def IsCategoryBuilding(category_id):  # type: (str) -> bool
+        """
+        这个类型的全表还在凑没有：有来源会凑出全表（能自报全量的，或覆写了 IsAllComplete、边扫边给的）而它的 IsAllComplete 还是假。
+        给不出全表的来源（不能自报全量、也没覆写 IsAllComplete）不算在凑 —— 它永远凑不齐，等它就是一直「扫描中」，
+        它的配方只在真用到这个物品时出现。来源炸了也不算在凑（免得一直等下去）。不碰引擎、不排扫描
+        """
+        for source in SourceRegistry.GetSources(category_id):
+            try:
+                if _builds_full_list(source) and not source.IsAllComplete():
+                    return True
+            except Exception as e:  # noqa
+                logger.error("[MEI/query] 类别 {} 的来源 {} 报不出全表凑齐没有: {}".format(
+                    category_id, type(source).__name__, error_text(e)))
+        return False
 
     @staticmethod
     def QueryAll(category_id):  # type: (str) -> tuple
@@ -138,9 +213,9 @@ class __RecipeManager(object):  # noqa
 
     def QueryRecipeEx(self, item, query_by="output", types=None):
         # type: (Item, str, list or None) -> tuple
-        """ 同 QueryRecipe, 多返回一个「结果是否完整」标志 """
-        # 直查模式下结果恒完整；标志是留给将来做背景全量构建的，消费方已按二元组接了
-        return self.QueryRecipe(item, query_by, types), True
+        """ 同 QueryRecipe, 多返回一个「结果是否完整」标志：查工作站的用途时，它服务的类型还没凑齐全表就是不完整 """
+        result, pending = self.QueryRecipeFull(item, query_by, types)
+        return result, not pending
 
     @staticmethod
     def _QueryCategory(category_id, item, query_by):  # type: (str, Item, str) -> list

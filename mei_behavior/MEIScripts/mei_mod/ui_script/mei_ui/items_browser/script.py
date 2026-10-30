@@ -21,14 +21,16 @@
 import mod.client.extraClientApi as clientApi
 
 from MEIScripts.constants.ui import CollectionConst, ItemsBrowserPath, PanelProtoConst, UiPathConst
-from MEIScripts.mei_mod.state import CacheManager
+from MEIScripts.mei_mod.state import CacheManager, PrefsManager
 from MEIScripts.mei_mod.state.settings import IsFindButtonEnabled
 from MEIScripts.mei_mod.ui_script.mei_ui.common.base import BaseItemsGridScript
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.controls.grid import GroupItemsGrid
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.controls.panel import GroupItemPanel
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.modules.page import BuildPage, PageWithGroup
 from MEIScripts.registry import ItemManager
+from MEIScripts.utils.text import native_str
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.manager import is_touch
+from MEIScripts.registry.filters import ItemFilters
 from MEIScripts.registry.search import ItemSearchIndex
 from MEIScripts.utils import utilities
 
@@ -38,6 +40,7 @@ class ItemsBrowserScript(BaseItemsGridScript):
     def __init__(self):
         BaseItemsGridScript.__init__(self)
         self.FindBtnControl = None  # 顶栏最右边的查询按钮（只在触屏、设置开着时有）
+        self.FilterBtnControl = None  # 搜索框右边的筛选按钮：开 / 关筛选与排序菜单（main.Filters）
         self.PageIndexLabelControl = None
         self.PageIndexProgressBarControl = None
         self.PageDownBtnControl = None
@@ -75,6 +78,23 @@ class ItemsBrowserScript(BaseItemsGridScript):
         self.PageDownBtnControl.SetButtonTouchDownCallback(self.PageDown)
         self.ClearEditBtnControl.SetButtonTouchDownCallback(self.ClearEditBox)
         self.InitFindButton()
+        self.InitFilterButton()
+
+    def InitFilterButton(self):
+        """ 搜索框右边的筛选按钮：点一下开 / 关筛选与排序菜单（mei_ui/filters/）；图标按选没选染色（菜单那边写）"""
+        self.FilterBtnControl = self.MainNode.GetUIControl(ItemsBrowserPath.FilterButton, "button")
+        if self.FilterBtnControl is not None:
+            self.FilterBtnControl.AddTouchEventParams({"isSwallow": True})
+            self.FilterBtnControl.SetButtonTouchUpCallback(self.ToggleFilters)
+        filters = getattr(self.MainNode, "Filters", None)
+        if filters is not None:
+            filters.PaintButton()
+
+    def ToggleFilters(self, _args=None):
+        """ 点了筛选按钮：交给这个界面的筛选菜单，下一帧开 / 关 """
+        filters = getattr(self.MainNode, "Filters", None)
+        if filters is not None:
+            filters.Toggle()
 
     def InitFindButton(self):
         """
@@ -140,13 +160,52 @@ class ItemsBrowserScript(BaseItemsGridScript):
     def InitItemsList(self):
         """ 初始化物品标识表 (不含slot映射, 由调用方通过 _refreshSlots 处理) """
         layout = self.Layout
-        cached = CacheManager.GetItemsPage()
+        filtered = self.HasItemView()
+        cached = CacheManager.GetItemsPage() if not filtered else None
         if not cached:
-            items = ItemManager.GetBrowsableItems()
+            items = self.ApplyItemView(self.ItemSource())
             self.ItemsPage = BuildPage(items, layout.Cols, layout.Rows)  # type: PageWithGroup
-            CacheManager.CacheItemsPage(self.ItemsPage)
+            if not filtered:
+                CacheManager.CacheItemsPage(self.ItemsPage)
         else:
             self.ItemsPage = cached
+
+    @staticmethod
+    def HasItemView():  # type: () -> bool
+        """ 选了筛选或排序没有（prefs）；没选时整条路照旧（缓存的分页也照旧用）"""
+        return bool(PrefsManager.GetItemFilters() or PrefsManager.GetItemSort())
+
+    @staticmethod
+    def ItemSource(text=None):  # type: (any) -> list
+        """
+        物品栏的候选：有搜索字按搜索、没有就是整张表。选了加法的筛选（「隐藏物品」）时连藏着的一起拿，
+        留哪些由 ApplyItemView 按那几项定
+        """
+        hidden = ItemFilters.HasAdditions(PrefsManager.GetItemFilters())
+        if text:
+            return ItemSearchIndex.Search(text, include_hidden=hidden)
+        return ItemManager.GetBrowsableItems(include_hidden=hidden)
+
+    @staticmethod
+    def ApplyItemView(items):  # type: (list) -> list
+        """ 物品栏的筛选与排序（registry/filters.py；先搜、再加、再筛、再排）；什么都没选原样返回 """
+        filters, sort = PrefsManager.GetItemFilters(), PrefsManager.GetItemSort()
+        if not filters and not sort:
+            return items
+        return ItemFilters.Apply(items, filters, sort, shown=lambda item: not ItemManager.IsHidden(item))
+
+    def RefreshItemView(self):
+        """ 筛选 / 排序变了（筛选菜单）：照现在的搜索字重排物品栏、回到第一页；搜索的缓存作废（它是按旧的筛选排的）"""
+        if not self.Inited:
+            return
+        CacheManager.ClearSearchData()
+        layout = self.Layout
+        if self.InputText:
+            self.ItemsPage = BuildPage(self.ApplyItemView(self.ItemSource(self.InputText)), layout.Cols, layout.Rows)
+            CacheManager.CacheSearchData(self.InputText, self.ItemsPage)
+        else:
+            self.InitItemsList()
+        self.RefreshSlots()
 
     def OnMouseWheel(self, args):
         x, _ = utilities.GetMousePosInt()
@@ -215,7 +274,7 @@ class ItemsBrowserScript(BaseItemsGridScript):
             cached = CacheManager.GetSearchData()
             if cached:
                 self.InputText, self.ItemsPage = cached
-                self.SearchControl.SetEditText(self.InputText)
+                self.SearchControl.SetEditText(native_str(self.InputText))
                 self.RefreshSlots()
                 self.UpdateIndexPanel()
                 return
@@ -225,7 +284,7 @@ class ItemsBrowserScript(BaseItemsGridScript):
                 return
             self.InputText = input_text
 
-            items = ItemSearchIndex.Search(self.InputText)
+            items = self.ApplyItemView(self.ItemSource(self.InputText))
 
             self.ItemsPage = BuildPage(items, layout.Cols, layout.Rows)
             self.RefreshSlots()

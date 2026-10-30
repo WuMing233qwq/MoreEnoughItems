@@ -30,15 +30,18 @@ from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys import hover
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.manager import FloatController
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.screen import open_screen
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.state import KIND_COMPAT, KIND_HUD, KIND_SCREEN, KIND_SUPPORTED
+from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
+from MEIScripts.mei_mod.ui_script.mei_ui.modes.tool import ToolHost
+from MEIScripts.mei_mod.ui_script.mei_ui.filters.menu import FilterMenu
 from MEIScripts.mei_mod.ui_script.mei_ui.core.params import (
-	MAIN_CONTENT_CONTROL, allow_change_visible, under, visible_control_path,
+	MAIN_CONTENT_CONTROL, adaptive_conditions, allow_change_visible, under, visible_control_path,
 )
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import NotifyNoRecipes
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.node import RecipeDetailsNode
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.manager import TooltipManager
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
 from MEIScripts.mei_mod.ui_script.mei_ui.core.script import UIScriptMain
-from MEIScripts.mei_mod.state import BookmarkManager, PinManager, PrefsManager
+from MEIScripts.mei_mod.state import BookmarkManager, PinManager, PrefsManager, TreePrefsManager
 from MEIScripts.mei_mod.state.settings import IsBookmarksVisible
 
 ViewBinder = clientApi.GetViewBinderCls()
@@ -58,10 +61,13 @@ class UIMainNode(UIScriptMain):
 		self.ScreenNode = screen_node
 		self.Kind = kind  # type: str  # 支持的界面（代理建的）/ HUD / 强制兼容（注入的，floating/hosts.py）/ MEI 自己的界面（floating/screen.py）
 		self.Float = None  # type: FloatController or None  # 悬浮窗、查找状态，OnCreate 建、OnDestroy 拆
+		self.Tool = None  # type: ToolHost or None  # 工具模式拿起的物品（docs/architecture/modes.md），OnCreate 建、OnDestroy 拆
+		self.Filters = None  # type: FilterMenu or None  # 物品栏的筛选与排序菜单（mei_ui/filters/），OnCreate 建、OnDestroy 拆
 		self.Covered = False  # type: bool  # 注入的界面被别的界面盖着（Cover / Uncover）：不推每帧
-		# 覆盖层用哪个定义：支持的界面两栏写死在 JSON 里；注入的界面用不带两栏的那个，第一次展开才建两栏（EnsureScripts）——
-		# HUD 上平时只多一个悬浮窗，不把两栏几百个控件塞进游戏界面的每次重排
-		self.RootDef = UiPathConst.ProxyRootDef if kind in (KIND_SUPPORTED, KIND_SCREEN) else UiPathConst.FloatRootDef  # type: str
+		# 覆盖层用哪个定义：支持的界面两栏写死在 JSON 里（平时那一档的层级）；注入的界面用不带两栏的那个，第一次展开才建两栏（EnsureScripts）——
+		# HUD 上平时只多一个悬浮窗，不把两栏几百个控件塞进游戏界面的每次重排。MEI 自己的界面也用不带两栏的，一打开就按悬浮窗那一档的定义建：
+		# 它一打开就是点开的样子，用带两栏的那个就得每次开都 SetLayer（很贵：要重算整个界面的层级）
+		self.RootDef = UiPathConst.ProxyRootDef if kind == KIND_SUPPORTED else UiPathConst.FloatRootDef  # type: str
 		self.AllowChangeVisible = {}  # type: dict  # 代理参数 AllowChangeVisible 解析成 {目标: 布尔}（core/params.py）
 		self.RecipeAdaptive = False  # type: bool  # 配方页开着：它的几块登记成了避让目标
 		self.SuspendedContent = []  # type: list  # 配方页开着时停了避让的原版内容（主内容和长在它底下的）
@@ -96,7 +102,8 @@ class UIMainNode(UIScriptMain):
 		self.AllowChangeVisible = allow_change_visible(self.Params)
 		self.VisiblePath = visible_control_path(self.Params, self.MainPath)
 
-		self.InitAdaptiveControlsFromPaths(self.ContentPaths, use_root_path=True, clear=True)
+		self.InitAdaptiveControlsFromPaths(self.ContentPaths, use_root_path=True, clear=True,
+		                                   conditions=adaptive_conditions(self.Params))
 
 	def OnCreate(self):
 		context.SetMainNode(self)
@@ -128,16 +135,23 @@ class UIMainNode(UIScriptMain):
 		# 悬浮窗与查找状态（docs/architecture/floating.md）：按设置定这次是展开还是收成悬浮窗
 		self.Float = FloatController(self, self.Kind)
 		self.Float.OnCreate()
+		# 三种模式（docs/architecture/modes.md）：工具模式拿起的物品、捕获层一个界面一份；每次开界面问一次服务端有没有作弊的权限
+		self.Tool = ToolHost(self)
+		self.Tool.OnCreate()
+		self.Filters = FilterMenu(self)
+		self.Filters.OnCreate()
+		ModeManager.OnScreenOpen()
 
 	def EnsureScripts(self):
 		"""
 		物品栏、收藏栏（「显示左侧栏」开着才建）的控件与脚本建起来，建过的不再建。
-		支持的界面两栏写在覆盖层的 JSON 里，这里只建脚本；注入的界面覆盖层里没有两栏，第一次展开时先把控件建出来
+		支持的界面两栏写在覆盖层的 JSON 里，这里只建脚本；注入的界面、MEI 自己的界面覆盖层里没有两栏，先把控件建出来 ——
+		按悬浮窗管事时那一档层级的定义建（这几种界面两栏一露面就是悬浮窗管事），不用再 SetLayer
 		"""
-		if not self.ItemsBrowserIns.Inited and self.__EnsureWrapper(UiPathConst.RightWrapper, UiPathConst.RightWrapperDef):
+		if not self.ItemsBrowserIns.Inited and self.__EnsureWrapper(UiPathConst.RightWrapper, UiPathConst.FloatRightWrapperDef):
 			self.ItemsBrowserIns.OnCreate()
 		if (IsBookmarksVisible() and not self.ItemsSidebarIns.Inited
-				and self.__EnsureWrapper(UiPathConst.LeftWrapper, UiPathConst.LeftWrapperDef)):
+				and self.__EnsureWrapper(UiPathConst.LeftWrapper, UiPathConst.FloatLeftWrapperDef)):
 			self.ItemsSidebarIns.OnCreate()
 
 	def __EnsureWrapper(self, path, control_def):  # type: (str, str) -> bool
@@ -181,6 +195,8 @@ class UIMainNode(UIScriptMain):
 		"""
 		if self.Float is not None:
 			self.Float.Suspend()
+		if self.Tool is not None:
+			self.Tool.Release()
 		self.ShowRoot(False)
 		self.Covered = True
 
@@ -278,6 +294,12 @@ class UIMainNode(UIScriptMain):
 		menu = self.Menu
 		if menu is not None:
 			menu.Update()
+		tool = self.Tool
+		if tool is not None:
+			tool.Update()
+		filters = self.Filters
+		if filters is not None:
+			filters.Update()
 		floating = self.Float
 		if floating is not None:
 			floating.Update()
@@ -286,6 +308,12 @@ class UIMainNode(UIScriptMain):
 
 	def OnDestroy(self):
 		context.ClearMainNode(self)
+		if self.Filters is not None:
+			self.Filters.OnDestroy()
+			self.Filters = None
+		if self.Tool is not None:
+			self.Tool.OnDestroy()
+			self.Tool = None
 		if self.Float is not None:
 			self.Float.OnDestroy()
 			self.Float = None
@@ -311,3 +339,4 @@ class UIMainNode(UIScriptMain):
 		PrefsManager.Flush(force=force)
 		BookmarkManager.Flush(force=force)
 		PinManager.Flush(force=force)
+		TreePrefsManager.Flush()  # 配方树的首选、当原料：有改动才写

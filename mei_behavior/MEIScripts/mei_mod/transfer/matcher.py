@@ -211,6 +211,21 @@ def can_fulfill(slots, supply, multiplier=1):  # type: (list, dict, int) -> bool
     return not missing
 
 
+def reachable(slots, supply):  # type: (list, dict) -> bool
+    """
+    每个要东西的格位，供给里至少有它的一种候选 —— can_fulfill 的**必要条件**：这里说不行的，can_fulfill 一定也说不行。
+    便宜（不复制供给表、不试算配额），一次判一大批配方时先拿它筛掉明显做不出来的（查工作台的用途时是整个合成表）。
+    不读 supply 里的数量：说行的照样要 can_fulfill 定夺
+    """
+    for _slot, ingredient in slots:
+        if ingredient is None:
+            continue
+        candidates = _candidates(ingredient)
+        if candidates and not any(key in supply for key in candidates):
+            return False
+    return True
+
+
 def copy_supply(supply):  # type: (dict) -> dict
     """ 供给表的浅副本，桶内元组不可变故只需复制列表 """
     return dict((key, list(bucket)) for key, bucket in supply.items())

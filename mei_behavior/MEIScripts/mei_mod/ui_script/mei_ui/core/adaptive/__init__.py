@@ -18,11 +18,10 @@
 
 from .registry import AdaptiveControlRegistry
 from .geometry import AdaptiveGeometryCache
-from .rules import resolve_rule_for_path, eval_visible_rule
+from .rules import holds
 
 __all__ = [
     "AdaptiveControlRegistry",
     "AdaptiveGeometryCache",
-    "resolve_rule_for_path",
-    "eval_visible_rule"
+    "holds",
 ]

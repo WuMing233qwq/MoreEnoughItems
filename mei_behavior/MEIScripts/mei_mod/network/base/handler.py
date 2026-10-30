@@ -37,14 +37,19 @@ _RULES_ATTR = "__mei_net_handler__"
 class HandlerContext(object):
     """ 一次请求的环境。由 Channel 填好交给处理器 """
 
-    __slots__ = ("Name", "RequestId", "PlayerId", "Channel")
+    __slots__ = ("Name", "RequestId", "PlayerId", "Channel", "Trusted")
 
-    def __init__(self, name, request_id, player_id, channel):
-        # type: (str, int, str, any) -> None
+    def __init__(self, name, request_id, player_id, channel, trusted=False):
+        # type: (str, int, str, any, bool) -> None
         self.Name = name              # type: str
         self.RequestId = request_id   # type: int
         self.PlayerId = player_id     # type: str  # 服务端侧是发起者; 客户端侧为空
         self.Channel = channel        # type: any
+        self.Trusted = trusted        # type: bool
+        """
+        PlayerId 是不是引擎给的：服务端收客户端事件时引擎自带 "__id__"（发送方玩家 id，SDK ListenForEvent 的说明），
+        客户端自己写的 "__from" 能冒充别人。**要按玩家鉴权的处理器（作弊给物品）只认 Trusted 的**
+        """
 
 
 def Handler(name):  # type: (str) -> any

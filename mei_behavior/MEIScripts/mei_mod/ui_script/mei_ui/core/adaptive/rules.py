@@ -17,64 +17,30 @@
 #  License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
-from MEIScripts.mei_mod.ui_script.mei_ui import context
+"""
+自适应的生效条件（docs/architecture/settings.md §6.3）：登记的避让目标看得见、还要它的条件说「算」，才拿去避让。
 
-def recipe_book_child_visible(_):
-    try:
-        main_node = context.GetMainNode()
-        screen_def = main_node.GetScreenDef()
-        if screen_def in ["crafting.inventory_screen", "crafting.crafting_screen"]:
-            # 是否需要计算关联到 recipe_book 控件可见性 解决棍母控件影响自适应问题
-            recipe_book = main_node.GetUIControl("/content_stack_panel/recipe_book")
-            return recipe_book.GetVisible()
-        else:
-            return False
-    except Exception:  # noqa
-        return False
+有的控件藏起来以后位置会变、却还看得见（原版配方书藏了，它上面的页签与网易的左右翻页箭头挪到别处），光看 GetVisible 判断不了，
+这时由代码说了算：条件是一个函数 condition(get) -> bool，get(路径) 按界面的 RootPath 取同一个界面里的控件（取不到给 None）。
+条件在代理参数的 Conditions 里按路径给（ctx.UI.Screens.Register，原版的在 extensions/vanilla/screens.py），
+主节点代码登记的避让目标也可以直接带一个（UIScriptMain.RegisterAdaptiveControl）。纯计算，不碰引擎
+"""
 
 
-RULES = {
-    "recipe_book_child_visible": recipe_book_child_visible,
-}
-
-STATIC_RULES = {"recipe_book_child_visible"}
-
-RULE_PATH_PREFIXES = (
-    "/recipe_book/tab_navigation_panel",
-    "/recipe_book/category_tab_left_arrow",
-    "/recipe_book/category_tab_right_arrow",
-)
-
-def resolve_rule_for_path(path):
-    if path and any(prefix in path for prefix in RULE_PATH_PREFIXES):
-        return "recipe_book_child_visible"
-    return None
-
-
-def eval_visible_rule(control, visible_rule, rule_cache=None):
-    if visible_rule is None:
+def holds(condition, get, memo=None):  # type: (callable or None, callable, dict or None) -> bool
+    """
+    这个条件此刻成不成立：没给条件就是成立；条件抛异常当「不成立」（这一块不避让）。
+    memo 是这一轮几何刷新的缓存，按条件函数记 —— 几条路径共用一个条件时一轮只问一次引擎
+    """
+    if condition is None:
         return True
-
-    if callable(visible_rule):
-        try:
-            return bool(visible_rule(control))
-        except Exception:  # noqa
-            return False
-
-    if isinstance(visible_rule, basestring):
-        if rule_cache is not None and visible_rule in STATIC_RULES and visible_rule in rule_cache:
-            return rule_cache[visible_rule]
-
-        rule = RULES.get(visible_rule)
-        if rule is None:
-            return True
-        try:
-            result = bool(rule(control))
-            if rule_cache is not None and visible_rule in STATIC_RULES:
-                rule_cache[visible_rule] = result
-            return result
-        except Exception:  # noqa
-            return False
-
-    return True
-
+    key = id(condition)
+    if memo is not None and key in memo:
+        return memo[key]
+    try:
+        result = bool(condition(get))
+    except Exception:  # noqa  条件是登记方的代码，抛了只当这一块这一轮不避让
+        result = False
+    if memo is not None:
+        memo[key] = result
+    return result

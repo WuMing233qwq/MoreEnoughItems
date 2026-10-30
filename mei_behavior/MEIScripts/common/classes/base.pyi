@@ -87,6 +87,8 @@ class SlotTarget(object):
 
     def Peek(self) -> Any: ...
 
+    def Restore(self, previous: Any) -> bool: ...
+
 
 class ItemSource(object):
     Id: str

@@ -66,7 +66,7 @@ class ExtensionContext(object):
 
         self.Registry = RegistryFacade()
         self.Types = TypesFacade()
-        self.UI = UiFacade()
+        self.UI = UiFacade(getattr(extension, "ID", None) or "")
         self.Utils = UtilsFacade()
         self.Const = ConstFacade()
         self.Log = _ExtensionLogger(getattr(extension, "ID", None))

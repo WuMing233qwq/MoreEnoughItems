@@ -33,9 +33,10 @@ from mod_log import logger
 
 from MEIScripts.constants.codes import NameConst, QueryConst
 from MEIScripts.constants.texts import TooltipText, TreeText
-from MEIScripts.constants.ui import TreeConst, TreePath
+from MEIScripts.constants.ui import ModeConst, TreeConst, TreePath
 from MEIScripts.mei_mod.state import BookmarkManager, TreePrefsManager
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.actions import op_toggle_item
+from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
 from MEIScripts.utils.binder import ScreenBinder
 from MEIScripts.utils.events import EventListener
 from MEIScripts.utils.text import error_text, native_str, to_unicode
@@ -144,6 +145,11 @@ class RecipeTreeScript(object):
 
     def DestroyScript(self):
         self.Ready = False
+        try:
+            # 首选、当原料：关配方树就写（排着的合并写等不到退出存档 —— SDK 那时把模组的定时器全清了）
+            self.Prefs.Flush()
+        except Exception as e:  # noqa
+            logger.error("[MEI/tree] 写配方树的首选失败: {}".format(error_text(e)))
         if self.Menu is not None:
             self.Menu.Destroy()  # 配方预览的脚本、绑定、控件
         if self.Events is not None:
@@ -432,6 +438,9 @@ class RecipeTreeScript(object):
     def OpenMenu(self, target, cell=None):  # type: (tuple, any) -> None
         if self.Solver is None or not self.Solver.Done:
             return
+        # 作弊模式：点哪一格就给那一样（一组），不开菜单。工具模式在配方树里没有拿起的宿主，照平时（docs/architecture/modes.md）
+        if ModeManager.Current() == ModeConst.Cheat and ModeManager.Give(self.TargetItem(target), True):
+            return
         self.MenuTarget = target
         self.MenuBrowse = None
         self.MenuCell = cell
@@ -515,6 +524,19 @@ class RecipeTreeScript(object):
 
     def __Item(self, key):  # type: (str) -> any
         return self.Provider.ItemOf(key)
+
+    def TargetItem(self, target):  # type: (tuple) -> any
+        """ 一格显示的那一样物品：树上的格子是它的物品、工作方块格是显示着的那个工作站、汇总里的是那一样；认不出给 None """
+        kind, ident = target
+        if kind == TARGET_SUM:
+            return self.__Item(ident)
+        node = self.Solver.Find(ident) if self.Solver is not None else None
+        if node is None:
+            return None
+        if kind == TARGET_WS:
+            station = self.__Station(node.Type)
+            return self.__Item(station) if station else None
+        return self.__Item(node.Key)
 
     # 菜单：原料格 / 根
 # ======================================================================================================================
@@ -713,7 +735,9 @@ class RecipeTreeScript(object):
     def SetDefault(self, node, recipe):
         """ 设为首选 / 取消首选：写全局表，以后每棵树先用它；这棵树里对它的单独选择清掉 """
         if recipe is not None:
-            self.Prefs.SetDefault(node.Key, recipe.Id)
+            if not self.Prefs.SetDefault(node.Key, recipe.Id) and self.Prefs.Default(node.Key) != recipe.Id:
+                self.ShowToast(TreeText.PrefsFull)  # 全局表记满了：什么都没存，这棵树里的选择也别动
+                return
             self.State.Choices.pop(node.Key, None)
             if node.Id == 0 and self.State.RootRecipe != recipe.Id:
                 self.State.RootRecipe = None
@@ -748,7 +772,9 @@ class RecipeTreeScript(object):
     def ToggleRaw(self, key):
         """ 当原料（全局）/ 取消：写全局表，每棵树都不再展开它 """
         raw = not self.Prefs.IsRaw(key)
-        self.Prefs.SetRaw(key, raw)
+        if not self.Prefs.SetRaw(key, raw) and self.Prefs.IsRaw(key) != raw:
+            self.ShowToast(TreeText.PrefsFull)
+            return
         self.ShowToast(TreeText.RawSet if raw else TreeText.RawUnset)
         self.Resolve(self.__CanvasTarget())
 

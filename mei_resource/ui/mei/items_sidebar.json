@@ -425,7 +425,7 @@
                                 "orientation": "horizontal",
                                 "controls": [
                                     {
-                                        "setting": {
+                                        "mode": {
                                             "type": "panel",
                                             "anchor_from": "left_middle",
                                             "anchor_to": "left_middle",
@@ -438,7 +438,8 @@
                                                 {
                                                     "button@mei_common.ore_style_button": {
                                                         "type": "button",
-                                                        "$button_content_control|default": "mei_icons.btn_setting",
+                                                        "$button_content_control|default": "mei_common.btn_mode",
+                                                        "$button_hover_extra_control": "mei_common.mode_hover_tip",
                                                         "$control_alpha": 1.0,
                                                         "$is_new_nine_slice": false,
                                                         "$label_color": [

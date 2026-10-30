@@ -24,6 +24,7 @@ import mod.client.extraClientApi as clientApi
 from mod_log import logger
 
 from MEIScripts.mei_mod.ui_script.mei_ui import context
+from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
 from MEIScripts.mei_mod.ui_script.proxy.focus.search import contains, control_rect
 from MEIScripts.utils import utilities, LogPatcher
 from MEIScripts.utils.binder import ScreenBinder
@@ -95,6 +96,9 @@ class ItemsGrid(object):
     MAX_REPAIRS = 2
     """ 自检：卡住时连着修几次就停手（界面被别的界面盖住时拉取本来就停，别一直修、一直记日志）；建全一次就重新算 """
 
+    CREATE_RETRIES = 30
+    """ 一格的面板接连几轮建不出来（建的时候抛异常）就先放空面板（约一秒，第 0 格的 .visible 每帧拉一次）"""
+
     REPAINT_PASSES = (2, 3)
     """
     推完行列数之后（或者引擎说格子重新排列了之后），第几轮到第几轮拉到某一格时**核对**它的图标：渲染器上画的不是这一格的物品
@@ -159,6 +163,7 @@ class ItemsGrid(object):
         self.__RepaintWindow = None  # type: tuple or None  # 核对图标的那几轮（Pulls 的区间，RepaintPasses）
         self.RepaintPasses = self.REPAINT_PASSES  # type: tuple  # 推完行列数 / 格子重新排列后核对哪几轮；小 grid 可以开长
         self.__WakeScheduled = False  # type: bool  # 格子重新排列后「恢复绑定」已经排到下一帧了
+        self.__CreateFailures = {}  # type: dict  # 格子下标 -> 面板接连建不出来几次（CREATE_RETRIES）
 
     def InitBindings(self):
         self.BindConfigs(self.GetDefaultBindingConfigs())
@@ -316,6 +321,9 @@ class ItemsGrid(object):
         item_panel_ins = self.ItemPanels.get(index-1)
         if not item_panel_ins:
             return
+        # 工具 / 作弊模式先问：拿起来、给物品就不再查配方、开菜单（docs/architecture/modes.md）
+        if ModeManager.Intercept(item_panel_ins, False):
+            return
         item_panel_ins.OnPrimaryClick(None)
 
 
@@ -324,6 +332,8 @@ class ItemsGrid(object):
         index = self.ParsePath(path)
         item_panel_ins = self.ItemPanels.get(index-1)
         if not item_panel_ins:
+            return
+        if ModeManager.Intercept(item_panel_ins, True):
             return
         item_panel_ins.OnSecondaryClick(None)
 
@@ -473,6 +483,7 @@ class ItemsGrid(object):
         for _, panel in self.ItemPanels.items():
             panel.Destroy()
         self.ItemPanels = {}
+        self.__CreateFailures = {}
         self.CacheSaturated = False
         self.PendingPause = False
         self.PendingPasses = 0
@@ -621,6 +632,21 @@ class ItemsGrid(object):
         self.__FastRepushes += 1
         self.__PushDims()
 
+    def __CreateOrFallback(self, collection_index):
+        """
+        建这一格的面板；接连 CREATE_RETRIES 轮都抛异常就先放一个空面板 —— 不然这一格每轮都重建一次、grid 永远写不满、
+        暂停不了（自检一直报「面板没建全」）。异常照样往外抛给绑定回调记一行（同一条绑定只记第一次）；清缓存（翻页、刷新）时再试
+        """
+        try:
+            return self.__CreateItemPanel(collection_index)
+        except Exception:  # noqa
+            failures = self.__CreateFailures.get(collection_index, 0) + 1
+            self.__CreateFailures[collection_index] = failures
+            if failures < self.CREATE_RETRIES:
+                raise
+        from .panel import ItemPanel  # 同一个包，用到才 import（包门面先 import 本模块）
+        return ItemPanel.from_empty(self.GetControlByIndex(collection_index))
+
     def __CreateItemPanel(self, collection_index):
         """ 创建指定index的ItemPanel对象 """
         panel = self.ItemPanelCallback(collection_index)
@@ -643,7 +669,7 @@ class ItemsGrid(object):
             self.__CountPassAndMaybePause(collection_index)
             return True
 
-        panel = self.__CreateItemPanel(collection_index)
+        panel = self.__CreateOrFallback(collection_index)
         if panel:
             self.ItemPanels[collection_index] = panel
             self.__RefreshCacheSaturatedState()

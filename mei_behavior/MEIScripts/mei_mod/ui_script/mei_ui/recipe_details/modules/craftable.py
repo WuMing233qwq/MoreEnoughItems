@@ -31,7 +31,8 @@
 排序发生在查询结果上，而缓存紧接着就会被页面重建清掉，进缓存等于白算。
 """
 from MEIScripts.common.classes.types.transfer import TransferContext
-from MEIScripts.mei_mod.transfer import can_fulfill, copy_supply, index_supply
+from MEIScripts.mei_mod.transfer import can_fulfill, copy_supply, index_supply, reachable
+from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.screen_transfers import ScreenTransfers
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
 from MEIScripts.registry.transfer import TransferRegistry
 from MEIScripts.utils.log import logger
@@ -48,11 +49,30 @@ class CraftableCache(object):
     def __init__(self):
         self._verdict = {}   # type: dict  # Recipe.Id -> bool
         self._supply = None  # type: dict  # 供给表快照，None 表示还没采集过
+        self._accepts = {}   # type: dict  # (转移目标的记号, Recipe.Id) -> bool：按界面登记的转移目标收不收这一条
 
     def Invalidate(self):
         """ 丢弃全部结论。**转移成功后必须调** —— 那时玩家的物品真的变了 """
         self._verdict = {}
         self._supply = None
+        self._accepts = {}
+
+    @staticmethod
+    def TransferTarget(recipe, category_id=None):  # type: (any, str) -> any
+        """
+        当前开着的界面登记了接这一类配方的转移目标（ctx.UI.Transfers）就给它，没有给 None。每帧被问 —— 只是一次比较；
+        类型优先取配方自己的，取不到用 category_id（配方页当前的类型）
+        """
+        category = getattr(recipe, "Type", None) or category_id
+        return ScreenTransfers.Find(ProxyManager.GetCurrentScreen(), category)
+
+    def Accepts(self, target, recipe):  # type: (any, any) -> bool
+        """ 那个转移目标收不收这一条（+ 亮不亮）：不看材料，只问它；同样每帧回读，按 Recipe.Id 缓存 """
+        recipe_key = getattr(recipe, "Id", None) or id(recipe)
+        key = (target.Token, recipe_key)
+        if key not in self._accepts:
+            self._accepts[key] = ScreenTransfers.Accepts(target, recipe)
+        return self._accepts[key]
 
     def MakeContext(self):  # type: () -> TransferContext
         """ 造一个客户端侧的转移环境，带上当前屏幕供策略判断 """
@@ -113,6 +133,9 @@ def CraftableIds(result):  # type: (dict) -> set
 
     顺序的语义是「**进页那一刻的推荐**」而不是实时排行：
     转移之后不重排，玩家刚点过的那条不会在他眼皮底下掉下去。
+
+    逐条判之前先用 reachable 筛（有一格的候选背包里一样都没有的，不必复制供给表再试算）：
+    查工作台的用途时结果是整个合成表，上千条里绝大多数在这一步就筛掉了（离线 1500 条约 50 → 23 毫秒）。
     """
     from MEIScripts.registry.sources import SourceRegistry
 
@@ -140,6 +163,6 @@ def CraftableIds(result):  # type: (dict) -> set
             if recipe_id is None or recipe_id in craftable:
                 continue
             mapped = policy.MapRecipe(ctx, recipe)
-            if mapped and can_fulfill(mapped, copy_supply(supply)):
+            if mapped and reachable(mapped, supply) and can_fulfill(mapped, copy_supply(supply)):
                 craftable.add(recipe_id)
     return craftable

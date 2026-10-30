@@ -45,6 +45,12 @@ VISIBLE_CONTROL_PATH = "VisibleControlPath"
 VISIBLE_CONTROL_PATH_SNAKE = "visible_control_path"
 """ 同一个参数的蛇形写法，两种都认 """
 
+CONDITIONS = "Conditions"
+"""
+ContentPaths 里哪几块要另看条件才避让：{路径: condition(get) -> bool}（core/adaptive/rules.py）。
+看得见不够的才写 —— 比如原版配方书上面的页签，配方书藏了它挪到别处、却还看得见（extensions/vanilla/screens.py）
+"""
+
 
 def allow_change_visible(params):  # type: (dict or None) -> dict
     """ 代理参数 -> {目标: 能不能改它的显隐} """
@@ -72,3 +78,13 @@ def under(path, root):  # type: (str, str) -> bool
         return False
     root = root.rstrip("/")
     return path == root or path.startswith(root + "/")
+
+
+def adaptive_conditions(params):  # type: (dict or None) -> dict
+    """ 代理参数的 Conditions：{路径: 条件函数}；不是 dict 给空表，不能调的条件丢掉 """
+    raw = params.get(CONDITIONS) if params else None
+    if not isinstance(raw, dict):
+        return {}
+    return dict((native_str(path), condition) for path, condition in raw.items()
+                if isinstance(path, basestring) and callable(condition))
+

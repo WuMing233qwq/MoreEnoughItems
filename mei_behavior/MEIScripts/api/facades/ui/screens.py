@@ -18,7 +18,7 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 """
-挂 MEI 的界面：哪些界面开着时旁边出物品栏、收藏栏，各自的代理参数是什么（docs/extension_api.md §5.59）。
+挂 MEI 的界面：哪些界面开着时旁边出物品栏、收藏栏，各自的代理参数是什么（docs/modding/05-screens-and-tools.md §1，接口参考 docs/modding/api.md §6.4）。
 原版那 23 个由原版扩展登记（extensions/vanilla/screens.py）。纯新增，不升 API_VERSION，第三方用 getattr 探测
 """
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
@@ -30,7 +30,8 @@ def Register(screen_def, params=None):
     # type: (str, dict) -> bool
     """
     让这个界面开着时挂上 MEI（与原版容器界面一样：旁边出物品栏、收藏栏，避让 params 里登记的几块）。
-    params 的键见 docs/extension_api.md §5.59（ContentPaths / VisibleControlPath / AllowChangeVisible …），不给就是空的。
+    方块容器的界面、RegisterUI + PushScreen 开的自己的界面都行（SDK 的界面代理）。
+    params 的键见 docs/modding/api.md §6.4（ContentPaths / Conditions / VisibleControlPath / AllowChangeVisible …），不给就是空的。
     SDK 拒绝（这一局已经挂过同一个代理）时返回 False。登记要在每次进存档装配时做 —— SDK 退出存档时把代理表清了
     """
     return ProxyManager.RegisterCustomUIScreen(screen_def, dict(params or {}))

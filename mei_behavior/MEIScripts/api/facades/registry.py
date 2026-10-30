@@ -25,13 +25,15 @@ from MEIScripts.registry import (
     RecipeManager, RecipeUIManager, SourceRegistry,
 )
 # 搜索索引刻意不进 registry 门面(包门面急加载那条债), 从模块直取
+from MEIScripts.registry.filters import ItemFilter, ItemFilters, ItemSort
 from MEIScripts.registry.search import ItemSearchIndex
 from MEIScripts.registry.transfer import TransferRegistry
 
 __all__ = [
-    "ItemFactory", "ItemManager", "ItemOrganizer", "ItemSearchIndex",
+    "ItemFactory", "ItemFilter", "ItemFilters", "ItemManager", "ItemOrganizer", "ItemSearchIndex", "ItemSort",
     "RecipeManager", "RecipeUIManager", "SourceRegistry", "TransferRegistry",
 ]
+""" ItemFilters 是物品栏筛选与排序的登记处，ItemFilter / ItemSort 是登记用的两个类（纯新增，第三方用 getattr 探测）"""
 
 
 class RegistryFacade(object):
@@ -48,3 +50,6 @@ class RegistryFacade(object):
         self.ItemOrganizer = ItemOrganizer
         self.ItemSearchIndex = ItemSearchIndex
         self.TransferRegistry = TransferRegistry
+        self.ItemFilters = ItemFilters
+        self.ItemFilter = ItemFilter
+        self.ItemSort = ItemSort

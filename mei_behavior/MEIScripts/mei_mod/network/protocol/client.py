@@ -29,6 +29,7 @@ from MEIScripts.registry.transfer import TransferRegistry
 from MEIScripts.utils.log import logger
 
 from ..base import KEY_BODY, KEY_ERROR, KEY_OK
+from .cheat import REQUEST_CHEAT_ACCESS, REQUEST_CHEAT_GIVE
 from .transfer import REQUEST_TRANSFER
 
 
@@ -95,4 +96,44 @@ def SendTransfer(plan, on_result):  # type: (TransferPlan, any) -> bool
         on_result(TransferResult.from_dict(response.get(KEY_BODY)))
 
     channel.Request(REQUEST_TRANSFER, plan.to_dict(), on_reply=__on_reply)
+    return True
+
+
+def AskCheatAccess(on_result):  # type: (any) -> bool
+    """
+    问服务端自己是不是操作员（开界面时问一次：模式按钮能不能轮到作弊）。on_result(allowed) 在回执时调一次；
+    超时、出错给 None（不知道）—— 调用方别把「不知道」当成「没有」去改模式。真给物品时服务端还会再查
+    """
+    channel = _channel()
+    if channel is None:
+        return False
+
+    def __on_reply(response):
+        if not response.get(KEY_OK):
+            on_result(None)
+            return
+        on_result(bool((response.get(KEY_BODY) or {}).get("allowed")))
+
+    channel.Request(REQUEST_CHEAT_ACCESS, {}, on_reply=__on_reply)
+    return True
+
+
+def SendCheatGive(item, whole_stack, on_result=None):  # type: (any, bool, any) -> bool
+    """
+    作弊模式：让服务端给自己一组（whole_stack）或一个这样物品 —— 给不给、给多少由服务端定（cheat.py）。
+    物品自带的 userData 一起带上。on_result(回执) 在回执时调一次，超时、出错给 None
+    """
+    channel = _channel()
+    if channel is None or item is None:
+        return False
+    body = {"item": item.ItemId, "aux": item.AuxValue or 0, "all": bool(whole_stack)}
+    user_data = getattr(getattr(item, "Attr", None), "UserData", None)
+    if isinstance(user_data, dict) and user_data:
+        body["user_data"] = user_data
+
+    def __on_reply(response):
+        if on_result is not None:
+            on_result(response.get(KEY_BODY) if response.get(KEY_OK) else None)
+
+    channel.Request(REQUEST_CHEAT_GIVE, body, on_reply=__on_reply)
     return True

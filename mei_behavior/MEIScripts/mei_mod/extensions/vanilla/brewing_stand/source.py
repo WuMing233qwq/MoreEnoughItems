@@ -120,6 +120,9 @@ class BrewingSource(EngineRecipeSource):
     def __Make(self, source, reagent, output):  # type: (str, str, str) -> list
         catalyst = self.__Plain(reagent)
         if catalyst is None:
+            if reagent not in self.Unknown:
+                self.Unknown.add(reagent)
+                logger.warn("[MEI/brewing] 认不出的催化剂 {}（物品表里没有），这条酿造配方不收".format(reagent))
             return []
         if potions.type_name(source) is not None or potions.type_name(output) is not None:
             potion_in, potion_out = self.__Side(source), self.__Side(output)

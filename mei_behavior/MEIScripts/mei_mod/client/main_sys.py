@@ -33,12 +33,14 @@ from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys import binds as hotkey_binds
 from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys import manager as hotkeys
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_tree import register_screen as register_tree_screen
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
-from MEIScripts.mei_mod.state import BookmarkManager, CacheManager, SettingsManager
+from MEIScripts.mei_mod.state import (
+    BookmarkManager, CacheManager, PinManager, PrefsManager, SettingsManager, TreePrefsManager)
 from MEIScripts.mei_mod.state.settings import IsBookmarksWorldSpecific, RegisterBuiltinSettings
 from MEIScripts.mei_mod.state.settings.builtin import BOOKMARKS_WORLD
 from MEIScripts.registry import ItemManager, RecipeManager
 from MEIScripts.registry.search import ItemSearchIndex
 from MEIScripts.utils.events import EventListener
+from MEIScripts.utils.text import to_native
 
 ClientSystem = clientApi.GetClientSystemCls()
 
@@ -140,7 +142,8 @@ class MainSys(ClientSystem):
 
     def SyncLoadedItems(self, args):  # noqa
         """ 加载来自服务端的物品列表 """
-        items, hidden_items = args.get("items", [[], []])
+        # 事件载荷里的字符串可能是 unicode（连远程服务器时），物品 id 都要递给引擎：先收成 str（CLAUDE.md 引擎结论 §2）
+        items, hidden_items = to_native(args.get("items", [[], []]))
         item_list = items + hidden_items
 
         ItemManager.LoadItemIds(item_list, hidden_items)
@@ -149,7 +152,8 @@ class MainSys(ClientSystem):
         # 索引不到的游离 Item(物品书签反查踩过). 可见集由 GetBrowsableItems 过滤
         ItemManager.Reset()
         ItemManager.RegItemFromIdList(item_list)
-        ItemSearchIndex.Rebuild(ItemManager.GetBrowsableItems())
+        # 上一个世界的搜索结果页（开物品栏时会还原它）里是旧的 Item 实例
+        CacheManager.ClearSearchData()
 
         # 配方查询缓存: 注入 + 清空.
         # **必须清** —— 重进世界会重建全部 Item 对象, 而缓存键是值语义的 Item,
@@ -170,6 +174,10 @@ class MainSys(ClientSystem):
         # 物品来源: 客户端这份只用于预检(按钮亮不亮), 服务端那份才是真理
         RegisterBuiltinSources()
 
+        # 搜索索引放在扩展装配之后建：装配会加物品变体（创造栏表）、改隐藏表，先建的话第一次搜索又要整个重建一遍。
+        # 藏着的也进索引：物品栏的「隐藏物品」筛选要搜得到
+        ItemSearchIndex.Rebuild(ItemManager.GetItems())
+
     # 被引擎直接执行的父类的重写函数，引擎会执行该Update回调，1秒钟30帧
     def Update(self):
         """
@@ -188,8 +196,12 @@ class MainSys(ClientSystem):
 
     def Destroy(self):
         FloatHosts.Reset()
-        # 改完设置马上退出世界时，防抖还没来得及写盘；收藏同理
+        # 改完设置马上退出世界时，防抖还没来得及写盘；收藏、置顶、偏好、配方树的首选同理
+        # （SDK 退出存档时把模组的定时器全清了，排着的合并写不会再跑）。有改动的才写
         SettingsManager.Flush()
         BookmarkManager.Flush()
+        PrefsManager.Flush()
+        PinManager.Flush()
+        TreePrefsManager.Flush()
         self.Channel.Detach()
         self.DestroyClientListenEvents()

@@ -135,8 +135,18 @@ class __ExtensionLoader(object):  # noqa
 
     def Shutdown(self):
         """ 逆序卸载全部扩展，供热重载与重进世界 """
+        from MEIScripts.mei_mod.ui_script.mei_ui.modes.drops import DropTargets
+        from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.screen_transfers import ScreenTransfers
+        from MEIScripts.registry.filters import ItemFilters
         for instance in reversed(self._loaded):
             self._Drive(instance, "OnUnload")
+            # 工具模式的放置目标、按界面登记的配方转移都记在扩展 ID 名下（ctx.UI.Drops / Transfers），扩展自己没撤的这里撤掉：
+            # 不然重进世界后旧的回调还挂着、还先被命中
+            DropTargets.UnregisterOwner(instance.ID)
+            ScreenTransfers.UnregisterOwner(instance.ID)
+        # 物品栏的筛选与排序只有内置的与扩展登记的：扩展都卸了就回到只有内置的 ——
+        # 扩展没撤的旧函数不留到下一个世界，重复的 Id 也就不会挡住它下次的登记
+        ItemFilters.Reset()
         self._loaded = []
         self._contexts = {}
         self._booted = False

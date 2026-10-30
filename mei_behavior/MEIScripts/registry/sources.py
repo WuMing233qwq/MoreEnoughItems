@@ -23,7 +23,7 @@
 from collections import OrderedDict
 
 from MEIScripts.common.classes.base import RecipeSource
-from MEIScripts.common.classes.types import RecipeCategory
+from MEIScripts.common.classes.types import RecipeCategory, keys
 from MEIScripts.utils.log import logger
 
 
@@ -65,6 +65,18 @@ class __SourceRegistry(object):  # noqa
         """ 按 SortIndex 升序，同序时保持注册序 """
         # sorted 是稳定的，所以只按 SortIndex 排就能拿到「同权重按注册序」
         return [c.Id for c in sorted(self.categories.values(), key=lambda c: c.SortIndex)]
+
+    def FindCategoriesByStation(self, item):  # type: (any) -> list
+        """
+        这个物品是哪些类型的工作站（RecipeCategory.Stations 里有同一个 (id, aux) 的），按 SortIndex 排。
+        不建索引：类型十来个、每个几个工作站，而工作站可以随时增删（AddStation / RemoveStationsByOwner），现查最不会过期
+        """
+        item_id, aux = getattr(item, "ItemId", None), getattr(item, "AuxValue", None)
+        if not item_id:
+            return []
+        key = keys.make_key(item_id, aux or 0)
+        return [category_id for category_id in self.ListCategoryIds()
+                if any(stack.get_key() == key for stack in self.categories[category_id].Stations)]
 
     # 来源
 # ======================================================================================================================

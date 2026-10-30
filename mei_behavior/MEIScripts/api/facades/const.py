@@ -22,12 +22,12 @@
 """
 from MEIScripts.constants.codes import NameConst, QueryConst, TagConst
 from MEIScripts.constants.ui import (
-    BindingConst, CollectionConst, ItemsSidebarPath, PanelProtoConst,
+    BindingConst, CollectionConst, ItemsBrowserPath, ItemsSidebarPath, ModeConst, PanelProtoConst,
     RecipeDetailsPath, UiPathConst,
 )
 
 __all__ = [
-    "BindingConst", "CollectionConst", "ItemsSidebarPath", "NameConst",
+    "BindingConst", "CollectionConst", "ItemsBrowserPath", "ItemsSidebarPath", "ModeConst", "NameConst",
     "PanelProtoConst", "QueryConst", "RecipeDetailsPath", "TagConst", "UiPathConst",
 ]
 

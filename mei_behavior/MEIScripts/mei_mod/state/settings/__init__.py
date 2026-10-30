@@ -19,7 +19,7 @@
 from .builtin import (
     GetFloatThreshold, GetRowItems, IsAdaptiveEnabled, IsAdvancedTooltipEnabled, IsBookmarksVisible,
     IsBookmarksWorldSpecific, IsFindButtonEnabled, IsFloatCompat, IsFloatModeForced, IsFloatOnHud, IsFloatQuickCollapse,
-    IsTouchOppositeSide, IsTreePreviewEnabled, RegisterBuiltinSettings,
+    IsItemIdShown, IsNamespaceShown, IsTouchOppositeSide, IsTreePreviewEnabled, RegisterBuiltinSettings,
 )
 from .kinds import Action, Choice, KeyBind, Setting, Slider, Toggle
 from .manager import SettingsManager
@@ -38,6 +38,8 @@ __all__ = [
     "IsFloatModeForced",
     "IsFloatOnHud",
     "IsFloatQuickCollapse",
+    "IsItemIdShown",
+    "IsNamespaceShown",
     "IsTouchOppositeSide",
     "IsTreePreviewEnabled",
     "KeyBind",

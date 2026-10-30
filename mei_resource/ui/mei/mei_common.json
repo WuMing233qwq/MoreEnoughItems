@@ -217,6 +217,34 @@
         ]
     },
     "namespace": "mei_common",
+    "btn_mode": {
+        "type": "image",
+        "size": [
+            "100%+-6px",
+            "100%+-6px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/mode"
+    },
+    "btn_filter": {
+        "type": "image",
+        "size": [
+            "100%+-6px",
+            "100%+-6px"
+        ],
+        "layer": 5,
+        "color": [
+            0.4784313725490196,
+            0.4784313725490196,
+            0.4784313725490196
+        ],
+        "texture": "textures/ui/mei/icons/filter"
+    },
     "nothing": {
         "type": "panel",
         "size": [
@@ -227,6 +255,7 @@
     "ore_style_button@common.button": {
         "type": "button",
         "$button_content_control|default": "",
+        "$button_hover_extra_control|default": "mei_common.nothing",
         "$control_alpha": 1.0,
         "$default_texture": "textures/ui/mei/button/button",
         "$hover_texture": "textures/ui/mei/button/button_highlighted",
@@ -318,6 +347,9 @@
                                     }
                                 ]
                             }
+                        },
+                        {
+                            "hover_extra@$button_hover_extra_control": {}
                         }
                     ],
                     "fill": true
@@ -1663,6 +1695,79 @@
                             "title@mei_common.tooltip_title": {}
                         }
                     ]
+                }
+            }
+        ]
+    },
+    "mode_hover_tip": {
+        "type": "image",
+        "anchor_from": "top_right",
+        "anchor_to": "top_left",
+        "offset": [
+            3,
+            0
+        ],
+        "size": [
+            "100%c+8px",
+            "100%c+8px"
+        ],
+        "layer": 50,
+        "texture": "textures/ui/mei/hover/content_background",
+        "controls": [
+            {
+                "label": {
+                    "type": "label",
+                    "color": [
+                        0.7725490196078432,
+                        0.7725490196078432,
+                        0.7725490196078432
+                    ],
+                    "font_type": "default",
+                    "localize": false,
+                    "text_alignment": "left",
+                    "text": "#text",
+                    "property_bag": {
+                        "#text": ""
+                    },
+                    "bindings": [
+                        {
+                            "binding_name": "#mei.mode.hover_text",
+                            "binding_name_override": "#text",
+                            "binding_condition": "always_when_visible"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "filter_hover_tip": {
+        "type": "image",
+        "$filter_hover_text|default": "筛选与排序\n§7选了的条件会记住，和搜索一起用",
+        "anchor_from": "top_left",
+        "anchor_to": "top_right",
+        "offset": [
+            -3,
+            0
+        ],
+        "size": [
+            "100%c+8px",
+            "100%c+8px"
+        ],
+        "layer": 50,
+        "texture": "textures/ui/mei/hover/content_background",
+        "controls": [
+            {
+                "label": {
+                    "type": "label",
+                    "color": [
+                        0.7725490196078432,
+                        0.7725490196078432,
+                        0.7725490196078432
+                    ],
+                    "font_type": "default",
+                    "localize": false,
+                    "text_alignment": "left",
+                    "text": "$filter_hover_text"
                 }
             }
         ]

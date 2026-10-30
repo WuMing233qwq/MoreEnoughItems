@@ -21,6 +21,13 @@ from collections import OrderedDict
 
 from .utilities import IsBindFlag
 
+_PROBE = "{}"
+"""
+转发函数进门先 format 一次它：py2 的 str.format 解析自动编号的 {} 时会查一次 PyErr_Occurred，
+引擎在 C 层留下、没清掉的异常（CLAUDE.md 引擎结论 §48）就在这里被接出来、清掉 —— 不然它会抛在回调里随便哪个 format 上，
+回调抛异常引擎就扔掉那条绑定（§15）
+"""
+
 
 def collection_capable(flag):  # type: (int) -> bool
     """ 这个 flag 能不能集合绑定；不认识的 flag 照调用方说的挂，由 SDK 决定 """
@@ -41,12 +48,19 @@ class ScreenBinder(object):
     def Bind(self, callback, flag, name, collection=None):  # type: (any, int, str, str) -> any
         """
         挂一条绑定，返回转发函数（Unbind 用它）。给了 collection 且 flag 能集合绑定（BF_Bind*）就是集合绑定；
-        按钮、输入框、开关、滑条只能普通绑定（引擎结论 §9），给了 collection 也按普通绑定挂
+        按钮、输入框、开关、滑条只能普通绑定（引擎结论 §9），给了 collection 也按普通绑定挂。
+        转发函数进门先静默接住引擎留下、没清掉的异常（_PROBE，引擎结论 §48）
         """
         if collection is not None and not collection_capable(flag):
             collection = None
 
+        probe = _PROBE
+
         def wrapper(*args):
+            try:
+                probe.format(0)
+            except Exception:  # noqa  引擎留下的异常（不是回调抛的）：接住即清掉
+                pass
             return callback(*args)
         wrapper.__name__ = "{}_binding_{}".format(getattr(callback, "__name__", "callback"), id(wrapper))
         wrapper.binding_flags = flag

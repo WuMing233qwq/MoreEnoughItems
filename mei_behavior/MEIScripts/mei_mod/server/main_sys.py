@@ -23,6 +23,7 @@ from mod_log import logger
 
 from MEIScripts.constants.codes import NameConst
 from MEIScripts.mei_mod.network.base import Channel, REQUEST_EVENT, RESPONSE_EVENT
+from MEIScripts.mei_mod.network.protocol.cheat import CheatService
 from MEIScripts.mei_mod.network.protocol.transfer import TransferService
 from MEIScripts.mei_mod.transfer import RegisterBuiltinSources
 from MEIScripts.utils.events import EventListener
@@ -40,6 +41,7 @@ class MainSys(ServerSystem):
         self.Channel = Channel("server")
         self.Channel.Attach(self.__SendToPlayer)
         self.Channel.RegisterAll(TransferService())
+        self.Channel.RegisterAll(CheatService(self))
         self.Events.Listen(REQUEST_EVENT, self.OnRequest, NameConst.NameSpace, NameConst.ClientSysName)
         RegisterBuiltinSources()
 

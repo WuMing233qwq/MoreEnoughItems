@@ -29,6 +29,7 @@
 > 唯一的端到端证据, 要验的时候在日志里打一行即可。
 """
 from MEIScripts.constants.codes import QueryConst, StorageConst
+from MEIScripts.constants.ui import ModeConst
 
 from .storage import Store
 
@@ -44,6 +45,12 @@ KEY_OPEN_COUNT = "open_count"
 KEY_DEFAULT_QUERY_BY = "default_query_by"
 KEY_FLOAT_POSITION = "float_position"
 """ 悬浮窗拖到哪：[横, 竖]，各是可用范围里的比例（0~1），换分辨率、换界面都还在同一处 """
+KEY_MODE = "mode"
+""" 普通 / 工具 / 作弊（ModeConst）：点模式按钮轮换，全局记一份、关界面不复位；作弊没有操作员权限时由界面改回普通 """
+KEY_ITEM_FILTERS = "item_filters"
+""" 物品栏选了哪几项筛选（registry/filters.py 的 Id 表）；登记表里已经没有的读的时候忽略 """
+KEY_ITEM_SORT = "item_sort"
+""" 物品栏按什么排：[排序 Id, "asc" / "desc"]；不排是 None """
 
 DEFAULT_QUERY_BY = QueryConst.Output
 
@@ -119,6 +126,42 @@ class __PrefsManager(object):  # noqa
     def SetFloatPosition(self, position):  # type: (tuple) -> bool
         x, y = position
         return self.Set(KEY_FLOAT_POSITION, [min(1.0, max(0.0, float(x))), min(1.0, max(0.0, float(y)))])
+
+    def GetMode(self):  # type: () -> str
+        """ 记下的模式（ModeConst）；没记过、存的看不懂给普通 """
+        value = self.Get(KEY_MODE, ModeConst.Normal)
+        return value if value in ModeConst.Order else ModeConst.Normal
+
+    def SetMode(self, mode):  # type: (str) -> bool
+        if mode not in ModeConst.Order:
+            raise ValueError("mode must be one of {}".format(ModeConst.Order))
+        return self.Set(KEY_MODE, mode)
+
+    def GetItemFilters(self):  # type: () -> list
+        """ 物品栏选了的筛选 Id；存的看不懂给空表 """
+        value = self.Get(KEY_ITEM_FILTERS)
+        if not isinstance(value, list):
+            return []
+        return [one for one in value if isinstance(one, basestring)]
+
+    def SetItemFilters(self, filter_ids):  # type: (list) -> bool
+        return self.Set(KEY_ITEM_FILTERS, [one for one in filter_ids or () if isinstance(one, basestring)])
+
+    def GetItemSort(self):  # type: () -> tuple or None
+        """ 物品栏按什么排：(排序 Id, "asc" / "desc")；不排、存的看不懂给 None """
+        value = self.Get(KEY_ITEM_SORT)
+        if not isinstance(value, list) or len(value) != 2 or not isinstance(value[0], basestring) \
+                or value[1] not in ("asc", "desc"):
+            return None
+        return value[0], value[1]
+
+    def SetItemSort(self, sort):  # type: (tuple or None) -> bool
+        if not sort:
+            return self.Set(KEY_ITEM_SORT, None)
+        sort_id, direction = sort
+        if direction not in ("asc", "desc"):
+            raise ValueError("direction must be 'asc' or 'desc'")
+        return self.Set(KEY_ITEM_SORT, [sort_id, direction])
 
 
 PrefsManager = __PrefsManager()

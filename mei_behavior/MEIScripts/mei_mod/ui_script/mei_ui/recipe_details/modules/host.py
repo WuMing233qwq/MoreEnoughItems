@@ -51,6 +51,36 @@ def attach_script(script, index, binder, control, tag="ui"):  # type: (any, int,
     return True
 
 
+class BrokenScript(object):
+    """
+    配方页脚本的构造（__init__）就抛了的那一行的占位：已经算接过、也算出过错（_Created / _Broken），
+    宿主、节拍、拆的时候都跳过它 —— 构造是在 #visible 的绑定回调里做的，抛出去引擎会扔掉整条绑定（引擎结论 §15），整页都空
+    """
+
+    _Created = True
+    _Broken = True
+    RecipeControl = None
+
+    def __init__(self, recipe):
+        self.Recipe = recipe
+
+    def DestroyBindings(self):
+        pass
+
+    def OnDestroy(self):
+        pass
+
+
+def build_script(cls, recipe, tag="ui"):  # type: (any, any, str) -> any
+    """ 造一行的配方页脚本；第三方的构造抛了给 BrokenScript（这一行不画），记一行 """
+    try:
+        return cls(recipe)
+    except Exception as e:  # noqa
+        logger.error("[MEI/{}] 配方页脚本 {} 建不出来，这一行不画: {}".format(
+            tag, getattr(cls, "__name__", cls), error_text(e)))
+        return BrokenScript(recipe)
+
+
 def detach_script(script, tag="ui"):  # type: (any, str) -> None
     """ 拆掉接上的脚本（翻页、换类型、关界面、收起预览）：解绑定、OnDestroy；出错只记一行，不影响拆别的 """
     if not getattr(script, "_Created", False):

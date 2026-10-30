@@ -20,11 +20,13 @@
 
 from collections import OrderedDict
 
-from .rules import resolve_rule_for_path, eval_visible_rule
+from .rules import holds
 
 
 class AdaptiveControlRegistry(object):
-    """ 维护自适应遮挡控件注册信息并按需解析控件实例 """
+    """
+    登记的避让目标（按路径或控件），按需取出「这会儿要避让的」：登记着、开着（enabled）、看得见、条件成立（rules.holds）的那些
+    """
 
     def __init__(self):
         self._controls = OrderedDict()  # type: OrderedDict  # 按登记的先后：第一条就是主内容（ContentPaths[0]，配方页开着时是配方页本身）
@@ -42,9 +44,12 @@ class AdaptiveControlRegistry(object):
             return key
         return path
 
-    def register_control(self, path=None, key=None, use_root_path=True, visible_rule=None, enabled=True, control=None,
+    def register_control(self, path=None, key=None, use_root_path=True, condition=None, enabled=True, control=None,
                          always=False):
-        """ always：悬浮窗管事、不避让原版界面的时候也照样避让它（配方页那几块）"""
+        """
+        condition：生效条件 condition(get) -> bool（rules.py），不给就只看看不看得见；
+        always：悬浮窗管事、不避让原版界面的时候也照样避让它（配方页那几块）
+        """
         if control is None and not path:
             raise ValueError("either control or path must be provided")
 
@@ -52,7 +57,7 @@ class AdaptiveControlRegistry(object):
         self._controls[entry_key] = {
             "path": path,
             "use_root_path": bool(use_root_path),
-            "visible_rule": visible_rule,
+            "condition": condition if callable(condition) else None,
             "enabled": bool(enabled),
             "control": control,
             "always": bool(always),
@@ -82,15 +87,17 @@ class AdaptiveControlRegistry(object):
     def ListKeys(self):
         return list(self._controls.keys())
 
-    def InitFromPaths(self, paths, use_root_path=True, clear=True):
+    def InitFromPaths(self, paths, use_root_path=True, clear=True, conditions=None):
+        """ 按代理参数登记：ContentPaths 的每一条，带上 Conditions 里给它的条件 """
         if clear:
             self.Clear()
 
+        conditions = conditions or {}
         for path in paths or []:
             self.register_control(
                 path=path,
                 use_root_path=use_root_path,
-                visible_rule=resolve_rule_for_path(path),
+                condition=conditions.get(path),
                 enabled=True,
             )
 
@@ -100,7 +107,7 @@ class AdaptiveControlRegistry(object):
     def ResolveControlsTagged(self, screen_node, root_getter):
         """ 同 ResolveControls，每个控件带上 always 标记：[(控件, always)] """
         controls = []
-        rule_cache = {}
+        memo = {}  # 这一轮里每个条件函数只问一次
         for _, entry in self._controls.items():
             if not entry.get("enabled", True):
                 continue
@@ -128,7 +135,7 @@ class AdaptiveControlRegistry(object):
             except Exception:  # noqa
                 pass
 
-            if not eval_visible_rule(control, entry.get("visible_rule"), rule_cache):
+            if not holds(entry.get("condition"), root_getter, memo):
                 continue
 
             controls.append((control, bool(entry.get("always", False))))

@@ -30,6 +30,9 @@ from .organizer import ItemOrganizer
 _BROWSABLE_CACHE_KEY = "default_visible_items"
 """ GetBrowsableItems 的结果缓存键，沿用旧实现的键名 """
 
+_ALL_CACHE_KEY = "all_items"
+""" GetBrowsableItems(include_hidden=True) 的结果缓存键 """
+
 
 class __ItemFactory(object):
     def __init__(self):
@@ -38,35 +41,47 @@ class __ItemFactory(object):
     def InitComps(self):
         self.__ItemComp = clientApi.GetEngineCompFactory().CreateItem(clientApi.GetLevelId())
 
+    def LoadInfo(self, item_id, aux_value=0, enchanted=False):  # type: (str, int, bool) -> ItemInfo or None
+        """
+        问引擎一个物品的基本信息；引擎不认识（这个 id，或这个 aux）给 None。
+        追加物品前先拿它核对：问到的交给 ItemSpec(info=...)，注册时就不再问第二次
+        """
+        if not self.__ItemComp:
+            self.InitComps()
+        info_dict = self.__ItemComp.GetItemBasicInfo(item_id, aux_value, enchanted)
+        if not info_dict:
+            return None
+        return ItemInfo(
+            id_aux=info_dict.get("id_aux", 0),
+            item_name=info_dict.get("itemName", item_id),
+            tags=info_dict.get("tags", []),
+            item_type=info_dict.get("itemType"),
+            category=info_dict.get("itemCategory"),
+            max_durability=info_dict.get("maxDurability"),
+            max_stack_size=info_dict.get("maxStackSize"),
+            tier_dict=info_dict.get("tierDict"),
+            item_tier_level=info_dict.get("itemTierLevel"),
+            fuel_duration=info_dict.get("fuelDuration"),
+            food_nutrition=info_dict.get("foodNutrition"),
+            food_saturation=info_dict.get("foodSaturation"),
+            weapon_damage=info_dict.get("weaponDamage"),
+            armor_defense=info_dict.get("armorDefense"),
+            armor_slot=info_dict.get("armorSlot"),
+            armor_toughness=info_dict.get("armorToughness"),
+            armor_knockback_resistance=info_dict.get("armorKnockbackResistance"),
+            enchant_slot_type=info_dict.get("enchant_slot_type"),
+        )
+
     def _LazyLoader(self, item, kind):  # type: (Item, str) -> any
         """ 注入到每个 Item 的惰性加载回调; kind ∈ {"info", "hover"} """
         if not self.__ItemComp:
             self.InitComps()
         try:
             if kind == "info":
-                info_dict = self.__ItemComp.GetItemBasicInfo(item.ItemId, item.AuxValue, item.IsEnchanted)
-                if not info_dict:
+                info = self.LoadInfo(item.ItemId, item.AuxValue, item.IsEnchanted)
+                if info is None:
                     raise ValueError("cannot get basic info for item: {}".format(item.ItemId))
-                return ItemInfo(
-                    id_aux=info_dict.get("id_aux", 0),
-                    item_name=info_dict.get("itemName", item.ItemId),
-                    tags=info_dict.get("tags", []),
-                    item_type=info_dict.get("itemType"),
-                    category=info_dict.get("itemCategory"),
-                    max_durability=info_dict.get("maxDurability"),
-                    max_stack_size=info_dict.get("maxStackSize"),
-                    tier_dict=info_dict.get("tierDict"),
-                    item_tier_level=info_dict.get("itemTierLevel"),
-                    fuel_duration=info_dict.get("fuelDuration"),
-                    food_nutrition=info_dict.get("foodNutrition"),
-                    food_saturation=info_dict.get("foodSaturation"),
-                    weapon_damage=info_dict.get("weaponDamage"),
-                    armor_defense=info_dict.get("armorDefense"),
-                    armor_slot=info_dict.get("armorSlot"),
-                    armor_toughness=info_dict.get("armorToughness"),
-                    armor_knockback_resistance=info_dict.get("armorKnockbackResistance"),
-                    enchant_slot_type=info_dict.get("enchant_slot_type"),
-                )
+                return info
             if kind == "hover":
                 item_id = item.ItemId
                 aux_value = item.AuxValue
@@ -197,6 +212,12 @@ class __ItemManager(object):
         放旁表则随时可写、零时序约束，见 docs/architecture/item_model.md §6.3。
         """
 
+        self.hidden_plain_keys = set()  # type: set
+        """
+        只藏原件的键集合 —— 原件是这个键下不带 userData、附魔这些区分变体属性的那一样（`Item.IsPlain`，id 表注册的就是它）。
+        带 userData 的变体顶替原件时用（附魔书、烟花）：hidden_keys 按键藏，会把同一个键下的变体一起藏掉
+        """
+
         self._version = 0  # type: int
         """
         物品表版本号，池或旁表**任何**变更都 +1。
@@ -229,6 +250,7 @@ class __ItemManager(object):
         # 引擎的隐藏表是按 id 给的, 而此刻只会造出 aux=0 的默认物品;
         # 之后追加的 aux 变体各自在 ItemSpec 里声明可见性, 不继承这里
         self.hidden_keys = set(keys.make_key(item_id, 0) for item_id in (hidden_ids or ()))
+        self.hidden_plain_keys = set()  # 和 hidden_keys 一样每次进世界从头来：扩展装配时再藏
         self.__Touch()
 
     def LookUpItem(self, item_id):  # type: (str) -> bool
@@ -238,11 +260,14 @@ class __ItemManager(object):
     def GetItems(self):  # type: () -> list
         return self.items
 
-    def GetBrowsableItems(self):  # type: () -> list
-        """ 默认候选集: 非隐藏物品，按 ItemId 升序 """
+    def GetBrowsableItems(self, include_hidden=False):  # type: (bool) -> list
+        """ 默认候选集: 非隐藏物品，按 ItemId 升序；include_hidden 连藏着的一起（物品栏选了「隐藏物品」筛选时）"""
         # 不持有这份表: 过滤结果本来就带缓存, 再存一份只多一个要同步作废的地方
         # (被删掉的 BrowsableItemManager.current_items_list 就是那份多余副本)
-        items = self.SearchByCondition(lambda item: not self.IsHidden(item), cache_key=_BROWSABLE_CACHE_KEY)
+        if include_hidden:
+            items = self.SearchByCondition(lambda item: True, cache_key=_ALL_CACHE_KEY)
+        else:
+            items = self.SearchByCondition(lambda item: not self.IsHidden(item), cache_key=_BROWSABLE_CACHE_KEY)
         items.sort(key=lambda item: item.ItemId)
         return items
 
@@ -314,7 +339,9 @@ class __ItemManager(object):
             # 认下 id 必须在入池**之后**: 提前认, 一旦造物或索引失败,
             # item_ids 里就多出一个 GetItemById 拿不到的 id —— 正是要焊死的那道口子
             self.item_ids.add(spec.ItemId)
-            self.__SetHiddenKey(keys.make_key(spec.ItemId, spec.AuxValue), spec.Hidden)
+            if spec.Hidden:
+                # 只往藏起来那边写：hidden=False（缺省）不该把别处 SetHidden 藏起来的同一个键又显回来
+                self.__SetHiddenKey(keys.make_key(spec.ItemId, spec.AuxValue), True)
             added += 1
 
         if added:
@@ -331,7 +358,8 @@ class __ItemManager(object):
     # 旁表路径 —— 只动集合，**一个 Item 都不碰**。没有造物、没有索引、没有引擎调用
 # ======================================================================================================================
     def IsHidden(self, item):  # type: (Item) -> bool
-        return keys.make_key(item.ItemId, item.AuxValue) in self.hidden_keys
+        key = keys.make_key(item.ItemId, item.AuxValue)
+        return key in self.hidden_keys or (key in self.hidden_plain_keys and item.IsPlain)
 
     def SetHidden(self, item_id, aux_value=0, hidden=True):  # type: (str, int, bool) -> bool
         """ 改一个物品的可见性，任何时候都能调 """
@@ -339,6 +367,18 @@ class __ItemManager(object):
             self.__Touch()
             return True
         return False
+
+    def SetPlainHidden(self, item_id, aux_value=0, hidden=True):  # type: (str, int, bool) -> bool
+        """ 只藏 / 显回原件（Item.IsPlain 的那一样），同一个键下带 userData 等属性的变体照常显示；任何时候都能调 """
+        key = keys.make_key(item_id, aux_value)
+        if bool(hidden) == (key in self.hidden_plain_keys):
+            return False
+        if hidden:
+            self.hidden_plain_keys.add(key)
+        else:
+            self.hidden_plain_keys.discard(key)
+        self.__Touch()
+        return True
 
     def GetHiddenKeys(self):  # type: () -> set
         return set(self.hidden_keys)

@@ -46,7 +46,7 @@ class CraftingTableSource(EngineRecipeSource):
     def ParseRecipe(self, raw_list):  # type: (list) -> list
         """ 工作台的一条原始配方要么是有序的要么是无序的，依次试 """
         result = []
-        for raw_dict in raw_list:
+        for raw_dict in raw_list or ():
             recipe = self.HandleShaped(raw_dict) or self.HandleShapeless(raw_dict)
             if recipe:
                 result.append(recipe)
@@ -79,7 +79,7 @@ class CraftingTableSource(EngineRecipeSource):
             outputs = [o for o in (self._to_output(self.ParseStackFromDict(r)) for r in result) if o]
 
             return ShapedRecipe(self.CategoryId, inputs, outputs, width, height, list(pattern))
-        except KeyError:
+        except (KeyError, TypeError, ValueError):  # 一条认不出只丢这一条（同 ParseShapelessParts）
             return None
 
     def HandleShapeless(self, raw_dict):  # type: (dict) -> ShapelessRecipe or None
@@ -91,6 +91,6 @@ class CraftingTableSource(EngineRecipeSource):
             outputs = [o for o in (self._to_output(self.ParseStackFromDict(r)) for r in result) if o]
 
             return ShapelessRecipe(self.CategoryId, inputs, outputs)
-        except KeyError:
+        except (KeyError, TypeError, ValueError):  # 一条认不出只丢这一条（同 ParseShapelessParts）
             return None
 

@@ -63,16 +63,18 @@ from mod_log import logger
 
 from MEIScripts.constants.codes import QueryConst
 from MEIScripts.constants.texts import TooltipText
-from MEIScripts.constants.ui import TooltipKind, TooltipPath
+from MEIScripts.constants.ui import ModeConst, TooltipKind, TooltipPath
 from MEIScripts.mei_mod.state.settings import IsAdvancedTooltipEnabled, IsTouchOppositeSide
 from MEIScripts.mei_mod.ui_script.controls.item.panel import panel_controls
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.state import KIND_HUD
+from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import DescribeItem
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.items import TooltipItemsView
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.layout import (
     GAP, contains, cursor_gap, place, place_beside, place_opposite, place_outside,
 )
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.recipe import TooltipRecipeView
+from MEIScripts.mei_mod.ui_script.proxy.focus.search import HOVER_TEXT, nearby
 from MEIScripts.registry import RecipeManager
 from MEIScripts.utils import utilities
 from MEIScripts.utils.text import error_text, native_str, to_unicode
@@ -194,6 +196,10 @@ class TooltipManager(object):
         self.__Hovered = {}  # type: dict  # id(面板) -> 面板：这一帧悬停探针报上来的
         self.__TouchHovered = {}  # type: dict  # 触屏：上一帧报上来的（认「移进」用：这一帧有、上一帧没有的那一格）
         self.__Rejected = None  # type: any  # 上次没建成的那一格：光标离开前不再试
+        self.__HelpWoke = False  # type: bool  # 快捷键帮助亮着时唤醒过 MEI 的 grid（悬停文字的绑定要再拉一遍才让位）
+        self.__HelpQuiet = None  # type: str or None  # 帮助亮着时要藏的原版悬停文字控件：光标下是原版 / 别的模组的格子时才有
+        self.__Quieted = None  # type: str or None  # 现在藏着的那一个（显回时用）
+        self.__HoverTextOf = {}  # type: dict  # 物品渲染器的路径 -> 它那一格的悬停文字控件（找不到是 None）；开关界面时清
 
     def OnCreate(self):
         """
@@ -209,6 +215,9 @@ class TooltipManager(object):
         self.Host = HOST_TOUCH if is_touch() or on_hud else HOST_DESKTOP
         self.ReplacesVanillaName = self.Enabled and self.Host == HOST_DESKTOP
         self.__TouchHovered = {}
+        self.__HoverTextOf = {}
+        self.__HelpWoke = False
+        self.__HelpQuiet = None
         self.Hide(force=True)
 
     def OnDestroy(self):
@@ -216,13 +225,19 @@ class TooltipManager(object):
         self.__TouchHovered = {}
         self.__Rejected = None
         self.Hide(force=True)
+        # 藏过的原版悬停文字关界面前显回：界面状态跨开关存活（引擎结论 §22）。grid 正在解绑，不唤醒
+        self.__HelpWoke = False
+        self.__HelpQuiet = None
+        self.__SyncHelp()
+        self.__HoverTextOf = {}
 
     def HidesVanillaName(self, panel):  # type: (any) -> bool
         """
         这一格悬停时不出原版悬停文字（ItemPanel.MeiTooltipHidesName 问这里，悬停文字的绑定每帧都问 —— 只做便宜的判断）：
-        触屏上一律不出（划过就开菜单，菜单标题就是完整的悬停文字）；PC 上设置开着、会出 MEI tooltip 的格子不出
+        触屏上一律不出（划过就开菜单，菜单标题就是完整的悬停文字）；PC 上设置开着、会出 MEI tooltip 的格子不出；
+        按住 Alt 的快捷键帮助亮着时一律不出（不然两段字叠在光标右边）
         """
-        if self.Host == HOST_TOUCH:
+        if self.Host == HOST_TOUCH or self.Help is not None:
             return True
         return self.ReplacesVanillaName and panel.HasMeiTooltip()
 
@@ -343,13 +358,15 @@ class TooltipManager(object):
         self.__Own(panel, cell_rect, True)
         return True
 
-    def ShowHelp(self, text):  # type: (any) -> bool
+    def ShowHelp(self, text, target=None):  # type: (any, any) -> bool
         """
         快捷键帮助（按住 Alt，hotkeys/hover.py）：只有标题那一种，不归哪一格（光标挪开不收，松开 Alt 才收）；同样的字不重建。
-        只在 PC 上、设置开着时出（关着时 PC 宿主是藏着的）
+        只在 PC 上、设置开着时出（关着时 PC 宿主是藏着的）。
+        亮着时光标下那一格的原版悬停文字让位（__SyncHelp）：target 是光标下的 FocusTarget，原版 / 别的模组的格子按它找悬停文字控件
         """
         if not self.Enabled or self.Host != HOST_DESKTOP:
             return False
+        self.__HelpQuiet = self.__VanillaHoverText(target)
         if self.Help == text and self.Current is not None:
             return True
         if not self.ShowTitle(text):
@@ -445,6 +462,7 @@ class TooltipManager(object):
         设置关着时 PC 上什么都不做；触屏上照常（菜单的「只有标题」那种还要建、要摆）
         """
         hovered, self.__Hovered = self.__Hovered, {}
+        self.__SyncHelp()
         if not self.Enabled and self.Host == HOST_DESKTOP:
             return
         try:
@@ -456,6 +474,56 @@ class TooltipManager(object):
                 self.__CheckHovered(list(hovered.values()))
         except Exception as e:  # noqa
             logger.error("[MEI/tooltip] 每帧处理失败: {}".format(error_text(e)))
+
+    def __SyncHelp(self):
+        """
+        快捷键帮助亮没亮，原版悬停文字跟着让位 / 显回（每帧对一次，帮助换了内容、被别的内容顶掉、松开 Alt 都在这里收拾）：
+        · MEI 的格子：悬停文字的绑定问 HidesVanillaName，帮助亮着时给空 —— 写满后暂停了的 grid 要唤醒才会再拉，亮 / 灭时各唤醒一次；
+        · 原版 / 别的模组的格子：它的悬停文字由引擎的绑定给字，只能把那一格的 hover_text 控件藏起来，帮助收起、光标换了格子时显回
+        """
+        try:
+            on = self.Help is not None
+            if on != self.__HelpWoke:
+                self.__HelpWoke = on
+                self.__WakeGrids()
+            want = self.__HelpQuiet if on else None
+            if want != self.__Quieted:
+                self.__ShowHoverText(self.__Quieted, True)
+                self.__Quieted = want if self.__ShowHoverText(want, False) else None
+        except Exception as e:  # noqa
+            logger.error("[MEI/tooltip] 快捷键帮助让位失败: {}".format(error_text(e)))
+
+    def __WakeGrids(self):
+        """ 物品栏、收藏栏、最近浏览的 grid 唤醒一下：暂停了的悬停文字绑定再拉几轮（ItemsGrid.Wake）"""
+        main = self.MainNode
+        for name in ("ItemsBrowserIns", "ItemsSidebarIns"):
+            script = getattr(main, name, None)
+            grids = getattr(script, "GetItemGrids", None) if script is not None else None
+            if not callable(grids):
+                continue
+            for grid in grids() or ():
+                grid.Wake()
+
+    def __VanillaHoverText(self, target):  # type: (any) -> str or None
+        """ 光标下是原版 / 别的模组的格子：它的悬停文字控件（焦点探针的 nearby 找，按渲染器的路径记下）；MEI 自己的格子、找不到给 None """
+        if target is None or getattr(target, "Panel", None) is not None:
+            return None
+        path = getattr(getattr(target, "Hit", None), "Path", None)
+        if not path:
+            return None
+        if path not in self.__HoverTextOf:
+            self.__HoverTextOf[path] = nearby(self.MainNode.ScreenNode, path, HOVER_TEXT)
+        return self.__HoverTextOf[path]
+
+    def __ShowHoverText(self, path, visible):  # type: (str or None, bool) -> bool
+        """ 按路径显 / 藏一个原版悬停文字控件；没有路径、控件不在了返回 False """
+        if not path:
+            return False
+        control = self.MainNode.ScreenNode.GetBaseUIControl(path)
+        if control is None:
+            return False
+        control.SetVisible(visible)
+        return True
 
     def Probe(self, panel):
         """
@@ -479,6 +547,9 @@ class TooltipManager(object):
             return
         panel = entered[0]
         if getattr(panel, "Destroyed", False) or self.IsInside(panel):
+            return
+        # 工具 / 作弊模式下点一格是拿起、给物品（ModeManager.Intercept），划进去不开菜单
+        if ModeManager.Current() != ModeConst.Normal:
             return
         menu = getattr(self.MainNode, "Menu", None)
         if menu is not None:

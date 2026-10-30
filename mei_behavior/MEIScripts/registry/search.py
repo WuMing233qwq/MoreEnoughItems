@@ -195,12 +195,19 @@ class __ItemSearchIndex(object):  # noqa
         """
 
         self._texts = {}  # type: dict
-        """ (ItemId, AuxValue) -> (悬停文字：小写、去掉颜色码, 它的拼音连写)。# 用到才算；物品表一变就清 """
+        """
+        id(Item) -> (Item, 悬停文字：小写、去掉颜色码, 它的拼音连写)。# 用到才算；物品表一变就清。
+        按实例记、不按 (ItemId, AuxValue)：附魔书、烟花这些同一个 id、aux 靠 userData 区分的，悬停文字各不一样。
+        值里留着物品本身、取的时候核对是同一个实例（留着引用，这个 id 就不会被别的对象占用）
+        """
 
     def Rebuild(self, items=None):  # type: (list or None) -> int
-        """ 重建索引，返回索引到的名字条数；items 省略时取当前可浏览集 """
+        """
+        重建索引，返回索引到的名字条数；items 省略时取全部物品 —— 藏着的也收（物品栏选了「隐藏物品」时要搜得到），
+        平时的结果里再滤掉（__ByName）
+        """
         if items is None:
-            items = ItemManager.GetBrowsableItems()
+            items = ItemManager.GetItems()
         # 空名字要滤掉: Item.Info 取不到时会静默降级成空 ItemInfo(item.py:294),
         # 空条目喂进搜索引擎会变成一个能被任意查询命中的垃圾结果
         names = dedupe([item.Info.ItemName for item in items if item.Info.ItemName])
@@ -212,10 +219,11 @@ class __ItemSearchIndex(object):  # noqa
         logger.info("[MEI/search] 索引重建完成, {} 个名字 / {} 个物品".format(self._count, len(items)))
         return self._count
 
-    def Search(self, query):  # type: (str) -> list
+    def Search(self, query, include_hidden=False):  # type: (str, bool) -> list
         """
         按搜索语法找物品（模块说明），返回 Item 表。有普通名字段时按拼音引擎的分数排；没有时按可浏览表的顺序，
-        段里有比名字的项（`铁|金`）就按它们的名次往前排。只打了前缀（还在输入）时给全部。索引过期会先自愈
+        段里有比名字的项（`铁|金`）就按它们的名次往前排。只打了前缀（还在输入）时给全部。索引过期会先自愈。
+        include_hidden：藏着的物品也要（物品栏选了「隐藏物品」这类加法筛选时）
         """
         if self._version != ItemManager.Version():
             self.Rebuild()
@@ -225,7 +233,8 @@ class __ItemSearchIndex(object):  # noqa
         names = [segment[0].Text for segment in plan if _is_plain(segment)]
         filters = sorted((segment for segment in plan if not _is_plain(segment)),
                          key=lambda segment: max(COSTS[term.Kind] for term in segment))
-        universe = self.__ByName(u" ".join(names)) if names else ItemManager.GetBrowsableItems()
+        universe = (self.__ByName(u" ".join(names), include_hidden) if names
+                    else ItemManager.GetBrowsableItems(include_hidden))
         if not filters:
             return universe
         cache = {}
@@ -246,16 +255,20 @@ class __ItemSearchIndex(object):  # noqa
 
     # 比对
 # ======================================================================================================================
-    def __ByName(self, query):  # type: (unicode) -> list
-        """ 拼音引擎搜名字，按分数排好的 Item 表（隐藏的滤掉、按实例去重）。查询照原来收成 str 递过去（引擎两种都收）"""
+    def __ByName(self, query, include_hidden=False):  # type: (unicode, bool) -> list
+        """
+        拼音引擎搜名字，按分数排好的 Item 表（按实例去重；藏着的滤掉，include_hidden 时留着）。
+        查询照原来收成 str 递过去（引擎两种都收）
+        """
         names = self._engine.Search(native_str(query))
         if not names:
             return []
         items = []
         for name in names:
             items.extend(ItemManager.GetItemsByName(name))
-        # 名字索引里混着隐藏物品(同名不同 aux 的隐藏变体), 搜索结果必须滤掉
-        items = [item for item in items if not ItemManager.IsHidden(item)]
+        # 名字索引里有藏着的物品(全部物品都进索引), 平时的结果必须滤掉
+        if not include_hidden:
+            items = [item for item in items if not ItemManager.IsHidden(item)]
         # 按实例身份去重: 一个 Item 实例可能被多个搜索结果名索引到
         return dedupe(items, key=id)
 
@@ -279,7 +292,8 @@ class __ItemSearchIndex(object):  # noqa
     def __Hits(self, term, universe):  # type: (Term, list) -> any
         """ 名字 / 命名空间 / ID 一次算出这一次搜索里命中的实例（id(item) 的集合；名字给 {id: 名次}）"""
         if term.Kind == KIND_NAME:
-            return dict((id(item), rank) for rank, item in enumerate(self.__ByName(term.Text)))
+            # 藏着的也算进名次：比的只是候选里的物品，候选本来就按 include_hidden 取过了
+            return dict((id(item), rank) for rank, item in enumerate(self.__ByName(term.Text, True)))
         if term.Kind == KIND_NAMESPACE:
             spaces = _fuzzy(term.Text, dict((space, space) for space in set(_namespace(item) for item in universe)))
             return set(id(item) for item in universe if _namespace(item) in spaces)
@@ -287,15 +301,14 @@ class __ItemSearchIndex(object):  # noqa
         return _fuzzy(term.Text, dict((id(item), _id_text(item, full)) for item in universe))
 
     def __TextMatches(self, needle, item):  # type: (unicode, any) -> bool
-        key = (item.ItemId, item.AuxValue)
-        cached = self._texts.get(key)
-        if cached is None:
+        cached = self._texts.get(id(item))
+        if cached is None or cached[0] is not item:
             try:
                 text = _COLOR_CODE.sub(u"", to_unicode(item.HoverText)).lower()
             except Exception:  # noqa  悬停文字取不到（物品信息都没有）就当没有字
                 text = u""
-            cached = self._texts[key] = (text, u"".join(lazy_pinyin(text)))
-        return needle in cached[0] or needle in cached[1]
+            cached = self._texts[id(item)] = (item, text, u"".join(lazy_pinyin(text)))
+        return needle in cached[1] or needle in cached[2]
 
     def __RankByNames(self, items, filters, cache):  # type: (list, list, dict) -> list
         """ 没有普通名字段时：段里比名字、不排除的项按拼音引擎的名次排在前面，其余照可浏览表的顺序跟在后面（sorted 是稳定的）"""

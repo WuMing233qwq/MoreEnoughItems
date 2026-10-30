@@ -24,11 +24,11 @@
 只想算匹配的人(客户端预检)不该被拖起服务端 api(engineering.md 的包门面急加载那条债)。
 """
 from .matcher import (
-    can_fulfill, copy_supply, index_supply, max_multiplier, max_stack_of, plan_entries,
+    can_fulfill, copy_supply, index_supply, max_multiplier, max_stack_of, plan_entries, reachable,
 )
 
 __all__ = ["can_fulfill", "copy_supply", "index_supply", "max_multiplier",
-           "max_stack_of", "plan_entries"]
+           "max_stack_of", "plan_entries", "reachable"]
 
 
 def RegisterBuiltinSources():  # type: () -> int

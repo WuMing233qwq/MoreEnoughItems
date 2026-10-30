@@ -93,6 +93,56 @@ def control_rect(control):  # type: (any) -> tuple or None
     return float(x), float(y), float(x) + float(w), float(y) + float(h)
 
 
+HOVER_TEXT = "hover_text"
+""" 原版格子的悬停文字控件名（ui_common.json：格子按钮的 hover/highlight/hover_text，custom 的 hover_text_renderer）"""
+
+
+def nearby(node, path, name, up=3, depth=4, budget=40):  # type: (any, str, str, int, int, int) -> str or None
+    """
+    path 附近叫 name 的控件：从 path 的父控件起往上最多 up 层，每层在它底下 depth 层以内找（先近后远，看过的子树不重看），
+    最多列 budget 次子控件；找到返回路径，没有给 None。只用 GetChildrenName（逐层列，引擎结论 §36）。
+    原版格子的悬停文字和物品渲染器是表亲：…/container_item/item_cell/item/<渲染器> 与 …/container_item/<按钮>/hover/highlight/hover_text
+    """
+    seen = set()
+    calls = [0]
+
+    def children(parent):  # type: (str) -> list or None
+        if calls[0] >= budget:
+            return None
+        calls[0] += 1
+        try:
+            names = node.GetChildrenName(parent)
+        except Exception:  # noqa  控件正好被拆
+            return []
+        return [native_str(child) for child in (names or ()) if isinstance(child, basestring) and child]
+
+    def search(parent, left):  # type: (str, int) -> str or None
+        if parent in seen:
+            return None
+        seen.add(parent)
+        kids = children(parent)
+        if not kids:
+            return None
+        if name in kids:
+            return parent + "/" + name
+        if left <= 1:
+            return None
+        for kid in kids:
+            found = search(parent + "/" + kid, left - 1)
+            if found is not None or calls[0] >= budget:
+                return found
+        return None
+
+    parts = (path or "").rstrip("/").split("/")
+    for level in range(1, up + 1):
+        if len(parts) - level < 2:
+            break
+        found = search("/".join(parts[:-level]), depth)
+        if found is not None or calls[0] >= budget:
+            return found
+    return None
+
+
 class FocusHit(object):
     """ 找到的渲染器：Path 控件路径、Rect 全局矩形 (x0, y0, x1, y1)、它显示的物品 """
 

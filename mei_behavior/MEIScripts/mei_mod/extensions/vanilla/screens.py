@@ -19,23 +19,40 @@
 # ----------------------------------------------------------------------
 """
 挂 MEI 的原版界面与它们的代理参数。
-扩展装配时经 ctx.UI.Screens.Register 一个个登记，卸载时注销；纯数据，不碰引擎。参数的意思见 docs/extension_api.md §5.59：
+扩展装配时经 ctx.UI.Screens.Register 一个个登记，卸载时注销；纯数据，不碰引擎。参数的意思见 docs/modding/api.md §6.4：
 
 - ContentPaths：原版界面里要被 MEI 避让的几块（相对原版根面板），第一项就是主内容；
 - VisibleControlPath：配方页开着时藏起来的那一块，不写就是主内容；
-- AllowChangeVisible：能不能藏它，不写就是能（docs/architecture/settings.md §6.2）
+- AllowChangeVisible：能不能藏它，不写就是能（docs/architecture/settings.md §6.2）；
+- Conditions：ContentPaths 里哪几块要另看条件才避让（{路径: condition(get) -> bool}，docs/architecture/settings.md §6.3）
 """
+
+RECIPE_BOOK = "/content_stack_panel/recipe_book"
+
+
+def recipe_book_shown(get):  # type: (callable) -> bool
+    """ 原版配方书开着没有：它上面的页签、网易的左右翻页箭头在配方书藏起来以后挪到别处、却还看得见，只在配方书开着时避让 """
+    book = get(RECIPE_BOOK)
+    return book is not None and bool(book.GetVisible())
+
+
+RECIPE_BOOK_CHILDREN = (
+    RECIPE_BOOK + "/tab_navigation_panel",  # 配方栏上方
+    RECIPE_BOOK + "/category_tab_left_arrow",  # 网易的切换分类页按钮左
+    RECIPE_BOOK + "/category_tab_right_arrow",  # 网易的切换分类页按钮右
+)
+
+RECIPE_BOOK_CONDITIONS = dict((path, recipe_book_shown) for path in RECIPE_BOOK_CHILDREN)
+""" 工作台、背包两个界面都有配方书 """
 
 SCREENS = {
     "crafting.crafting_screen": {  # 工作台
         "ContentPaths": [
             "/content_stack_panel/player_inventory",  # 背包栏
             "/content_stack_panel/toolbar_anchor/toolbar_panel/toolbar_background",  # 背包栏上方
-            "/content_stack_panel/recipe_book",  # 配方栏
-            "/content_stack_panel/recipe_book/tab_navigation_panel",  # 配方栏上方
-            "/content_stack_panel/recipe_book/category_tab_left_arrow",  # 网易的切换分类页按钮左
-            "/content_stack_panel/recipe_book/category_tab_right_arrow"  # 网易的切换分类页按钮右
-        ],
+            RECIPE_BOOK,  # 配方栏
+        ] + list(RECIPE_BOOK_CHILDREN),
+        "Conditions": RECIPE_BOOK_CONDITIONS,
         "VisibleControlPath": "/content_stack_panel",  # 配方页开着时整块藏起来（背包栏、配方栏连同上方的栏）
     },
     "cartography.cartography_screen": {  # 制图台
@@ -98,14 +115,12 @@ SCREENS = {
             # "/content_stack_panel/center_fold/center_bg",  # 背包中间
             # "/content_stack_panel/survival_padding",  # 生存模式填充
 
-            "/content_stack_panel/recipe_book",  # 配方栏
+            RECIPE_BOOK,  # 配方栏
             # "/content_stack_panel/recipe_book/tab_content_panel"  # 配方内容(创造模式物品栏内容)
             # "/content_stack_panel/recipe_book/bg"  # 配方内容背景
-            "/content_stack_panel/recipe_book/creative_hotbar_panel",   # 创造模式快捷栏
-            "/content_stack_panel/recipe_book/tab_navigation_panel",  # 配方栏上方
-            "/content_stack_panel/recipe_book/category_tab_left_arrow",  # 网易的切换分类页按钮左
-            "/content_stack_panel/recipe_book/category_tab_right_arrow"  # 网易的切换分类页按钮右
-        ],
+            RECIPE_BOOK + "/creative_hotbar_panel",   # 创造模式快捷栏
+        ] + list(RECIPE_BOOK_CHILDREN),
+        "Conditions": RECIPE_BOOK_CONDITIONS,
         "VisibleControlPath": "/content_stack_panel",  # 同工作台
     },
     "anvil.anvil_screen": {  # 铁砧

@@ -97,7 +97,11 @@ class __TransferRegistry(object):  # noqa
             for item in entries or ():
                 if not item:
                     continue
-                stack, handle = item
+                try:
+                    stack, handle = item
+                except (TypeError, ValueError):  # 不是 (ItemStack, handle)：只跳过这一条，别的来源照常
+                    logger.error("[MEI/transfer] {} 的 Collect 给了看不懂的条目: {!r}".format(source.Id, item))
+                    continue
                 merged.append((stack, source.Id, handle))
         return merged
 

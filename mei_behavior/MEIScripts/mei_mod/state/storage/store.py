@@ -107,7 +107,9 @@ class Store(object):
         try:
             record = self.Backend.read(self.ConfigName, self.IsGlobal)
         except Exception as e:  # noqa  引擎异常不能把界面带崩
-            logger.error("[MEI/store] 读取 {} 失败: {}".format(self.ConfigName, error_text(e)))
+            # 读不出来不等于盘上是空的：这一局只读，免得拿空表把盘上的数据盖掉
+            self._readonly = True
+            logger.error("[MEI/store] 读取 {} 失败，这一局不写它: {}".format(self.ConfigName, error_text(e)))
             return self._data
 
         if not record:
@@ -183,11 +185,15 @@ class Store(object):
         return dict(self._data)
 
     def Flush(self, force=False):  # type: (bool) -> bool
-        """ 落盘. force=True 时跳过脏标记检查(用于关界面等强制刷盘点) """
+        """
+        落盘. force=True 时跳过脏标记检查(用于关界面等强制刷盘点).
+        **一次都没读过的不写**：内存里是空的，写下去就是拿空表盖掉盘上的数据（没开过配方页就关界面，置顶全没了）；
+        没读过也就不可能改过 —— Set / Delete 都先 Load
+        """
         self._pending = False
         if self._readonly:
             return False
-        if not self._dirty and not force:
+        if not self._loaded or (not self._dirty and not force):
             return True
 
         record = {

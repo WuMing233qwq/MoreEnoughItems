@@ -19,7 +19,7 @@
 # ----------------------------------------------------------------------
 """
 对外的唯一入口：第三方 CreateComponent("MoreEnoughItems", "MeiApi") 拿到本类实例。
-接入方式与硬约束见 docs/extension_api.md。
+接入方式与硬约束见 docs/modding/（从 01-getting-started.md 读起，接口参考在 api.md）。
 """
 import mod.client.extraClientApi as clientApi
 

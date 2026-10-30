@@ -70,6 +70,8 @@ def is_fuel(item):  # type: (any) -> bool
 
 def burn_seconds(item):  # type: (any) -> float or None
     """ 一样燃料能烧多少秒：引擎给的燃料时长（秒，引擎结论 §44）；方块类燃料给 0 的按 tag 写原版的数；都没有给 None """
+    if not is_fuel(item):
+        return None  # 和「能燃烧」筛选一个口径：下界木的木板、台阶带着 planks / wooden_slabs 的 tag，却烧不了
     try:
         info = item.Info
         duration = float(info.FuelDuration or 0)

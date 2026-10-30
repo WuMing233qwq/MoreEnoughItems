@@ -29,7 +29,20 @@ import mod.server.extraServerApi as serverApi
 from MEIScripts.common.classes.base import SlotTarget
 from MEIScripts.common.classes.types.transfer import KIND_BLOCK, KIND_PLAYER
 from MEIScripts.utils.log import logger
-from MEIScripts.utils.text import error_text
+from MEIScripts.utils.text import error_text, native_str, to_native
+
+ATTR_KEYS = (
+    ("UserData", "userData"),
+    ("EnchantData", "enchantData"),
+    ("ModEnchantData", "modEnchantData"),
+    ("CustomTips", "customTips"),
+    ("ExtraId", "extraId"),
+    ("Durability", "durability"),
+)
+"""
+ItemAttr 的字段 → 引擎物品信息字典的键。写进槽位时这几样一样不落（只写 id、aux、数量的话，附魔、耐久、自定义名字、
+userData 里的潜影盒内容、烟火之星的效果全丢 —— 损坏的工具搬进合成格就成了新的）；同一格累加时这几样也要都一样才算同一种东西
+"""
 
 
 def _item_comp():
@@ -38,10 +51,35 @@ def _item_comp():
 
 
 def _to_dict(stack, count=None):  # type: (any, int) -> dict
-    """ ItemStack -> 引擎的 itemDict。递给引擎的字符串必须是 str 不能是 unicode """
+    """ ItemStack -> 引擎的 itemDict，带上 ItemAttr 里有的那几样（ATTR_KEYS）。递给引擎的字符串必须是 str 不能是 unicode """
     item = stack.Item
-    return {"itemName": str(item.ItemId), "auxValue": int(item.AuxValue),
+    data = {"itemName": native_str(item.ItemId), "auxValue": int(item.AuxValue),
             "count": int(stack.Count if count is None else count)}
+    attr = getattr(item, "Attr", None)
+    for field, key in ATTR_KEYS:
+        value = getattr(attr, field, None)
+        if value:
+            data[key] = to_native(value)
+    if attr is not None and getattr(attr, "ShowInHand", True) is False:
+        data["showInHand"] = False
+    return data
+
+
+def _plain(value):  # type: (any) -> any
+    """ 比较用：unicode 收成 str、tuple 与 list 一样、dict 不论键的先后 """
+    if isinstance(value, dict):
+        return tuple(sorted((native_str(key), _plain(one)) for key, one in value.items()))
+    if isinstance(value, (list, tuple)):
+        return tuple(_plain(one) for one in value)
+    return native_str(value)
+
+
+def _identity(item_dict):  # type: (dict) -> tuple
+    """ 一格里是什么东西（不算数量）：id、aux 与 ATTR_KEYS 那几样，空的都当没有 """
+    item_id = item_dict.get("newItemName") or item_dict.get("itemName")
+    aux = int(item_dict.get("newAuxValue", item_dict.get("auxValue", 0)) or 0)
+    extras = tuple((key, _plain(item_dict.get(key))) for _field, key in ATTR_KEYS if item_dict.get(key))
+    return native_str(item_id), aux, extras
 
 
 def _merged_count(existing, stack):  # type: (dict, any) -> int or None
@@ -53,15 +91,11 @@ def _merged_count(existing, stack):  # type: (dict, any) -> int or None
     覆盖写的话只有最后一摞落地，前面的被吃掉（而来源那边已经扣了）。
     倍数为 1 时每格只要 1 个、只会有一条 entry，所以这个坑到最大化转移才暴露。
     """
-    if not existing:
+    if not existing or int(existing.get("count", 0) or 0) <= 0:
         return int(stack.Count)
-
-    item = stack.Item
-    exist_id = existing.get("newItemName") or existing.get("itemName")
-    exist_aux = int(existing.get("newAuxValue", existing.get("auxValue", 0)) or 0)
-    if exist_id != str(item.ItemId) or exist_aux != int(item.AuxValue):
-        # 清单把两种物品排到了同一格 —— 那是规划错了, 覆盖会白吃掉一摞.
-        # 拒绝并让来源知道(它就不会扣), 比悄悄丢东西好
+    if _identity(existing) != _identity(_to_dict(stack)):
+        # 清单把两种物品（或同一种物品的两个变体：附魔、耐久、userData 不一样）排到了同一格 —— 那是规划错了，
+        # 覆盖会白吃掉一摞、合并会抹掉一边的数据。拒绝并让来源知道(它就不会扣), 比悄悄丢东西好
         return None
     return int(existing.get("count", 0) or 0) + int(stack.Count)
 
@@ -101,11 +135,20 @@ class PlayerSlotTarget(SlotTarget):
             return False
 
     def Peek(self):  # type: () -> any
+        """ 带 userData 读（累加前要比 userData、撤回时要原样写回）"""
         try:
-            return _item_comp().GetPlayerUIItem(self.PlayerId, self.Slot, False)
+            return _item_comp().GetPlayerUIItem(self.PlayerId, self.Slot, True)
         except Exception as e:  # noqa
             logger.error("[MEI/transfer] 读玩家槽位 {} 失败: {}".format(self.Slot, error_text(e)))
             return None
+
+    def Restore(self, previous):  # type: (any) -> bool
+        """ 写回 previous、不退回背包（needBack=False）：撤回刚放进来的那些 """
+        try:
+            return bool(_item_comp().SetPlayerUIItem(self.PlayerId, self.Slot, previous or None, False))
+        except Exception as e:  # noqa
+            logger.error("[MEI/transfer] 撤回玩家槽位 {} 失败: {}".format(self.Slot, error_text(e)))
+            return False
 
 
 class BlockSlotTarget(SlotTarget):
@@ -116,6 +159,8 @@ class BlockSlotTarget(SlotTarget):
     但引擎在这条路上**没有**时序保护，且直写会绕过模组的
     PlayerTryPutCustomContainerItemServerEvent 校验 ——
     所以"哪几个槽位可写"必须由 TransferPolicy 说了算，不能乱塞。
+    **服务端现在不收这种清单**（executor.check）：坐标是客户端给的，服务端核对不了「这个玩家开着这个容器」，
+    收了就是谁都能清空、塞满别人的箱子；Clear 也不退回玩家。要开放得先补上这两样
     """
 
     def __init__(self, dimension, position, slot):  # type: (int, any, int) -> None
@@ -151,10 +196,19 @@ class BlockSlotTarget(SlotTarget):
     def Peek(self):  # type: () -> any
         try:
             return _item_comp().GetContainerItem(
-                self.Position, self.Slot, self.Dimension, False)
+                self.Position, self.Slot, self.Dimension, True)
         except Exception as e:  # noqa
             logger.error("[MEI/transfer] 读方块槽位 {} 失败: {}".format(self.Slot, error_text(e)))
             return None
+
+    def Restore(self, previous):  # type: (any) -> bool
+        try:
+            return bool(_item_comp().SpawnItemToContainer(
+                previous or {"itemName": "minecraft:air", "count": 0, "auxValue": 0},
+                self.Slot, self.Position, self.Dimension))
+        except Exception as e:  # noqa
+            logger.error("[MEI/transfer] 撤回方块槽位 {} 失败: {}".format(self.Slot, error_text(e)))
+            return False
 
 
 def make_target(ctx, kind, slot):  # type: (any, str, int) -> SlotTarget or None

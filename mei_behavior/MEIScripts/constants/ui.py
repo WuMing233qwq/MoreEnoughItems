@@ -32,12 +32,15 @@ class UiPathConst(object):
     MeiRoot = "/mei_ui"
     LeftWrapper = MeiRoot + "/mei_left_wrapper"
     RightWrapper = MeiRoot + "/mei_right_wrapper"
-    # 覆盖层的定义（mei_main 命名空间下）：支持的界面两栏写在 JSON 里；注入的界面（HUD、强制兼容）用不带两栏的那个，
-    # 第一次展开才按下面两个定义把两栏建出来（UIMainNode.EnsureScripts）
+    # 覆盖层的定义（mei_main 命名空间下）：支持的界面两栏写在 JSON 里（下面头两个定义，平时那一档的层级）；
+    # 注入的界面（HUD、强制兼容）与 MEI 自己的界面用不带两栏的那个，要展开时按后两个定义把两栏建出来（UIMainNode.EnsureScripts）——
+    # 后两个生下来就是悬浮窗管事时那一档的层级（这几种界面两栏一露面就是悬浮窗管事），不用再 SetLayer
     ProxyRootDef = "mei_proxy_ui"
     FloatRootDef = "mei_float_ui"
     RightWrapperDef = "MeiItemsBrowser.items_browser_ui"
     LeftWrapperDef = "MeiItemsSidebar.items_sidebar_ui"
+    FloatRightWrapperDef = "mei_main.float_right_wrapper"
+    FloatLeftWrapperDef = "mei_main.float_left_wrapper"
     # 悬浮窗（docs/architecture/floating.md）
     Backdrop = MeiRoot + "/mei_backdrop"  # 从悬浮窗点开 MEI 时盖住原版界面的黑底（30% 透明度，吞点击；点它收起）
     FindCapture = MeiRoot + "/mei_find"  # 查找状态：整屏透明的捕获层，下一次点哪就查哪（layer 95，在悬浮窗下面）
@@ -45,6 +48,27 @@ class UiPathConst(object):
     FloatMei = FloatWindow + "/buttons/mei"
     FloatQuerySlot = FloatWindow + "/buttons/query_slot"  # 查询按钮连同它前面的间隔：不在触屏时宽度写 0
     FloatQuery = FloatQuerySlot + "/query"
+    # 工具模式（docs/architecture/modes.md）：拿起来的物品（比格子里的大一圈）与「下一下点哪就放到哪」的捕获层，显隐都绑在「拿着没有」上
+    ToolLayer = MeiRoot + "/mei_tool"
+    ToolCapture = ToolLayer + "/capture"  # 整屏透明（layer 96，在查找状态的捕获层上面、悬浮窗下面）
+    ToolDesktop = ToolLayer + "/desktop"  # PC：follows_cursor 的 1×1 宿主，在 PC 上一直亮着（藏着的跟不住光标，引擎结论 §29）
+    ToolDesktopItem = ToolDesktop + "/item"
+    ToolTouchItem = ToolLayer + "/touch"  # 触屏：摆在点的那一格上（锚左上，SetPosition 给的是相对父控件左上角的坐标，引擎结论 §39）
+    # 物品栏的筛选与排序菜单（mei_ui/filters/）：整屏一层，框由脚本摆在筛选按钮旁边，里面全部锚左上、绝对定位
+    FilterLayer = MeiRoot + "/mei_filter"
+    FilterFrame = FilterLayer + "/frame"
+    FilterTitle = FilterFrame + "/title"
+    FilterClose = FilterFrame + "/close"
+    FilterSection = FilterFrame + "/filter_section"
+    FilterScroll = FilterFrame + "/chips"  # common.scrolling_panel：标签块放不下时上下滚
+    FilterSortSection = FilterFrame + "/sort_section"
+    FilterPrev = FilterFrame + "/sort_prev"
+    FilterValue = FilterFrame + "/sort_value"
+    FilterNext = FilterFrame + "/sort_next"
+    FilterDir = FilterFrame + "/sort_dir"
+    FilterLine = FilterFrame + "/line"
+    FilterClear = FilterFrame + "/clear"
+    FilterDone = FilterFrame + "/done"
     # 两栏的层级：根控件的变量 $mei_side_layer（平时）/ $mei_float_side_layer（悬浮窗管事时）经这几个记号带给脚本，
     # 和层级为 0 的那个做差（floating/manager.py 的 side_layers）
     SideLayerZero = MeiRoot + "/side_layer_zero"
@@ -65,6 +89,8 @@ class ItemsSidebarPath(object):
     TabIndexBar = Top + "/tab_index/progress_bar"
     BookmarksGrid = Root + "/items/grids/bookmarks"
     HistoryGrid = Root + "/items/grids/panel/history"
+    ModePanel = Top + "/mode"  # 顶栏最左边的模式按钮那一格（普通 / 工具 / 作弊，点一下轮换；原来的 setting 占位）
+    ModeButton = ModePanel + "/button"
 
 class ItemsBrowserPath(object):
     Root = UiPathConst.RightWrapper + "/items_browser"
@@ -79,6 +105,8 @@ class ItemsBrowserPath(object):
     SearchClearBtn = Top + "/search_box/clear"
     FindPanel = Top + "/query"  # 顶栏最右边的查询按钮那一格（只在触屏、设置开着时显示）
     FindButton = FindPanel + "/button"
+    FilterPanel = Top + "/filter"  # 搜索框右边的筛选按钮那一格（原来的 setting 占位）
+    FilterButton = FilterPanel + "/button"
 
 class RecipeDetailsPath(object):
     # 注意: Root 与 Screen 差一层 —— Root 是 CreateChildControl 建出来的容器,
@@ -156,6 +184,47 @@ class FloatConst(object):
     ScreenDef = "mei_main.mei_screen"  # 画布（common.base_screen 派生，路径结构与原版界面相同，主节点的 RootPath 用缺省的就行）
     ScreenKey = "MeiScreen"  # RegisterUI / PushScreen 的 uiKey，命名空间是 NameConst.NameSpace
     ScreenClose = "button.mei.screen.close"  # ESC、背包键在画布上 global 映射到它：关掉这个界面
+
+
+class ModeConst(object):
+    """
+    普通 / 工具 / 作弊三种模式（docs/architecture/modes.md）：收藏栏顶栏最左边的按钮点一下轮换，全局记住（prefs）。
+    作弊要操作员：开界面时问一次服务端，给物品时服务端再查一次
+    """
+    Normal = "normal"  # 照常：点格子查配方，触屏出菜单
+    Tool = "tool"  # 点格子把它拿起来，再点一下放到别的模组登记过的控件上（ctx.UI.Drops）；点空处放下
+    Cheat = "cheat"  # 点格子给一组（PC 右键给一个），不出菜单、不二次确认
+    Order = (Normal, Tool, Cheat)  # 点按钮的轮换顺序；没有操作员权限时跳过作弊
+    IconSubs = FloatConst.IconSubs  # 按钮图标（ore_style_button 平时、悬停两张脸；贴图写在 mei_common.btn_mode）
+    Colors = {  # 按钮图标的颜色：普通是图标平时的灰（与 mei_icons 一致），工具深黄、作弊深红（浅了在灰按钮上看不清）
+        Normal: FloatConst.IconColor,
+        Tool: (0.86, 0.6, 0.0),
+        Cheat: (0.8, 0.13, 0.13),
+    }
+    HoverBinding = "#mei.mode.hover_text"  # 模式按钮悬停文字的绑定名（mei_common.mode_hover_tip，ToolHost 挂）
+
+
+class FilterConst(object):
+    """ 物品栏的筛选与排序菜单（mei_ui/filters/，docs/architecture/modes.md §8）"""
+    ChipCount = 24  # 标签块池几个，必须与 mei_main.json 的 filter_chips 里 chip_0 … chip_23 一致；登记的筛选比它多，多的不显示
+    ChipName = "button.mei.filter.chip.{}"  # 第 i 个标签块的 $pressed_button_name，也是 BF_ButtonClickUp 绑定名
+    CloseName = "button.mei.filter.close"
+    PrevName = "button.mei.filter.sort_prev"
+    NextName = "button.mei.filter.sort_next"
+    DirName = "button.mei.filter.sort_dir"
+    ClearName = "button.mei.filter.clear"
+    DoneName = "button.mei.filter.done"
+    ScrollContents = (  # common.scrolling_panel 里放内容的那一层（PC / 触屏、滚动条在不在里面四种），按顺序找第一个在的
+        "/scroll_mouse/scroll_view/stack_panel/background_and_viewport/scrolling_view_port/scrolling_content",
+        "/scroll_touch/scroll_view/panel/background_and_viewport/scrolling_view_port/scrolling_content",
+        "/scroll_mouse/scroll_view/panel/background_and_viewport/scrolling_view_port/scrolling_content",
+        "/scroll_touch/scroll_view/stack_panel/background_and_viewport/scrolling_view_port/scrolling_content",
+    )
+    ChipSub = "/chip_{}"  # 标签块相对内容那一层的路径
+    LabelSub = "/label"  # 按钮上的字（mei_common.menu_button）
+    FaceSub = "/default"  # 按钮平时的底图：按下的标签块换成按下的样子
+    FaceNormal = "textures/ui/mei/button/tooltip_button/button"
+    FaceOn = "textures/ui/mei/button/tooltip_button/button_pressed"
 
 
 class FocusConst(object):

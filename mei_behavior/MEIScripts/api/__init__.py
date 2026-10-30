@@ -19,7 +19,7 @@
 # ----------------------------------------------------------------------
 """
 对外 API 层。第三方**不经过本包**，他们只拿 comp.MeiApiComponent 的实例。
-本门面是给 MEI 自身与内置扩展用的，见 docs/extension_api.md。
+本门面是给 MEI 自身与内置扩展用的，见 docs/modding/api.md。
 """
 
 # 只导常量：comp 顶层拉客户端引擎（GetComponentCls），context 拉 registry 与 ui_script，

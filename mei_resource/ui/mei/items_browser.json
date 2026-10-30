@@ -407,7 +407,7 @@
                                         }
                                     },
                                     {
-                                        "setting": {
+                                        "filter": {
                                             "type": "panel",
                                             "anchor_from": "right_middle",
                                             "anchor_to": "right_middle",
@@ -420,7 +420,8 @@
                                                 {
                                                     "button@mei_common.ore_style_button": {
                                                         "type": "button",
-                                                        "$button_content_control|default": "mei_icons.btn_setting",
+                                                        "$button_content_control|default": "mei_common.btn_filter",
+                                                        "$button_hover_extra_control": "mei_common.filter_hover_tip",
                                                         "$control_alpha": 1.0,
                                                         "$is_new_nine_slice": false,
                                                         "$label_color": [

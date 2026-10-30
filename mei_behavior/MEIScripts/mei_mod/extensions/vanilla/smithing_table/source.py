@@ -31,6 +31,9 @@ CATEGORY_ID = "smithing_table"
 class SmithingSource(EngineRecipeSource):
     """ 一条配方：ingredients 三格（模板、物品、材料）+ result（纹饰是空表）"""
 
+    SCAN_BY = "input"
+    """ 全量扫描按原料问：纹饰配方按产物查不到，按原料扫才凑得全（转换配方按原料也都查得到，同一条按 Id 去重）"""
+
     def __init__(self):
         EngineRecipeSource.__init__(self, CATEGORY_ID)
 

@@ -23,8 +23,8 @@
 - **按住 Ctrl 或 Shift**（不带 Alt）悬停在一条配方 / 配方树收藏的某一格上：这一条的全部格子着色（收起的那一格、展开后的产物、原料、工具）。
   只问收藏栏自己的 grid（便宜），光标、修饰键都没变就不问；收藏格上的颜色在 JSON（MeiItemsSidebar.bookmark_highlight）。
 - **只按住 Alt**：tooltip 列出光标下这一格现在能用的快捷键（键位跟着玩家改过的走，没绑的、这一格做不了的不列）；松开 Alt 收起。
-  借 MEI tooltip 的「只有标题」那一种 —— 设置里关了「启用高级Tooltip」就不出。光标下是什么问焦点探针：在别人家的界面上要逐层找控件，
-  所以只在光标挪了、又隔了 HELP_INTERVAL 才重问。
+  借 MEI tooltip 的「只有标题」那一种 —— 设置里关了「启用高级Tooltip」就不出；亮着时光标下那一格的原版悬停文字让位（不然叠在一起，
+  TooltipManager.ShowHelp）。光标下是什么问焦点探针：在别人家的界面上要逐层找控件，所以只在光标挪了、又隔了 HELP_INTERVAL 才重问。
 """
 import time
 
@@ -110,8 +110,9 @@ def _tick(main):
     if _State.HelpPos is not None and (pos == _State.HelpPos or now - _State.HelpAt < HELP_INTERVAL):
         return
     _State.HelpAt, _State.HelpPos = now, pos
-    text = help_text(main, main.FocusAt(pos[0], pos[1]))
+    target = main.FocusAt(pos[0], pos[1])
+    text = help_text(main, target)
     if text:
-        tooltip.ShowHelp(text)
+        tooltip.ShowHelp(text, target)
     else:
         tooltip.HideHelp()

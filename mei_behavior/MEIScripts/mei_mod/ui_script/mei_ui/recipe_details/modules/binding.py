@@ -31,6 +31,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.click import (
     BUTTON_PRIMARY, BUTTON_SECONDARY, SlotClickContext, GetPolicy,
 )
 from MEIScripts.mei_mod.ui_script.controls.item.panel import panel_controls
+from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
 from MEIScripts.mei_mod.ui_script.proxy.focus.search import contains, control_rect
 from MEIScripts.utils import utilities
 from MEIScripts.utils.binder import ScreenBinder
@@ -748,6 +749,10 @@ class RecipesGridBind(object):
         panel = self.ItemPanels.get((row, group_id, ordinal))
         if not panel:
             logger.error("[MEI/click] 面板未建 addr=({}, {}, {})".format(row, group_id, ordinal))
+            return
+
+        # 工具 / 作弊模式先问（配方树菜单里的预览也走这里：那里没有拿起的宿主，工具模式照平时）
+        if ModeManager.Intercept(panel, button == BUTTON_SECONDARY):
             return
 
         self._OnSlotClick(SlotClickContext(

@@ -15,7 +15,7 @@
 #  License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
-from typing import Dict, List, Optional, Literal, Type, Tuple, Any
+from typing import Dict, List, Optional, Literal, Set, Type, Tuple, Any
 
 from MEIScripts.common.classes.base import BaseRecipeUIScript
 from MEIScripts.common.classes.types import Item, ItemStack, Recipe, RecipeCategory
@@ -55,6 +55,21 @@ class __RecipeManager(object):
 
     def QueryRecipe(self, item: Item, query_by: Literal["output", "input"]="output",
                     types: List[str]=None) -> Dict[str, List[Recipe]]:...
+
+    # (结果, 还没凑齐全表的类型); 查工作站的用途时它服务的类型排最前、带上全表
+    def QueryRecipeFull(self, item: Item, query_by: Literal["output", "input"]="output",
+                        types: List[str]=None) -> Tuple[Dict[str, List[Recipe]], Set[str]]:...
+
+    # 这个物品是哪些类型的工作站(按 SortIndex); 给了 wanted 就只要其中的
+    @staticmethod
+    def StationCategories(item: Item, wanted: Optional[List[str]]=None) -> List[str]:...
+
+    # 查这个物品时全表还在凑的类型(只有查工作站的用途才有); 不碰引擎
+    def PendingCategories(self, item: Item, query_by: Literal["output", "input"]) -> List[str]:...
+
+    # 有会凑出全表的来源(能自报全量 / 覆写了 IsAllComplete)还没凑齐; 给不出全表的来源不算
+    @staticmethod
+    def IsCategoryBuilding(category_id: str) -> bool:...
 
     # 一个类别的全部配方 + 是否完整; 怎么凑出全量是各来源自己的事
     @staticmethod

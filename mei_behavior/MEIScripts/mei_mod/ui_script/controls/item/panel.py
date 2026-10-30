@@ -20,11 +20,44 @@
 
 from MEIScripts.common.classes.types import Item, ItemStack
 from MEIScripts.constants.codes import NameConst, QueryConst
-from MEIScripts.constants.texts import MenuKindText
+from MEIScripts.constants.texts import ItemText, MenuKindText
 from MEIScripts.constants.ui import MenuKey
+from MEIScripts.mei_mod.state.settings import IsItemIdShown, IsNamespaceShown
 from MEIScripts.mei_mod.ui_script.mei_ui import context
 from MEIScripts.utils import utilities
 from MEIScripts.utils.text import native_str
+
+
+def render_args(data):  # type: (tuple) -> tuple
+    """
+    递给 ItemRenderer.SetUiItem 的四样（物品 id、aux、附魔、userData）规整一下再给引擎：id 收成 str（unicode 引擎不认，
+    CLAUDE.md 引擎结论 §2）、aux 收成 int、附魔收成 bool、userData 只给非空的 dict —— 引擎的 C++ 转换收到别的类型会抛 TypeError
+    """
+    item_id, aux_value, is_enchanted, user_data = data
+    try:
+        aux_value = int(aux_value or 0)
+    except (TypeError, ValueError):
+        aux_value = 0
+    if not isinstance(user_data, dict) or not user_data:
+        user_data = None
+    return native_str(item_id or ""), aux_value, bool(is_enchanted), user_data
+
+
+def identity_lines(item):  # type: (any) -> list
+    """
+    悬停文字最后补的两行（设置「信息显示」里的两项）：英文 ID（深灰，倒数第二行）、命名空间（蓝色斜体，最底下）——
+    照 Java 版高级提示框与 JEI / REI 写模组名的样子。附加值不为 0 的 ID 带上它（minecraft:potion:21）；没有命名空间的按 minecraft
+    """
+    item_id = native_str(getattr(item, "ItemId", None) or "")
+    if not item_id:
+        return []
+    lines = []
+    if IsItemIdShown():
+        aux = getattr(item, "AuxValue", 0) or 0
+        lines.append(native_str(ItemText.IdLine).format(item_id + (":{}".format(aux) if aux else "")))
+    if IsNamespaceShown():
+        lines.append(native_str(ItemText.NamespaceLine).format(item_id.split(":", 1)[0] if ":" in item_id else "minecraft"))
+    return lines
 
 
 def panel_controls(panel):  # type: (any) -> list
@@ -184,6 +217,9 @@ class ItemPanel(object):
           · `unicode + 含中文的字节串` → py2 按 ASCII 解码后者，UnicodeDecodeError；
           · 拼出 unicode 递给引擎 → **不抛不报，只是安静地取不到东西**（引擎结论 §2）。
         收敛到 str 之后两条都不成立。这正是 `utils/text.py` 存在的理由，不另发明规矩。
+
+        最后接英文 ID 与命名空间两行（identity_lines，看设置）：接在格子追加的说明后面，写在悬停文字里、不另画在 tooltip 底部；
+        物品自己的 HoverText（搜索的 # 前缀查的就是它）不带这两行
         """
         if self.Item is None:
             self.ItemHoverText = ""
@@ -191,7 +227,8 @@ class ItemPanel(object):
         text = native_str(self.Item.HoverText or "")
         if self.ItemLore:
             text += "\n\n" + "\n".join(native_str(line) for line in self.ItemLore)
-        self.ItemHoverText = text
+        tail = identity_lines(self.Item)
+        self.ItemHoverText = "\n".join([part for part in [text] + tail if part])
 
     @classmethod
     def from_item(cls, control, item):
@@ -224,7 +261,7 @@ class ItemPanel(object):
 
     def SetUiItem(self):  # type: () -> 'bool'
         """ 设置Renderer控件显示的物品 (渲染四元组由 Stack 提供, 为 FluidStack 铺路) """
-        item_id, aux_value, is_enchanted, user_data = self.Stack.get_render_data()
+        item_id, aux_value, is_enchanted, user_data = render_args(self.Stack.get_render_data())
         suc = self.RendererControl.SetUiItem(item_id, aux_value, is_enchanted, user_data)
         if not suc:
             # 如果某些情况无法正确 SetUiItem 则直接隐藏 Renderer 控件 (例如 minecraft:air 就无法正常渲染)
@@ -245,7 +282,7 @@ class ItemPanel(object):
             return False
         self.Mirrors.append((control, renderer))
         if self.Stack is not None:
-            renderer.SetUiItem(*self.Stack.get_render_data())
+            renderer.SetUiItem(*render_args(self.Stack.get_render_data()))
         return True
 
     def Controls(self):  # type: () -> list

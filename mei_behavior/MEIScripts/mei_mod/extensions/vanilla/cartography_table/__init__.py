@@ -19,10 +19,11 @@
 # ----------------------------------------------------------------------
 """
 制图：制图台的配方。引擎给的是无序配方的形状（ingredients 一两格 + result），tag 是 cartography_table；
-原版只有两条：纸 → 空地图、纸 + 指南针 → 空定位地图（empty_map 的 aux 2）。复制、扩大、锁定地图是写死在引擎里的，查不到（CLAUDE.md 引擎结论 §45）
+原版只有两条：纸 → 空地图、纸 + 指南针 → 空定位地图（empty_map 的 aux 2，由原版扩展的创造栏表加进物品表，creative/）。
+复制、扩大、锁定地图是写死在引擎里的，查不到（CLAUDE.md 引擎结论 §45）
 """
 from MEIScripts.api.facades.registry import ItemFactory
-from MEIScripts.api.facades.types import ItemSpec, RecipeCategory
+from MEIScripts.api.facades.types import RecipeCategory
 
 from .source import CartographySource
 from .ui_script import CartographyUIScript
@@ -41,6 +42,3 @@ SOURCE = CartographySource
 
 UI_SCRIPT = CartographyUIScript
 """ 配方页脚本：照原版制图台 —— 原料、加号、附加原料一列 → 箭头 → 地图 → 箭头 → 产物 """
-
-VARIANTS = [ItemSpec("minecraft:empty_map", 2)]
-""" 空定位地图：物品表里每个 id 只有 aux 0（RegItemFromIdList），不加的话物品栏里没有它、配方产物点了也不在表里 """

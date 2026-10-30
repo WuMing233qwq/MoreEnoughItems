@@ -25,6 +25,7 @@ from mod_log import logger
 from MEIScripts.common.classes.base import BaseRecipeUIScript
 from MEIScripts.constants.ui import BindingConst, CollectionConst, RecipeDetailsPath
 from MEIScripts.constants.codes import NameConst, QueryConst
+from MEIScripts.constants.texts import RecipeText
 from MEIScripts.mei_mod.state import BookmarkManager, CacheManager, PinManager
 from MEIScripts.mei_mod.ui_script.controls.item import ItemsGrid
 from MEIScripts.mei_mod.ui_script.controls.item import ItemPanel
@@ -37,8 +38,10 @@ from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.controls.button import (
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules import RecipesGridBind
 from MEIScripts.mei_mod.network.protocol.client import BuildPlan, SendTransfer
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.craftable import CraftableCache
+from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.screen_transfers import ScreenTransfers
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import NotifyNoRecipes
-from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.host import attach_script, detach_script, is_live
+from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.host import (
+    attach_script, build_script, detach_script, is_live)
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.ordering import SortResult
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.typetab import TypeTabNav
 from MEIScripts.mei_mod.ui_script.proxy.focus.search import contains, control_rect
@@ -143,6 +146,12 @@ class RecipeDetailsScript(object):
         self.RecipesResult = []  # type: list
         self.RawRecipesResult = []  # type: list   # 查询原序，置顶排序每次都从它出发
         self.PendingFocusId = None  # type: str or None  # 从收藏点开时要翻到的那条配方，建配方分页时用掉
+        self.ScanPending = []  # type: list
+        """
+        正在看的是工作站的用途、它服务的类型全表还在扫（RecipeManager.PendingCategories）：这些类型的页码后面写「扫描中」，
+        节拍里等它们扫完、重新查一次刷新（PollScan，只刷新一次）
+        """
+        self.ScanEntry = None  # type: tuple or None  # 上面那份结果是查哪个 (物品, 方向) 得来的
         self.CraftingStationItems = []  # type: list
 
         self.ControlDef = ""  # type: str
@@ -355,6 +364,12 @@ class RecipeDetailsScript(object):
         if self.RecipesGridBind:
             self.RecipesGridBind.TickPanels(self.AnimTicks)
 
+        try:
+            self.PollScan()
+        except Exception as e:  # noqa  刷新失败只少一次刷新，不能停掉整页的节拍
+            self.ScanPending = []
+            logger.error("[MEI/ui] 扫描完成后刷新工作站的用途失败: {}".format(error_text(e)))
+
 
     def DestroyScript(self):
         self.StopAnimTimer()
@@ -382,6 +397,8 @@ class RecipeDetailsScript(object):
         self.RecipesResult = []
         self.RawRecipesResult = []
         self.PendingFocusId = None
+        self.ScanPending = []
+        self.ScanEntry = None
         self.RecipesGridControl = None
         self.TypeTabsGridReady = False
 
@@ -424,8 +441,30 @@ class RecipeDetailsScript(object):
             nav.SetCurrent(entry)
 
         CacheManager.AddHistory(item)
+        self.ScanEntry = entry
+        self.ScanPending = RecipeManager.PendingCategories(item, query_by)
         self.SetRecipesResult(result, prefer_type, focus_id)
         self.UpdateBackButton()
+        return True
+
+    def PollScan(self):
+        """
+        正在看的工作站用途，它服务的类型扫完了：重新查一次，停在原来的类型和那一页（按这一页的第一条配方定位），只刷新这一次。
+        节拍里调（每 0.2 秒）：只问各来源还在不在凑全表（RecipeManager.IsCategoryBuilding），不碰引擎
+        """
+        if not self.ScanPending:
+            return False
+        if any(RecipeManager.IsCategoryBuilding(category_id) for category_id in self.ScanPending):
+            return False
+        entry, self.ScanPending = self.ScanEntry, []
+        if entry is None or not self.RecipesResult or CacheManager.GetRecipeNav().Current != entry:
+            return False
+        result = self.ResolveQuery(*entry)
+        if result is None:
+            return False
+        shown = self.RecipesPage.current_items if self.RecipesPage else []
+        focus = native_str(recipe_id(shown[0])) if shown and recipe_id(shown[0]) else None
+        self.SetRecipesResult(result, prefer_type=self.CurrentType, focus_id=focus)
         return True
 
     def FocusRecipe(self, crafting_type, focus_id):  # type: (str, str) -> bool
@@ -521,9 +560,16 @@ class RecipeDetailsScript(object):
 # ======================================================================================================================
     @RecipeAction.Visible(actions.PLUS)
     def CanTransferRecipe(self, _row, recipe):  # type: (int, any) -> bool
-        """ 类型不支持转移就整个不渲染；支持但材料不够是**灰掉**，那是 Enabled 的事 """
+        """
+        类型不支持转移就整个不渲染；支持但材料不够是**灰掉**，那是 Enabled 的事。
+        当前界面登记了接这一类配方的转移目标（ctx.UI.Transfers，样板、编码器这类）时照样出：+ 把配方交给它
+        """
+        if recipe is None:
+            return False
+        if self.Craftable.TransferTarget(recipe, self.CurrentType) is not None:
+            return True
         category = self.__CurrentCategory()
-        return recipe is not None and category is not None and category.Transfer is not None
+        return category is not None and category.Transfer is not None
 
     @RecipeAction.Enabled(actions.PLUS)
     def IsRecipeCraftable(self, _row, recipe):  # type: (int, any) -> bool
@@ -531,7 +577,11 @@ class RecipeDetailsScript(object):
         材料够不够。**每帧被回读，所以必须走缓存** —— 真正的采集在开页时算一次
 
         (不缓存就是每帧扫一遍背包, 正是 binding_cost.md 记的那类事故)
+        交给界面登记的转移目标的不看材料，问它收不收这一条（同样走缓存）
         """
+        target = self.Craftable.TransferTarget(recipe, self.CurrentType)
+        if target is not None:
+            return self.Craftable.Accepts(target, recipe)
         return self.Craftable.CanCraft(self.__CurrentCategory(), recipe)
 
     @RecipeAction.Button(actions.PLUS)
@@ -543,8 +593,16 @@ class RecipeDetailsScript(object):
         "普通转移 / 最大化"的手势区分还没有，
         与物品书签入口手势是同一件悬着的事。
         """
+        if ctx.Recipe is None:
+            return
+        target = self.Craftable.TransferTarget(ctx.Recipe, self.CurrentType)
+        if target is not None:
+            # 交给当前界面登记的转移目标（不搬材料）：写成了关掉配方页回到那个界面；不在按钮回调里同步关（引擎结论 §10）
+            if ScreenTransfers.Deliver(target, ctx.Recipe):
+                self.GameComp.AddTimer(0.0, self.Close)
+            return
         category = self.__CurrentCategory()
-        if ctx.Recipe is None or category is None or category.Transfer is None:
+        if category is None or category.Transfer is None:
             return
 
         plan = BuildPlan(category, ctx.Recipe, self.Craftable.MakeContext())
@@ -734,9 +792,11 @@ class RecipeDetailsScript(object):
         self.TopLine1LabelControl.SetText(native_str(display_name))
 
     def UpdateTopLine2Label(self):
-        """ 更新顶部第二行的 label 控件 """
+        """ 更新顶部第二行的 label 控件；这个类型的全表还在扫（查工作站的用途时），页码后面写「扫描中」"""
         page_index = "{}/{}".format(self.RecipesPage.current_page_number, self.RecipesPage.total_page)
-        self.TopLine2LabelControl.SetText(page_index)
+        if self.CurrentType in self.ScanPending:
+            page_index = RecipeText.Scanning.format(page_index)
+        self.TopLine2LabelControl.SetText(native_str(page_index))
 
     def UpdateTypeTabsGrid(self):
         """ 更新合成方法选择网格 """
@@ -877,7 +937,8 @@ class RecipeDetailsScript(object):
         if not cls:
             raise ValueError("RecipeUIScriptCls cannot be None")
         for recipe in recipes:
-            self.RecipeUIScriptList.append(cls(recipe))  # noqa
+            # 构造也兜住：这里在 #visible 的绑定回调里跑，抛出去整条绑定被扔掉、整页都空（引擎结论 §15）
+            self.RecipeUIScriptList.append(build_script(cls, recipe))
 
     def CreateRecipesGrid(self, control_def):
         """ 创建 RecipesGrid 控件 """
@@ -955,7 +1016,9 @@ class RecipeDetailsScript(object):
                 self.RecipesPageUp()
 
     def Close(self, _=None):
-        """ 关闭配方界面 """
+        """ 关闭配方界面；已经关过（+ 成交后排的下一拍关、紧接着又按了 ESC）就什么都不做 """
+        if not getattr(self, "Created", False):
+            return
         self.DestroyScript()
         # 物品栏、收藏栏改回避让原版内容，藏了的原版主内容显回来（core/node.py，代理参数 AllowChangeVisible）
         self.MainNode.OnRecipeDetailsClosed()

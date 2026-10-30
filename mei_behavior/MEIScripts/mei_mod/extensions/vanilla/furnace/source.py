@@ -45,7 +45,7 @@ class FurnaceSource(EngineRecipeSource):
 
     def ParseRecipe(self, raw_list):  # type: (list) -> list
         result = []
-        for raw_dict in raw_list:
+        for raw_dict in raw_list or ():
             recipe = self.HandleFurnace(raw_dict)
             if recipe:
                 result.append(recipe)
@@ -108,6 +108,6 @@ class FurnaceSource(EngineRecipeSource):
                 return None
             outputs = [o for o in (self._to_output(out_stack),) if o]
             return FurnaceRecipe(self.CategoryId, [ingredient], outputs)
-        except KeyError:
+        except (KeyError, TypeError, ValueError):  # 一条认不出只丢这一条（同 ParseShapelessParts）
             return None
 

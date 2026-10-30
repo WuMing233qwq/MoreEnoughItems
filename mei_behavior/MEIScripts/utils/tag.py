@@ -121,17 +121,19 @@ class TagParser(object):
         会在下钻途中自动创建缺失的复合节点
         (列表下标永不自动创建) 返回目标叶子/分支节点
         """
-        if default is None:
-            default = {}
+        fill = {} if default is None else default
         node = self
         parts = [p for p in dotted.replace(".", "/").split("/") if p != ""]
-        for part in parts:
+        for index, part in enumerate(parts):
             key = int(part) if (node.is_list and _is_int(part)) else part
             child = node.get(key)
             if child is None:
-                if node.is_compound:
-                    node._raw[key] = default
-                    child = TagParser(node._raw[key])
+                if not node.is_compound:
+                    return default  # 列表下标不自动创建：走不下去
+                # 中间每一层各建一个新的 {}、叶子用 default 的拷贝 —— 同一个对象挂在几层上就成了自己套自己
+                # （json.dumps 报循环引用、递给引擎会无限递归）
+                node._raw[key] = _deepcopy(fill) if index == len(parts) - 1 else {}
+                child = TagParser(node._raw[key])
             node = child
         return node
 

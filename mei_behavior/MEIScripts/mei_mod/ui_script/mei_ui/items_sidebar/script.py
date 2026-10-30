@@ -30,6 +30,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui.items_sidebar.controls import (
     BookmarkItemPanel, BookmarkItemsGrid, BroderItemPanel, HistoryItemsGrid,
 )
 from MEIScripts.mei_mod.ui_script.mei_ui.items_sidebar.modules import BookmarkPager, build_pages, frame_key, highlight_key
+from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
 from MEIScripts.utils import utilities
 from MEIScripts.utils.text import native_str
 
@@ -100,6 +101,7 @@ class ItemsSidebarScript(BaseItemsGridScript):
         self.TabNextBtnControl = None
         self.TabLabelControl = None
         self.TabIndexBarControl = None
+        self.ModeBtnControl = None  # 顶栏最左边的模式按钮（普通 / 工具 / 作弊）
 
         self.__BookmarkCells = {}  # type: dict  # 当前页：格子下标 -> Cell
         self.__BookmarkEdges = {}  # type: dict  # 当前页：格子下标 -> 分组外轮廓的边
@@ -162,6 +164,20 @@ class ItemsSidebarScript(BaseItemsGridScript):
             if button:
                 button.AddTouchEventParams({"isSwallow": True})
                 button.SetButtonTouchDownCallback(callback)
+        self.InitModeButton()
+
+    def InitModeButton(self):
+        """
+        顶栏最左边的模式按钮：点一下轮换普通 / 工具 / 作弊（docs/architecture/modes.md）。
+        颜色由这个界面的 main.Tool 每帧对着 ModeManager.Revision 染 —— 这里只让它下一帧重染一次（栏刚建出来、界面重开）
+        """
+        self.ModeBtnControl = self.MainNode.GetUIControl(ItemsSidebarPath.ModeButton, "button")
+        if self.ModeBtnControl:
+            self.ModeBtnControl.AddTouchEventParams({"isSwallow": True})
+            self.ModeBtnControl.SetButtonTouchUpCallback(ModeManager.Cycle)
+        tool = getattr(self.MainNode, "Tool", None)
+        if tool is not None:
+            tool.Painted = -1
 
     def InitItemsList(self):
         self.ItemsPage = BookmarkPager()
@@ -352,14 +368,11 @@ class ItemsSidebarScript(BaseItemsGridScript):
 
     @staticmethod
     def __BuildHistorySignature(items):
+        """ 最近浏览的样子：物品按收藏的身份键（带区分变体的属性 —— 两本附魔书不是同一样），认不出的按实例 """
         result = []
         for item in items:
-            item_id = getattr(item, "ItemId", None)
-            aux_value = getattr(item, "AuxValue", None)
-            if item_id is not None:
-                result.append((item_id, aux_value))
-            else:
-                result.append(id(item))
+            key = BookmarkManager.ItemKey(item) if getattr(item, "ItemId", None) is not None else ""
+            result.append(key or id(item))
         return tuple(result)
 
     @staticmethod

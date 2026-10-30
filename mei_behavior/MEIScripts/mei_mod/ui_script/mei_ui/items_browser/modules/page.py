@@ -195,8 +195,8 @@ def group_items(items):  # type: (list) -> (list, dict)
     """
     item_to_category = {}
     for group_name, group_data in ItemOrganizer.GetAllGroups().items():
-        for item in group_data["Items"]:
-            item_to_category[item.ItemId] = group_name
+        for item_id in group_data["Items"]:  # 组表存的是物品 id（旁表不持有池对象）
+            item_to_category[item_id] = group_name
 
     category_info = {}
     unclassified = []
@@ -240,7 +240,7 @@ def group_items(items):  # type: (list) -> (list, dict)
                 group_all.extend(ItemManager.GetItemsById(group_item_id))
             other_items = [
                 item for item in group_all
-                if item.ItemId not in matched_ids
+                if item.ItemId not in matched_ids and not ItemManager.IsHidden(item)
             ]
             result.append({cat_name: matched_items + other_items})
             index_map[len(result) - 1] = cat_name

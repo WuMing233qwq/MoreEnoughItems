@@ -192,6 +192,10 @@ class SlotTarget(object):
         """ 看一眼当前槽位里是什么，空则 None。默认不支持 """
         return None
 
+    def Restore(self, previous):  # type: (any) -> bool
+        """ 把本槽位写回 previous（Peek 看到的样子，None 是空）、不退回任何东西：来源扣不掉时撤回刚放进来的。默认不支持 """
+        return False
+
 
 class ItemSource(object):
     """

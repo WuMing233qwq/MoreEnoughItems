@@ -26,6 +26,9 @@ from MEIScripts.api.facades.types import Ingredient
 from MEIScripts.api.facades.types import RecipeSource
 from MEIScripts.api.facades.registry import ItemFactory, ItemManager
 
+from .answers import INPUT, OUTPUT, EngineAnswers
+from .scanner import RecipeScanner
+
 
 def _tags_of(stack):  # type: (any) -> set or None
     """ 候选物品的 tag（注册物品时缓存的 Info.Tags）；取不到给 None """
@@ -71,7 +74,16 @@ def common_tag(stacks):  # type: (list) -> str or None
 
 
 class EngineRecipeSource(RecipeSource):
-    """ 透传引擎的配方来源：GetRecipesBy* 查询 + dict 解析 """
+    """
+    透传引擎的配方来源：GetRecipesBy* 查询 + dict 解析。问过引擎的（这个来源、这个方向、这个物品）记下答案、不问第二次（tools/answers.py）；
+    全表要的时候才分帧扫描凑（tools/scanner.py）
+    """
+
+    SCAN_BY = OUTPUT
+    """
+    全量扫描逐个物品问这个来源时按哪个方向问：缺省按产物（"output"）。
+    有的配方按产物查不到就改成按原料（"input"）—— 锻造纹饰的产物是空的，只在查模板、盔甲、材料的用途时出来
+    """
 
     def __init__(self, category_id):  # type: (str) -> None
         self.CategoryId = category_id
@@ -80,11 +92,17 @@ class EngineRecipeSource(RecipeSource):
 
     @staticmethod
     def _safe_stack(item_id, aux_value=0, count=1):  # type: (str, int, int) -> any
-        """ 安全构造 ItemStack: 物品不存在时返回 None (修空指针) """
-        item = ItemFactory.GetItem(ItemId=item_id, AuxValue=aux_value)
-        if not item:
+        """
+        安全构造 ItemStack：物品不在物品表里（ItemFactory 抛 ValueError）、数量不对时返回 None ——
+        一条配方里有一格认不出，不该让这个物品整个类型的配方都出不来
+        """
+        try:
+            item = ItemFactory.GetItem(ItemId=item_id, AuxValue=aux_value)
+            if not item:
+                return None
+            return item.stack(count=count)
+        except (TypeError, ValueError):
             return None
-        return item.stack(count=count)
 
     def ParseIngredientFromDict(self, _dict):  # type: (dict) -> Ingredient
         """
@@ -171,7 +189,10 @@ class EngineRecipeSource(RecipeSource):
         data = _string.split(":")
         if len(data) == 3:
             item_id = data[0] + ":" + data[1]
-            aux_value = int(data[2])
+            try:
+                aux_value = int(data[2])
+            except ValueError:  # 附加值不是数：认不出这一格
+                return None
         elif len(data) == 2:
             item_id = data[0] + ":" + data[1]
             aux_value = 0
@@ -180,13 +201,15 @@ class EngineRecipeSource(RecipeSource):
         return self._safe_stack(item_id, aux_value, count)
 
     def GetAll(self):  # type: () -> list
-        """ 本类型已扫到的全部配方；引擎不给枚举接口，只能靠扫描凑 """
-        from .scanner import RecipeScanner
-        RecipeScanner.Request(self.CategoryId)
+        """
+        本类型已扫到的全部配方；引擎不给枚举接口，只能靠扫描凑 —— **第一次要全表时才开扫**。
+        要全表就是有人在等（查工作站的用途）：还没扫完的插到扫描队列最前（Request(urgent=True)）
+        """
+        RecipeScanner.Request(self.CategoryId, urgent=True)
         return RecipeScanner.GetRecipes(self.CategoryId)
 
     def IsAllComplete(self):  # type: () -> bool
-        from .scanner import RecipeScanner
+        """ 扫完才是真（还没要过全表的也是假）"""
         return RecipeScanner.IsDone(self.CategoryId)
 
     def ParseRecipe(self, raw_list):  # type: (list) -> list
@@ -197,9 +220,19 @@ class EngineRecipeSource(RecipeSource):
         return []
 
     def GetRecipesByResult(self, item):
-        result = self.RecipeComp.GetRecipesByResult(item.ItemId, self.Tag, item.AuxValue)
-        return self.ParseRecipe(result)
+        """ 按产物问引擎；问过的（不管是平时查来源还是全量扫描）直接给记下的答案 """
+        known = EngineAnswers.Get(self, OUTPUT, item)
+        if known is not None:
+            return known
+        recipes = self.ParseRecipe(self.RecipeComp.GetRecipesByResult(item.ItemId, self.Tag, item.AuxValue))
+        EngineAnswers.Put(self, OUTPUT, item, recipes)
+        return recipes
 
     def GetRecipesByInput(self, item):
-        result = self.RecipeComp.GetRecipesByInput(item.ItemId, self.Tag, item.AuxValue)
-        return self.ParseRecipe(result)
+        """ 按原料问引擎（官方说这个方向昂贵）；问过的直接给记下的答案 """
+        known = EngineAnswers.Get(self, INPUT, item)
+        if known is not None:
+            return known
+        recipes = self.ParseRecipe(self.RecipeComp.GetRecipesByInput(item.ItemId, self.Tag, item.AuxValue))
+        EngineAnswers.Put(self, INPUT, item, recipes)
+        return recipes

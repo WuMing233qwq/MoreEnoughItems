@@ -285,17 +285,20 @@ class UIScriptMain(object):
             path=None,
             key=None,
             use_root_path=True,
-            visible_rule=None,
+            condition=None,
             enabled=True,
             control=None,
             always=False
     ):
-        """ always：悬浮窗管事、不避让原版界面的时候也照样避让它（配方页那几块）"""
+        """
+        登记一块避让目标。condition：生效条件 condition(get) -> bool（core/adaptive/rules.py），看得见还不够、要代码说了算的才给；
+        always：悬浮窗管事、不避让原版界面的时候也照样避让它（配方页那几块）
+        """
         entry_key = self._AdaptiveRegistry.register_control(
             path=path,
             key=key,
             use_root_path=use_root_path,
-            visible_rule=visible_rule,
+            condition=condition,
             enabled=enabled,
             control=control,
             always=always,
@@ -318,9 +321,10 @@ class UIScriptMain(object):
     def ListAdaptiveControlKeys(self):
         return self._AdaptiveRegistry.ListKeys()
 
-    def InitAdaptiveControlsFromPaths(self, paths, use_root_path=True, clear=True):
+    def InitAdaptiveControlsFromPaths(self, paths, use_root_path=True, clear=True, conditions=None):
+        """ 代理参数的 ContentPaths 全部登记成避让目标；conditions 是代理参数的 Conditions（{路径: 条件}）"""
         self._AdaptiveRegistry.InitFromPaths(
-            paths, use_root_path=use_root_path, clear=clear
+            paths, use_root_path=use_root_path, clear=clear, conditions=conditions
         )
         self.InvalidateAdaptiveGeometry()
 

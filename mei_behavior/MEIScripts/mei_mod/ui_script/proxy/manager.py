@@ -45,7 +45,8 @@ class __ProxyManager(object):
     def RegisterCustomUIScreen(self, screen_def, params):  # type: (str, dict) -> bool
         """
         让这个界面挂上 MEI（代理 CustomProxyScript）并记下它的代理参数。扩展装配时调（原版那 23 个由原版扩展登记，
-        extensions/vanilla/screens.py），SDK 退出存档时把代理表清了，所以每次进存档都要重新登记
+        extensions/vanilla/screens.py），SDK 退出存档时把代理表清了，所以每次进存档都要重新登记。
+        别的模组 RegisterUI + PushScreen 开的界面一样挂得上：SDK 压栈时按全名取界面节点（uiManager.get_pushed_screen）
         """
         if not self.RegisterProxyScript(screen_def, CUSTOM_PROXY_SCRIPT):
             return False

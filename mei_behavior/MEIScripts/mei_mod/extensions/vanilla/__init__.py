@@ -31,6 +31,14 @@ TYPES = ("crafting_table", "furnace", "blast_furnace", "smoker", "campfire", "st
 + 在这里加一个名字。清单显式而不扫描目录，理由同 extensions/__init__.py。
 """
 
+FUEL_FILTER = "mei:fuel"
+""" 物品栏筛选「能燃烧」的 Id（扩展登记的带命名空间，免得和别人撞）"""
+
+BURN_SORT = "mei:burn"
+""" 物品栏排序「燃烧时长」的 Id """
+
+FILTER, SORT = "filter", "sort"
+
 
 class VanillaExtension(MeiExtension):
     """ 原版配方：工作台、熔炉家族（熔炉 / 高炉 / 烟熏炉 / 营火）、切石机、制图台、锻造台、酿造台与燃料页 """
@@ -45,28 +53,69 @@ class VanillaExtension(MeiExtension):
     def __init__(self):
         self.Sources = []  # type: list
         self.Screens = []  # type: list  # 登记成挂 MEI 的原版界面（screens.py），卸载时逐个注销
+        self.ItemViews = []  # type: list  # 登记上的物品栏筛选 / 排序 [(FILTER 或 SORT, Id)]，卸载时逐个撤
 
     def OnRegister(self, ctx):
+        # 一步一隔离、挂 MEI 的原版界面最先登记：后面哪一步抛了，MEI 照样挂得上原版界面，别的类型照常
+        self._Step("挂 MEI 的原版界面", self._RegisterScreens, ctx)
         for name in TYPES:
-            module = self._ImportType(name)
-            if module is None:
-                continue
-            category = module.CATEGORY
-            source = module.SOURCE()
-            # 有转移策略的类型才支持快捷合成; 没有的 plus 按钮一律不亮
-            policy_cls = getattr(module, "POLICY", None)
-            if policy_cls is not None:
-                category.SetTransferPolicy(policy_cls())
-            ctx.Registry.SourceRegistry.RegisterCategory(category)
-            ctx.Registry.SourceRegistry.RegisterSource(source)
-            ctx.Registry.RecipeUIManager.RegisterScript(category.Id, module.UI_SCRIPT)
-            self.Sources.append(source)
-            # 这个类型要的物品变体（药水的各种 aux、空定位地图）：物品表里每个 id 只有 aux 0（RegItemFromIdList），不加就画不出、点不到。
-            # 不用撤：每次进世界物品表都重建；同一样再加一遍 AddItems 会跳过
-            variants = getattr(module, "VARIANTS", None)
-            if variants:
-                ctx.Registry.ItemManager.AddItems(variants)
-        self._RegisterScreens(ctx)
+            self._Step(name, self._RegisterType, ctx, name)
+        self._Step("创造栏的变体", self._RegisterCreativeItems, ctx)
+        self._Step("物品栏筛选", self._RegisterItemFilters, ctx)
+
+    @staticmethod
+    def _Step(label, step, *args):
+        """ 装配的一步：抛了只记一行 """
+        try:
+            step(*args)
+        except Exception as e:  # noqa
+            from MEIScripts.api.facades.utils import error_text, logger
+            logger.error("[MEI/vanilla] 装配「{}」出错: {}".format(label, error_text(e)))
+
+    def _RegisterType(self, ctx, name):
+        """ 一个配方类型：类型、来源、配方页脚本，有转移策略的才支持快捷合成（没有的 plus 按钮一律不亮）"""
+        module = self._ImportType(name)
+        category = module.CATEGORY
+        source = module.SOURCE()
+        policy_cls = getattr(module, "POLICY", None)
+        if policy_cls is not None:
+            category.SetTransferPolicy(policy_cls())
+        ctx.Registry.SourceRegistry.RegisterCategory(category)
+        ctx.Registry.SourceRegistry.RegisterSource(source)
+        ctx.Registry.RecipeUIManager.RegisterScript(category.Id, module.UI_SCRIPT)
+        self.Sources.append(source)
+
+    @staticmethod
+    def _RegisterCreativeItems(ctx):
+        """
+        创造栏里有、物品表里没有的物品（creative/）：物品表每个 id 只有 aux 0（RegItemFromIdList）——
+        目录里带附加值的（药水、药箭、床……）与引擎自己加的带 userData 的几族（附魔书、烟花、旗帜）。
+        先问引擎认不认识，不认识的跳过；目录里只有带附加值那一样的（活塞这类拿方块朝向当图标），aux 0 那份从物品栏藏起来；
+        附魔书、烟花的原件（不带 userData 的）也藏起来。不用撤：每次进世界物品表都重建；同一样再加一遍 AddItems 会跳过
+        """
+        from MEIScripts.api.facades.utils import logger
+        from .creative import GAME_VERSION, build, enchant_limit
+        items = ctx.Registry.ItemManager
+        plan = build(items.LookUpItem, ctx.Registry.ItemFactory.LoadInfo, enchant_limit())
+        added = items.AddItems(plan.Specs)
+        for item_id, aux in plan.Hide:
+            items.SetHidden(item_id, aux, True)
+        for item_id, aux in plan.HidePlain:
+            items.SetPlainHidden(item_id, aux, True)
+        logger.info("[MEI/items] 创造栏的变体: 加了 {} 个(表按游戏 {} 生成), 引擎不认识跳过 {} 个".format(
+            added, GAME_VERSION, plan.Unknown))
+
+    def _RegisterItemFilters(self, ctx):
+        """
+        物品栏的「能燃烧」筛选与「燃烧时长」排序：用熔炉的燃料表（furnace/fuels.py）——
+        引擎给方块类燃料的燃烧时长是 0，只看物品信息会漏掉木头这些（CLAUDE.md 引擎结论 §11）
+        """
+        from .furnace.fuels import burn_seconds, is_fuel
+        filters = ctx.Registry.ItemFilters
+        if filters.RegisterFilter(ctx.Registry.ItemFilter(FUEL_FILTER, "mei.filter.fuel", is_fuel, 35)):
+            self.ItemViews.append((FILTER, FUEL_FILTER))
+        if filters.RegisterSort(ctx.Registry.ItemSort(BURN_SORT, "mei.sort.burn", burn_seconds, 65)):
+            self.ItemViews.append((SORT, BURN_SORT))
 
     def _RegisterScreens(self, ctx):
         """
@@ -79,12 +128,15 @@ class VanillaExtension(MeiExtension):
                 self.Screens.append(screen_def)
 
     def OnTick(self, ctx):
-        """ 推进全量配方扫描；队列空时立即返回，不构成常驻开销 """
+        """
+        推进全量配方扫描；队列空时立即返回，不构成常驻开销。**进存档不扫**，有人要某个类型的全表时才排上（查工作站的用途，
+        EngineRecipeSource.GetAll）—— 游戏有动态注册配方的接口，开局扫了，以后为了兼容只能每加一条就整个作废重扫，反而更费
+        """
         from .tools.scanner import RecipeScanner
         RecipeScanner.Pump()
 
     def OnUnload(self, ctx):
-        # 扫出来的配方引用的是旧世界的 Item 实例，重进世界必须清
+        # 扫出来的配方、记下的引擎答案引用的是旧世界的 Item 实例，重进世界必须清（tools/answers.py 一起清）
         from .tools.scanner import RecipeScanner
         RecipeScanner.Reset()
 
@@ -97,13 +149,20 @@ class VanillaExtension(MeiExtension):
             ctx.UI.Screens.Unregister(screen_def)
         self.Screens = []
 
+        for kind, view_id in self.ItemViews:
+            if kind == FILTER:
+                ctx.Registry.ItemFilters.UnregisterFilter(view_id)
+            else:
+                ctx.Registry.ItemFilters.UnregisterSort(view_id)
+        self.ItemViews = []
+
     @staticmethod
     def _ImportType(name):  # type: (str) -> any
         """ 惰性导入类型子包；它们顶层拉引擎，不能在本模块顶层 import """
         # 装配器可能在引擎就绪前 import 本模块来探测 EXTENSION
         return __import__(
             "MEIScripts.mei_mod.extensions.vanilla." + name, {}, {},
-            ["CATEGORY", "SOURCE", "UI_SCRIPT", "POLICY", "VARIANTS"])
+            ["CATEGORY", "SOURCE", "UI_SCRIPT", "POLICY"])
 
 
 EXTENSION = VanillaExtension

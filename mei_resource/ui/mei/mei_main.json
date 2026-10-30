@@ -27,6 +27,440 @@
             }
         ]
     },
+    "tool_capture@common.button": {
+        "type": "button",
+        "$pressed_button_name|default": "button.mei.tool.capture",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 96,
+        "visible": false,
+        "button_mappings": [],
+        "bindings": [
+            {
+                "binding_name": "#mei.tool.capture",
+                "binding_name_override": "#visible",
+                "binding_condition": "always"
+            }
+        ],
+        "controls": [
+            {
+                "default": {
+                    "type": "panel"
+                }
+            },
+            {
+                "hover": {
+                    "type": "panel"
+                }
+            },
+            {
+                "pressed": {
+                    "type": "panel"
+                }
+            }
+        ]
+    },
+    "tool_item": {
+        "type": "custom",
+        "renderer": "inventory_item_renderer",
+        "size": [
+            24,
+            24
+        ],
+        "layer": 1,
+        "visible": false
+    },
+    "tool_layer": {
+        "type": "panel",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 0,
+        "controls": [
+            {
+                "capture@mei_main.tool_capture": {}
+            },
+            {
+                "desktop": {
+                    "type": "input_panel",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        1.0,
+                        1.0
+                    ],
+                    "follows_cursor": true,
+                    "layer": 39,
+                    "visible": false,
+                    "always_handle_pointer": true,
+                    "consume_hover_events": false,
+                    "bindings": [
+                        {
+                            "binding_name": "#mei.tool.follow",
+                            "binding_name_override": "#visible",
+                            "binding_condition": "always"
+                        }
+                    ],
+                    "controls": [
+                        {
+                            "item@mei_main.tool_item": {
+                                "anchor_from": "center",
+                                "anchor_to": "center",
+                                "bindings": [
+                                    {
+                                        "binding_name": "#mei.tool.desktop",
+                                        "binding_name_override": "#visible",
+                                        "binding_condition": "always"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "touch@mei_main.tool_item": {
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "layer": 40,
+                    "bindings": [
+                        {
+                            "binding_name": "#mei.tool.touch",
+                            "binding_name_override": "#visible",
+                            "binding_condition": "always"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "filter_chips": {
+        "type": "panel",
+        "size": [
+            142,
+            14
+        ],
+        "controls": [
+            {
+                "chip_0@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.0"
+                }
+            },
+            {
+                "chip_1@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.1"
+                }
+            },
+            {
+                "chip_2@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.2"
+                }
+            },
+            {
+                "chip_3@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.3"
+                }
+            },
+            {
+                "chip_4@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.4"
+                }
+            },
+            {
+                "chip_5@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.5"
+                }
+            },
+            {
+                "chip_6@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.6"
+                }
+            },
+            {
+                "chip_7@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.7"
+                }
+            },
+            {
+                "chip_8@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.8"
+                }
+            },
+            {
+                "chip_9@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.9"
+                }
+            },
+            {
+                "chip_10@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.10"
+                }
+            },
+            {
+                "chip_11@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.11"
+                }
+            },
+            {
+                "chip_12@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.12"
+                }
+            },
+            {
+                "chip_13@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.13"
+                }
+            },
+            {
+                "chip_14@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.14"
+                }
+            },
+            {
+                "chip_15@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.15"
+                }
+            },
+            {
+                "chip_16@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.16"
+                }
+            },
+            {
+                "chip_17@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.17"
+                }
+            },
+            {
+                "chip_18@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.18"
+                }
+            },
+            {
+                "chip_19@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.19"
+                }
+            },
+            {
+                "chip_20@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.20"
+                }
+            },
+            {
+                "chip_21@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.21"
+                }
+            },
+            {
+                "chip_22@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.22"
+                }
+            },
+            {
+                "chip_23@mei_common.menu_button": {
+                    "$pressed_button_name": "button.mei.filter.chip.23"
+                }
+            }
+        ]
+    },
+    "filter_menu": {
+        "type": "panel",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 85,
+        "controls": [
+            {
+                "frame": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        150,
+                        120
+                    ],
+                    "layer": 1,
+                    "visible": false,
+                    "texture": "textures/ui/purpleBorder",
+                    "controls": [
+                        {
+                            "title": {
+                                "type": "label",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ],
+                                "layer": 3,
+                                "color": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "enable_profanity_filter": false,
+                                "font_type": "default",
+                                "localize": false,
+                                "shadow": false,
+                                "text": ""
+                            }
+                        },
+                        {
+                            "close@mei_common.menu_icon_button": {
+                                "$menu_icon_control": "mei_icons.btn_cross",
+                                "$pressed_button_name": "button.mei.filter.close",
+                                "visible": true
+                            }
+                        },
+                        {
+                            "filter_section": {
+                                "type": "label",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ],
+                                "layer": 3,
+                                "color": [
+                                    0.62,
+                                    0.58,
+                                    0.72
+                                ],
+                                "enable_profanity_filter": false,
+                                "font_type": "default",
+                                "localize": false,
+                                "shadow": false,
+                                "text": ""
+                            }
+                        },
+                        {
+                            "chips@common.scrolling_panel": {
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    142,
+                                    14
+                                ],
+                                "layer": 2,
+                                "$scrolling_content": "mei_main.filter_chips",
+                                "$scrolling_pane_size": [
+                                    "100%",
+                                    "100%"
+                                ],
+                                "$scroll_size": [
+                                    4,
+                                    "100%"
+                                ],
+                                "$show_background": false,
+                                "$allow_scroll_even_when_content_fits": false
+                            }
+                        },
+                        {
+                            "sort_section": {
+                                "type": "label",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ],
+                                "layer": 3,
+                                "color": [
+                                    0.62,
+                                    0.58,
+                                    0.72
+                                ],
+                                "enable_profanity_filter": false,
+                                "font_type": "default",
+                                "localize": false,
+                                "shadow": false,
+                                "text": ""
+                            }
+                        },
+                        {
+                            "sort_prev@mei_common.menu_icon_button": {
+                                "$menu_icon_control": "mei_icons.btn_arrow_left",
+                                "$pressed_button_name": "button.mei.filter.sort_prev",
+                                "visible": true
+                            }
+                        },
+                        {
+                            "sort_value": {
+                                "type": "label",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    "default",
+                                    "default"
+                                ],
+                                "layer": 3,
+                                "color": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "enable_profanity_filter": false,
+                                "font_type": "default",
+                                "localize": false,
+                                "shadow": false,
+                                "text": ""
+                            }
+                        },
+                        {
+                            "sort_next@mei_common.menu_icon_button": {
+                                "$menu_icon_control": "mei_icons.btn_arrow_right",
+                                "$pressed_button_name": "button.mei.filter.sort_next",
+                                "visible": true
+                            }
+                        },
+                        {
+                            "sort_dir@mei_common.menu_button": {
+                                "$pressed_button_name": "button.mei.filter.sort_dir",
+                                "visible": true
+                            }
+                        },
+                        {
+                            "line": {
+                                "type": "image",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    142,
+                                    1
+                                ],
+                                "layer": 2,
+                                "color": [
+                                    0.24,
+                                    0.15,
+                                    0.42
+                                ],
+                                "alpha": 0.75,
+                                "fill": true,
+                                "texture": "textures/ui/mei/white"
+                            }
+                        },
+                        {
+                            "clear@mei_common.menu_button": {
+                                "$pressed_button_name": "button.mei.filter.clear",
+                                "visible": true
+                            }
+                        },
+                        {
+                            "done@mei_common.menu_button": {
+                                "$pressed_button_name": "button.mei.filter.done",
+                                "visible": true
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
     "float_backdrop@common.button": {
         "type": "button",
         "$pressed_button_name|default": "button.mei.float.backdrop",
@@ -267,7 +701,13 @@
                 "mei_tooltip@mei_common.tooltip_root": {}
             },
             {
+                "mei_filter@mei_main.filter_menu": {}
+            },
+            {
                 "mei_find@mei_main.find_capture": {}
+            },
+            {
+                "mei_tool@mei_main.tool_layer": {}
             },
             {
                 "mei_float@mei_main.float_window": {}
@@ -322,12 +762,26 @@
                 "mei_tooltip@mei_common.tooltip_root": {}
             },
             {
+                "mei_filter@mei_main.filter_menu": {}
+            },
+            {
                 "mei_find@mei_main.find_capture": {}
+            },
+            {
+                "mei_tool@mei_main.tool_layer": {}
             },
             {
                 "mei_float@mei_main.float_window": {}
             }
         ]
+    },
+    "float_right_wrapper@MeiItemsBrowser.items_browser_ui": {
+        "$mei_float_side_layer|default": 30,
+        "layer": "$mei_float_side_layer"
+    },
+    "float_left_wrapper@MeiItemsSidebar.items_sidebar_ui": {
+        "$mei_float_side_layer|default": 30,
+        "layer": "$mei_float_side_layer"
     },
     "mei_screen@common.base_screen": {
         "$background_animations": [],

@@ -24,6 +24,8 @@
   **`Item` 拿到手只读**；改物品只有两条路：`ItemManager.SetHidden()` 等**旁表写入**，
   与 `AddItems(specs)` **加变体**。身份字段（`ItemId`/`AuxValue`）一律不可事后修改
   ——要改就加变体 + 隐藏原件。`MeiItem` 已随 `Hidden` 旁表化删除。
+  **带 userData 的变体和原件是同一个键**（`(id, aux)`），按键藏会连变体一起藏 —— 只藏原件用 `SetPlainHidden`（`Item.IsPlain`）。
+  §9 是**创造栏的物品变体**（原版扩展的 `creative/`：游戏目录生成的 aux 表 + 手写的四族 userData），§9.8 是落地与换游戏版本时怎么维护。
 - **`docs/architecture/quick_craft.md`** —— 快捷合成（配方转移）专项，**N1~Q5 已落地并实机通过**（工作台）；
   剩 Q6 对外文档与方块容器侧。
   写入分两条路，判据是**槽位归玩家还是归方块**：`SetPlayerUIItem`（工作台 32~40 行优先、
@@ -33,8 +35,10 @@
   **逐格小事务 + 失败补偿**，不做整单原子。**原版方块拿不到坐标**，故第一版只做玩家侧。
   §0 那三条硬规矩（轮子不许枚举业务 / 贴合既有惯例 / 扩展性优先）适用于本项目所有新模块。
   打表工具 `debug/ingame/ui_slot_scan.py`。**动 plus 按钮或写 `mei_mod/network/` 前必读。**
-- **`docs/extension_api.md`** —— **面向第三方模组作者的 API 参考**（怎么用）。
-  改动 `MEIScripts/api/` 的任何对外签名都必须同步它，并考虑是否要升 `API_VERSION`。
+- **`docs/modding/`** —— **面向第三方模组作者的文档**（2026-10-30 从 `extension_api.md` 整理）：五篇指南（`01-getting-started` 从 0 接入、
+  `02-recipes` 注册配方、`03-recipe-page` 配方页、`04-items` 物品、`05-screens-and-tools` 界面与工具）+ **接口参考 `api.md`**，互相链着（显式锚点 `<a id>`）。
+  改动 `MEIScripts/api/` 的任何对外签名都必须同步它（先改 `api.md`，再看哪篇指南讲到它），并考虑是否要升 `API_VERSION`（只有破坏性变更才升；
+  纯新增写「探测」）。`docs/extension_api.md` 只剩「旧节号 → 新位置」的对照表，别处写着「`extension_api.md` §x」的照表找。
 - **`docs/architecture/extensions.md`** —— 第三方接入设计：**「扩展」这个抽象存在的唯一理由
   是第三方模组在物理上无法 `import MEIScripts.xxx`**。通道是**自定义组件**
   （MEI 侧 `RegisterComponent("MoreEnoughItems", "MeiApi", …)`，第三方侧
@@ -76,6 +80,14 @@
   §1 是作者定的，§2 是三种样子与不避让，§5 是原生拖拽，§6 是注入（只在压栈时），§6.1 是 MEI 自己的界面，
   §7 是层级（**两栏的层级由根控件上的两个变量控制，在哪调**），§8 是待实机确认的事，§10 是四次实机的记录（崩溃的分析在 `focus.md` §8.2）。
   **动悬浮窗、查找状态、MEI 覆盖层的显隐、往原版界面注入控件前必读。**
+- **`docs/architecture/modes.md`** —— 三种模式：普通 / 工具 / 作弊（`mei_mod/ui_script/mei_ui/modes/`，2026-10-30 第二十九轮写完，待实机）：
+  收藏栏顶栏最左边的模式按钮（原 setting 占位）点一下轮换，工具染黄、作弊染红、全局存（prefs）；作弊每次开界面问服务端、给物品时服务端再查一次操作员，
+  **只认引擎给的发起者 `__id__`**（§3；网络层原来认的 `__from` 是客户端自己写的、能冒充）；工具模式拿起物品、再点一下放到别的模组登记的控件上（`ctx.UI.Drops`，§5）。
+  §2 是点格子时在哪接走（`ModeManager.Intercept`，所有 MEI 物品格），§4 是拿起 / 放下与**显隐全走绑定、开关界面写回藏着**，§7 是待实机确认的。
+  **动模式、作弊的网络请求、工具模式的捕获层、放置目标前必读。**
+- **`docs/design/item_filter.html`** —— 物品栏筛选菜单的排版预览（2026-10-30，本地网页；四种候选 A 单列分段 / B 两栏 / C 页签 / D 标签 + 步进器，
+  每种都能点、能标「通过 / 有问题」写备注、导出）。菜单下一轮照作者选的写（`README.md` §8 P2-12）；生成器 `debug/scripts/gen_filter_preview.py`
+  （从 `registry/filters.py` 与原版扩展读筛选与排序、从 `zh_CN.lang` 取名字）。
 - **`docs/design/recipe_tree.html`** —— 配方树（S5）的**方案与交互预览**（2026-10-28，第二版；本地网页，浏览器直接打开；**第一版已按它写完，待实机**，
   现状与和本页的出入在 `docs/architecture/recipe_tree.md` §0 —— **动配方树前先读那一节**）：
   PushScreen 新界面、**自上而下**、照网易成就界面做原生拖动（`cut` → `dragpanel` → 可拖的 `input_panel`，引擎自己夹边）；
@@ -86,7 +98,7 @@
   预览里的算法与布局是真算的。算法的老设计在 `recipe_tree.md`。
 - **`docs/architecture/recipe_types.md`** —— 原版的七种配方类型（S6，2026-10-29 第十八轮写、第十九轮按作者意见重做配方页）：高炉、烟熏炉、营火、切石机、制图台、锻造台、酿造台
   各自怎么查、怎么画。§1 是引擎给的样子（引擎结论 §45 的摘要），**§2 是配方页的规矩（作者第十九轮定：每个类型自己的命名空间、布局照原版界面、
-  进度条用原版控件、镜像格）**，§3 是物品变体（`VARIANTS`），§4 有营火模型（纸娃娃渲染方块几何体），§7 是**酿造**（药水 aux ↔ 类型名的映射表、
+  进度条用原版控件、镜像格）**，§3 是物品变体（10-30 起统一由原版扩展的创造栏表加，`VARIANTS` 退役），§4 有营火模型（纸娃娃渲染方块几何体），§7 是**酿造**（药水 aux ↔ 类型名的映射表、
   全表自己凑、三种配方、桶、上 1 下 3 的配方页），§8 是已知的限制与待实机确认的。**动这几个类型、加药水类型、往原版扩展加类型、写新的配方页前必读。**
 - **`docs/architecture/binding_cost.md`** —— 绑定回调开销专题：集合绑定是每帧全量拉取，
   每个 ItemPanel 槽位挂 6 个绑定、其中 5 个是最贵的 `always` 档。
@@ -165,6 +177,9 @@
   > `@` 命名空间（模糊）、`#` 完整的悬停文字（原文或拼音）、`&` 整名相等（含拼音全拼）、`$` 英文 ID（模糊）。
   > 不带前缀、不带 `-` 的普通词**合起来**交给拼音引擎（它自己按空格拆、按分数排）—— 拼音加空格照旧能搜、顺序以它为准；
   > 悬停文字用到才向引擎要、按物品缓存，排在最后筛。搜索栏的悬停提示（`items_browser.json` 两处）写着这套语法。回归位 `probe_search.py`。
+  > **悬停文字的缓存按物品实例记**（10-30 第三十五轮，作者报 `#保护` 出来全部附魔书、别的附魔名搜不出来）：原来按 (id, aux) 记，
+  > 41 本附魔书同是 `enchanted_book:0`、共用了第一本的字。**名字索引收全部物品**（藏着的也收，平时的结果里滤掉）：物品栏的「隐藏物品」筛选要搜得到它们
+  > （`Search(query, include_hidden)`）。
 - **UI 栈**：`mei_ui/core`（`UIScriptMain` / `UIMainNode` / `context` 主节点单例
   + `adaptive/` 自适应布局三件套 geometry/registry/rules）、
   `items_browser`（可翻页物品浏览器）、`items_sidebar`（侧栏）、
@@ -187,13 +202,26 @@
   每个 `.py` 配 `.pyi` 存根。
 - **物品表的两条写入路径**（看着同级，实现依赖完全不同，别混）：
   **造物路径** `RegItemFromIdList` / `AddItems` —— 经 `ItemFactory` 造实例、入池、建索引，
-  依赖整条造物链；**旁表路径** `SetHidden` / `ItemOrganizer` —— 只动集合，一个 Item 都不碰。
+  依赖整条造物链；**旁表路径** `SetHidden` / `SetPlainHidden` / `ItemOrganizer` —— 只动集合，一个 Item 都不碰。
   两者都经 `__Touch()` 撞版本号，派生物（搜索索引、UI 分页缓存）按 `ItemManager.Version()`
   自愈，**registry 不反向通知上层**。
-- **全量配方扫描**：`RecipeSource.CAN_ENUMERATE` / `IsAllComplete()` +
-  `extensions/vanilla/tools/scanner.py`（`BudgetQueue` 分帧）+ `RecipeManager.QueryAll`
-  + `MeiExtension.OnTick` 节拍。**已实现但未接线** —— 缺第三查询方向与
-  `WorkstationIndex`，见 `docs/migration/tasks_s4.md` §8.6。
+- **全量配方扫描与工作站的用途（10-29 第二十七轮写，第二十八轮按作者意见改成要全表时才扫，离线探针全过，待实机）**：
+  **有人要某个类型的全表时才扫**（`EngineRecipeSource.GetAll` → `RecipeScanner.Request(urgent=True)`；查工作站的用途就是要全表），
+  **不在进存档时扫**（作者 10-30：游戏有动态注册配方的接口，开局扫了，以后为了兼容只能每加一条就整个作废重扫，反而更费）。
+  `extensions/vanilla/tools/scanner.py`：一个类型一趟，按物品表逐个问，每帧 10 毫秒（有人在等）；锻造台按原料扫 —— 纹饰配方没有产物，
+  `EngineRecipeSource.SCAN_BY`；酿造、燃料自己有全表，不扫。实机第一次（进存档全扫的那一版，2463 个物品的整合包）：八个类型 19704 次、平均每次 0.13 毫秒，
+  工作台 2564 条 —— 只扫工作台约 2463 次 ≈ 0.3 秒查询。
+  **单配方查过的也记下**（`tools/answers.py` 的 `EngineAnswers`）：引擎的每个回答按（来源, 方向, 物品）记下，平时查来源、用途问过的不问第二次，
+  扫描再问到也直接用；按原料查（官方说昂贵）同样记 —— 记的是「引擎对这个物品答了什么」，不拿产物反推（反推对不上方块态 data，`state/cache.py`）。
+  扫描结果与记下的答案一起在 `RecipeScanner.Reset()` 作废（重进世界；SDK 没有「配方变了」的事件，以后要兼容动态注册的配方也是调它）。
+  **查工作站的用途带上整个类型的配方**（JEI / EMI 的做法）：`RecipeManager.QueryRecipeFull` 返回（结果, 还在凑的类型）——
+  它服务的类型排最前（`SourceRegistry.FindCategoriesByStation`，按 `RecipeCategory.Stations` 现查），每个类型里先是真用到它的、后面接 `QueryAll` 的全表；
+  全表还在凑的类型不进查询缓存，要全表的类型插到扫描最前、那几帧预算 10 毫秒；配方页这个类型的页码后面写「扫描中」，
+  扫完自动刷新一次、按那一页第一条定位（`RecipeDetailsScript.PollScan`）。给不出全表的来源（只实现了 `QueryBy*`）不算在凑（`IsCategoryBuilding`），
+  只出真用到它的那几条。工作台的用途是整个合成表，开页排序的「现在做得出来」先用 `matcher.reachable` 筛（离线 1500 条约 50 → 23 毫秒）。
+  第三个查询方向没加（并进了「用途」）；工作站图标的点击照旧（右键用途就是全表）。
+  扫完记一行 `[MEI/scan] 全量配方扫描完成: …`（每个类型几条、问了几次、其中真问引擎几次、多久扫完）。
+  回归位 `probe_extensions.py` X-11 ~ X-11d、`probe_transfer.py` T-6；历史见 `docs/migration/tasks_s4.md` §8.6。
 - **快捷合成（N1~Q5 已落地）**：`mei_mod/network/`（`base/` 是**不认识业务**的通讯轮子
   —— codec/channel/request/handler；`protocol/` 放具体请求）+ `mei_mod/transfer/`
   （`matcher` 全局配额 / `targets` 两种写入口 / `inventory` 内置来源 / `executor` **派发器**）
@@ -203,6 +231,10 @@
   `#enabled` 绑定），结论在**每次重建配方页脚本**时失效（覆盖开页/切类型/翻页）。
   排序三级稳定分区 **置顶 → 可合成 → 其余**，置顶绝对优先、TypeTab 顺序不受影响；
   顺序是「进页那一刻的推荐」，**转移后不重排**。**动它前读 `quick_craft.md`。**
+  > **10-30 第三十五轮全仓审查后的服务端核对**（`quick_craft.md` §6.6）：只认引擎给的发起者（`Trusted`）；**方块容器的清单不收**
+  > （坐标是客户端给的，收了谁都能清空、塞满任意一个加载着的箱子）；整张清单先核对再动格子（来源没登记、写的格不在要清的那片里、条数超限都在清空前拒掉）；
+  > 只放清单这一条要的东西；**搬的带着附魔 / 耐久 / 自定义名字 / userData 原样过去**（原来只写 id、aux、数量 —— 损坏的工具搬进合成格就成了新的、
+  > 潜影盒里的东西没了）；背包扣不掉就撤回目标格（`SlotTarget.Restore`）。回归位 `probe_transfer.py` T-7。
 - **槽位控件基件化**（`mei_resource/ui/mei/mei_common.json`）：
   `slot_base`（根：全部派生绑定名 + `#visible` 集合绑定）/
   `slot_background(_bordered)` / `slot_item(_marked)` / `slot_overlay`
@@ -243,6 +275,8 @@
   「信息显示」两项（2026-10-27 加）：**启用高级Tooltip**（默认开；关掉时 MEI tooltip 一律不出、格子照常出原版悬停文字，
   tooltip 根与 PC 宿主也藏，开界面时读、两个方向都写）、**触控tooltip是否沿对面侧显示**（默认关；开着时触屏菜单摆到点的那一格
   另一侧的屏幕边上，方便双手操作，`tooltip.md` §3）。
+  10-30 又加两项：**启用显示物品命名空间**（默认开；悬停文字最底下一行深蓝斜体 `§9§o`）、**启用显示物品ID**（默认关；倒数第二行深灰 `§8`，aux 不是 0 写 `id:aux`）——
+  写在格子的悬停文字里（`controls/item/panel.py` 的 `identity_lines`，原版悬停文字与 MEI tooltip 的标题都是它），不另画在 tooltip 底部（`settings.md` §6）。
   关于页：「模组信息」（版本、作者、开源地址、LGPL-3.0）+「许可证」（`LICENSE` 全文，一段一行，
   原文写死在 JSON 里、不进 `.lang`）。读设置走 `state/settings` 的 `GetRowItems()` / `IsAdaptiveEnabled()` / `IsAdvancedTooltipEnabled()` /
   `IsTouchOppositeSide()` 等读值函数。
@@ -376,7 +410,8 @@
   > 两栏从藏着变成显示时**当场补推**（`ShowSides` → 脚本 `SetShown` → `ItemsGrid.Revive`；推完行列数、格子被拉过两轮才核对一次）；③ 挂 MEI 的原版界面表搬进原版扩展，
   > 新门面 `ctx.UI.Screens`；④ 代理参数 **`VisibleControlPath`**（配方页开着时藏哪一块，兜底主内容；工作台、背包写 `/content_stack_panel`）；
   > ⑤ 两栏的层级由 `mei_main.json` 两个根上的变量 `$mei_side_layer`（0）/ `$mei_float_side_layer`（30）控制，悬浮窗管事时调高
-  > （`floating.md` §7）；⑥ 设置「启用快速收起悬浮窗」（默认关）。
+  > （`floating.md` §7；10-30 起 `SetLayer` 只在两栏露着、真要换时才调，注入的界面与 MEI 自己的界面的两栏按悬浮窗那一档的定义建，引擎结论 §47）；
+  > ⑥ 设置「启用快速收起悬浮窗」（默认关）。
   > **第四次实机后（作者 10-28）**：第三轮的几项「基本没问题」；诊断开关复现的崩溃由 UniSDK CrashHunter 坐实是焦点探针第一次开扫时
   > 引擎抛的 C++ 异常（`focus.md` §8.2）⇒ **焦点探针改成查询时递归，注入的界面上也能查了**（`FindAvailable` / `CanFind` 删掉，诊断开关改名 `FocusTrace`，第五次实机后连同别的调试代码一起删了）；
   > 触屏划过格子就开菜单（`tooltip.md` §6.13）；开界面时 grid 刷 `cannot find position` —— 「推完行列数核对」改成格子真被拉过两轮才问、
@@ -436,6 +471,9 @@
   > 值变了 `ItemsGrid.Wake` 再拉一遍；颜色在 `items_sidebar.json` 的 `bookmark_highlight`）；**只按住 Alt**，tooltip 列出光标下这一格能用的快捷键
   > （`actions.APPLIES` 判能不能做、键位跟着改键走、没绑的不列；借「只有标题」那一种，设置关着「启用高级Tooltip」不出，松开 Alt 收起）。
   > 回归位 `probe_bookmark_ui.py` K-19、`probe_tooltip.py` T-13。
+  > **帮助亮着时原版悬停文字让位**（10-30 第三十一轮，作者报两段字叠在一起）：MEI 的格子 `HidesVanillaName` 一律给真（悬停文字绑定给空），
+  > 写满后暂停了的 grid 在帮助亮 / 灭时各 `Wake` 一次；原版 / 别的模组的格子按焦点探针给的渲染器路径找那一格的 `hover_text`（`proxy/focus/search.nearby`：
+  > 往上三层、每层往下四层、最多列 40 次）藏起来，帮助收起、光标换了格子、关界面时显回（`TooltipManager.__SyncHelp`，每帧对一次）。回归位 `probe_tooltip.py` T-14。
 
 - **燃料页（2026-10-29 第十六轮 P2-11，实机通过）**：原版扩展的第三个类型 `fuel`（`extensions/vanilla/fuel/`，JSON `recipes/fuel.json`，命名空间 `MeiFuel`）：
   查一样东西的**用途**时它能当熔炉燃料就多一页「燃料」—— 燃料格 + 火焰 + 两行字「燃烧 N 秒」「可烧炼 N 个物品」（熔炉一个物品 10 秒）。
@@ -454,12 +492,62 @@
   > 制图台只有两条（复制 / 扩大 / 锁定写死在引擎里）；锻造纹饰的 `result` 是空的 → 产物格就是「物品」那一格的同一组候选（整页轮播同相位，一一对上），说明行写着。
   > **酿造**：药水的 aux ↔ 类型名直接映射（`brewing_stand/potions.py`，作者定）；按催化剂查不到 ⇒ 第一次用到时自己凑全表（每种药水类型、每种瓶子各按原料查一次，
   > 共 50 次）、自己建桶；混合配方的药水格是三种瓶子的同一种药水（同相位轮播）、换容配方按药水类型一条一条列（火药、龙息各 47 条）。
-  > **物品变体**：类型包导出 `VARIANTS`（`ItemSpec` 表），原版扩展装配时 `AddItems` —— 三种瓶子 aux 1 ~ 46（138 样）、空定位地图；
-  > `AddItems` 遇到一模一样的跳过（10-29 加，热重载、扩展重装时会再加一遍）。
+  > **物品变体**：原来是类型包导出 `VARIANTS`（三种瓶子 aux 1 ~ 46、空定位地图）；**10-30 第三十四轮起统一由原版扩展的创造栏表加**
+  > （下面「创造栏的物品变体」），`VARIANTS` 退役；`AddItems` 遇到一模一样的跳过（10-29 加，热重载、扩展重装时会再加一遍）。
   > 配方页脚本的底子 `tools/pages.py`（`RecipePageScript`：格子路径的最后一段 = 绑定组前缀的最后一段、说明行、镜像格、重播动画）、
   > 本地化经 `utils/lang.localize`（第二十轮把原版扩展自己的 `tools/lang.py` 删了，下面「架构关键点 · 界面文字」）。回归位 `probe_recipe_types.py`（R-1 ~ R-12，含新类型的 Id 金标准、镜像格、营火模型）。
   > **第二十轮（作者实机后）**：作者自己调了制图台（去掉两个箭头、宽 148）、酿造台（高 68，燃料 / 催化剂 / 产物三格的坐标）与营火模型的参数
   > （`campfire/model.py` 的 `RENDER`），wrapper 与配方行跟着对齐；配方页脚本上的 `TYPE` 删了（不读：高炉、烟熏炉用的是熔炉的脚本，写在脚本上的类型名对不上）。
+- **三种模式：普通 / 工具 / 作弊（2026-10-30 第二十九轮写完，离线探针全过，待实机）**：专题 `docs/architecture/modes.md`。
+  > **按钮**：收藏栏顶栏最左边（JSON 里 `setting` 改名 `mode`，图标 `mei_common.btn_mode`，扳手）点一下轮换普通 → 工具 → 作弊（`ModeManager.Cycle`），
+  > 颜色 `ModeConst.Colors`（普通是图标平时的灰、工具黄、作弊红），每个界面的 `ToolHost.Update` 按 `ModeManager.Revision` 变了才染。模式全局存在 prefs（`mode`），关界面不复位。
+  > **作弊**：每次开界面问服务端（`mei:cheat_access`），没有权限而存着作弊 → 退回普通并存盘；「不知道」（超时）不当没有。点格子给物品（`mei:cheat_give`）：
+  > 触屏一组；PC 左键一组、右键一个；一组 = 最大堆叠（引擎给 0 按 64），背包放不下掉在脚下。**服务端只信引擎给的发起者**：`Channel.OnRequest` 先认 `__id__`、
+  > `HandlerContext.Trusted`，`CheatService` 再查 `GetPlayerOperation() == 2`（`network/protocol/cheat.py`）。
+  > **工具**：点格子拿起（数量 1 的 ItemStack，配方收藏、配方树收藏给它们显示的那样），PC 上 follows_cursor 的宿主带着走、触屏摆在格子上抬 6，都是 24（格子里 18）；
+  > 再点一下：别的模组登记的放置目标（`ctx.UI.Drops`，`modes/drops.py`）→ 回调（别名或路径, ItemStack）；MEI 别的物品格 → 换着拿；别处 → 放下。
+  > `mei_main.json` 两个根里的 `mei_tool`（`tool_layer`：捕获层 96、两个物品 40 —— 装物品渲染器，97、78 都画不出来，引擎结论 §31）**显隐全走绑定**（`#mei.tool.*`），开 / 关界面脚本写回藏着（引擎结论 §22）。
+  > **接在哪**：`ItemsGrid` 的左右键派发、配方页的 `_DispatchSlotClick`（配方树菜单的预览也走它）先问 `ModeManager.Intercept`；触屏划进格子在工具 / 作弊模式不开菜单；
+  > 配方树的格子作弊时给物品不开菜单。扩展卸载时装配器兜底撤掉记在它名下的放置目标。回归位 `probe_modes.py`（M-1 ~ M-8）。
+  > **第三十轮**：颜色加深（工具 `(0.86, 0.6, 0)`、作弊 `(0.8, 0.13, 0.13)`）；悬停文字三种（`ModeText`，`ore_style_button` 的悬停态多了可替换的 `$button_hover_extra_control`，
+  > 模式按钮换 `mei_common.mode_hover_tip`、字绑 `ModeConst.HoverBinding`）；放置目标可以要点的位置（`point=True`）；
+  > 蔚蓝合成样板接上工具模式（蔚蓝仓 `external/mei/crafting_template.py`，不打补丁、复用蔚蓝自己的上传请求，`modes.md` §9）；
+  > 对外加 **`ctx.UI.Actions`**（开配方页 / 用途 / 配方树、`ItemAt` / `ItemUnderCursor`、`Mode` / `CheatAllowed`、收藏），`ctx.Const` 加 `ModeConst` / `ItemsBrowserPath`。
+  > **第三十一轮**：上一轮为 PushScreen 开的界面加的注入挂载（`Mount = "inject"`）**删了** —— 作者：只要是 PushScreen 就挂得上代理（SDK 压栈时按全名
+  > `uiManager.get_pushed_screen` 取界面节点），MEI 纯靠代理兼容；`ctx.UI.Screens.Register` 照常登记就行。
+  > 新接口 **`ctx.UI.Transfers`**（按界面登记的配方转移，`recipe_details/modules/screen_transfers.py`）：这个界面开着时，配方页上登记的那几类配方的 +
+  > 不搬材料，而是回调 `callback(Recipe)`，写成了 MEI 关掉配方页；`accepts(Recipe)` 说收不收（不收的灰掉，`CraftableCache.Accepts` 按 Recipe.Id 缓存）；
+  > 同一个界面、同一个类型后登记的优先，比类型上的转移策略（`SetTransferPolicy`）优先。蔚蓝合成样板接上它（工作台配方的 + 写进样板）；
+  > 另找了蔚蓝里四个「选一样物品」的界面接上工具模式（蔚蓝仓 `external/mei/selectors.py`）：电动机件加工台（选产物是它的配方）、冷冻机（切到产物是它的那一档）、
+  > 物品分流器（点到哪一行换哪一行）、连锁挖矿设置（方块加进列表，界面这里登记）。流体分流器不接（工具模式拿不起流体）。回归位 `probe_modes.py` M-13、M-17，
+  > `probe_skyblue_ext.py` S-14 / S-15。
+- **物品栏筛选（2026-10-30 第二十九轮骨架，第三十轮照排版 D 写完菜单，待实机）**：`registry/filters.py`（`ItemFilters`：内置九项筛选、八种排序，`Apply` 先加、再筛、再排、None 排最后、同值稳定；
+  **第三十五轮加了「隐藏物品」**（作者：添加而不是减法）—— **加法的筛选**（`ItemFilter.Additive`，`AddFilter(..., additive=True)` 也能登记）：选了不把表筛小，
+  而是把平时不显示的物品里它认的加进来，别的筛选照样再筛；物品栏的候选这时连藏着的一起拿（`ItemsBrowserScript.ItemSource` → `GetBrowsableItems(include_hidden)` /
+  `ItemSearchIndex.Search(…, include_hidden)`），排在菜单最后（order 1000）；
+  `AddFilter` / `AddSort` 简便接口）+ prefs 的 `item_filters` / `item_sort` + `ItemsBrowserScript.ApplyItemView`（先搜、再筛、再排）/ `RefreshItemView`（改了当场重排）
+  + 原版扩展登记「燃料」「燃烧时长」（用 `furnace/fuels.py`）+ 对外 `ctx.Registry.ItemFilters` / `ItemFilter` / `ItemSort`（`docs/modding/04-items.md` §4）。
+  文案照作者给的：防具 武器 食物 燃料 有耐久 可附魔 已附魔 不可堆叠 模组物品（顺序同）。扩展都卸了筛选表回到只有内置的（`ExtensionLoader.Shutdown`）。
+  **菜单**（`mei_ui/filters/`：`state` / `layout` 纯计算、`menu` 的 `FilterMenu`，主节点 `main.Filters`；`mei_main.json` 的 `filter_menu` / `filter_chips`）：
+  搜索框右边的 `filter` 按钮开 / 关；purpleBorder 框里标签块（按下就选中）+ 排序步进器 + 升 / 降 + 清除 / 确定；标签区是原版 `common.scrolling_panel`、**超过 8 行才滚**；
+  改了就存、物品栏当场重排；选了东西按钮图标染蓝；物品栏藏起来时跟着关；开 / 关界面都写回藏着。设计在 `modes.md` §8。回归位 `probe_modes.py` M-9 ~ M-12。
+- **自适应的生效条件（2026-10-30 第三十轮）**：`core/adaptive/rules.py` 精简成一个 `holds(condition, get, memo)` —— 避让目标看得见还不够时由代码说了算
+  （`condition(get) -> bool`，`get(路径)` 按 RootPath 取控件）；条件从代理参数 **`Conditions`** 来（`{路径: 条件}`，`core/params.adaptive_conditions`），
+  或 `RegisterAdaptiveControl(..., condition=...)`。原版配方书的条件挪进原版扩展（`extensions/vanilla/screens.py` 的 `recipe_book_shown`），
+  核心层原来写死的字符串规则、路径前缀、静态缓存都删了（`settings.md` §6.3）。回归位 `probe_modes.py` M-15。
+- **创造栏的物品变体（2026-10-30 第三十四轮，离线探针全过，待实机）**：物品表按 id 注册、每个 id 只有 aux 0，带附加值、带 userData 的创造栏物品原来要手写。
+  作者定：拿一遍游戏的创造栏目录（id + aux），带 userData 的照一份现成的创造栏物品表补全，写进原版扩展，以后只盯着物品更新（`item_model.md` §9.8）。
+  `extensions/vanilla/creative/`：`table.py` 由 `debug/scripts/gen_creative_table.py --emit` 从游戏的 `behavior_packs/vanilla/item_catalog/crafting_item_catalog.json` 生成
+  （3.9：225 样 —— 药箭、谜之炖菜、山羊角、空定位地图、三种药水、不祥之瓶、床，**不要手改**）；`families.py` 手写引擎自己往创造栏加的四族（游戏目录里没有来源）：
+  旗帜 15 色 + 不祥旗帜、附魔书 41 本（每种最高级，`ENCHANT_MAX_LEVEL` 是唯一手写的数）、烟花火箭 17 支、烟火之星 16 颗，userData 一律带类型的写法；
+  `build()` 每个 (id, aux) 问一次引擎（`ItemFactory.LoadInfo`，问到的信息交给 `ItemSpec`、注册时不问第二次），不认识的跳过（表与游戏版本对不上不出错；
+  附魔 id 不小于 `EnchantType.NumEnchantments` 的不收）；装配时记一行 `[MEI/items] 创造栏的变体: 加了 N 个…`（全认识是 315）。
+  > 目录里只有带附加值那一样的六种（活塞 / 黏性活塞 :1、发射器 / 投掷器 :3、两种蘑菇方块 :14 —— 拿方块朝向、菌盖当图标）把 aux 0 藏起来；
+  > 附魔书、烟花火箭、烟火之星的**原件**（不带 userData 的那一样）藏起来 —— 新的 `ItemManager.SetPlainHidden`：只藏 `Item.IsPlain` 的那一样
+  > （`SetHidden` 按 (id, aux) 藏，变体和原件同一个键，会一起藏掉）。酿造台、制图台各自的 `VARIANTS` 退役（物品变体只有这一处）。
+  > 物品栏筛选「已附魔」也认 userData 里存着的附魔（附魔书的 `ench`；`IsEnchanted` 只看附魔表，没动）。
+  > **换游戏版本**：先不带 `--emit` 跑生成器，它对比现在的 `table.py`、`.lang` 里的附魔种数（3.10 多了突进 `enchantment.lunge`）、目录里没有的新物品组，再 `--emit`。
+  > 回归位 `probe_creative.py`（C-1 ~ C-6，含生成器重跑与 `table.py` 一字不差）、`probe_recipe_types.py` R-3 / R-5 / R-9、`probe_samples.py` E-3。
 
 ### 历史断裂（已全部修复，勿再当作现状）
 
@@ -660,12 +748,55 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
 > **10-29 第二十五轮**：作者让全仓审查注释 —— 代码注释与 docstring 里的会话指向（会话轮次、第几次实机 / 第几版、待办与阶段编号、
 > 「作者某天定 / 指出」、日期）全部改成只解释代码的写法（蔚蓝仓不在范围内）；规矩写进 `engineering.md` §4.1b-8 与 §8 自检清单，
 > 体检 `debug/scripts/probe_comments.py`。`CLAUDE.md` 与 `docs/` 是记录，照旧写轮次与日期。
+> **10-29 第二十六轮**：列待办（`docs/architecture/README.md` §8 一览）；作者让重建提交历史 —— 旧提交全部清掉，工作区整个提交成一个 `init commit`（`master`），
+> `.gitignore` 忽略了却还在版本管理里的 `docs/`（28 个文件）与 `world_icon.jpeg` 移出版本管理（文件留在本地）；之后的改动在 `dev` 分支上做（下面「交付纪律」第 5 条）。
+> **10-29 第二十七轮**：作者让先讲 P2-10（切换配方不重建）的影响范围、做法与副作用（只评估，`recipe_tree.md` §0.0.1 补了实查出的出入），
+> 这轮做 P2-1 的两件：**原版全量配方扫描 + 缓存**、**查工作站的用途带上全部配方** —— 写完、离线探针全过，待实机（上面「已落地」的「全量配方扫描与工作站的用途」）。
+> **10-30 第二十八轮**：作者实机贴回扫描日志（2463 个物品、19704 次、平均 0.13 毫秒、24.7 秒扫完），提了两条：① 悬浮窗为什么有 `SetLayer`（开销极大、不建议用）
+> —— `Apply` 每次开界面都给两栏写一遍，改成只在露着、且真要换时写，注入的界面与 MEI 自己的界面的两栏生下来就是悬浮窗那一档（引擎结论 §47、`floating.md` §7）；
+> ② 不在进存档时扫、首次要全表时扫，单配方查过的也记下（游戏有动态注册配方的接口）—— 照做（上面「已落地」那一条）。离线探针全过，待实机。
+> **10-30 第二十九轮**：作者「MEI 已经接近发布完成度，接下来做的可能是本体发布前最后几个功能」—— 三件（先问了四个问题，作者都选推荐项）：
+> ① **普通 / 工具 / 作弊三种模式**（`modes.md`）写完、离线探针全过，待实机；顺带查出网络层的发起者认的是客户端自己写的 `__from`（能冒充），
+> 改成先认引擎给的 `__id__`（`quick_craft.md` §6.5）；② **物品栏筛选**只做骨架与网页预览（`docs/design/item_filter.html` 四种排版），
+> 作者选了排版下一轮写菜单；③ 设置「信息显示」加「启用显示物品命名空间」「启用显示物品ID」，写完待实机（上面「已落地」三条）。
+> **10-30 第三十轮**：作者实机第二十九轮后五件：① 模式按钮颜色加深 + 悬停文字；② 工具模式接蔚蓝合成样板 —— 先评估：只在蔚蓝的 MEI 扩展里加一个文件、不打补丁、
+> 不改服务端（复用蔚蓝自己的上传请求），MEI 侧加了注入挂载（`Mount = "inject"`，第三十一轮删了）与 `point=True`，已接上（`docs/thirdparty/skybluetech.md` §8.12）；
+> ③ 补导出（`ctx.UI.Actions` 等）、第三方文档整理成 `docs/modding/`（`extension_api.md` 只留对照表），顺带把自适应规则精简成「生效条件」；
+> ④ 物品栏第 0 格偶尔建不出来（`TypeError: bad argument type for built-in operation`，开着大面积遮挡的界面时）—— 离线没能复现、没找到确定的原因：
+> grid 回调异常的日志加了抛出的位置（`utils/text.error_where`）、一格接连一秒建不出来先放空格（`ItemsGrid.CREATE_RETRIES`）、递给渲染器的参数规整（`controls/item/panel.render_args`），等作者贴回带位置的日志；
+> ⑤ 筛选菜单照排版 D 实现（上面「已落地」）。离线探针全过，待实机。
+> **10-30 第三十一轮**：作者实机第三十轮后五件：① 按住 Alt 的快捷键帮助和原版悬停文字叠在一起 —— 帮助亮着时原版悬停文字让位（上面「快捷键」）；
+> ② 作者：PushScreen 开的界面也挂得上代理、MEI 纯靠代理兼容 ⇒ 上一轮的注入挂载删了（上面「三种模式」）；③ 第 0 格的异常有了位置：
+> `grid.py` 的 `"/{}{}".format(...)` —— 这一行本身不会错，是**引擎在 C 层留下、没清掉的异常**被 format 的 `PyErr_Occurred` 检查撞上（引擎结论 §48）；
+> MEI 的绑定回调进门先接一次（`utils/binder.py`）、主节点每帧的几步之间各接一次（`core/node.py`），接住了记一行 `[MEI/stray]`：在哪接住的、
+> 上一条跑完的 MEI 绑定 —— 下次实机据此找是谁留下的；④ 蔚蓝里另外四个选物品的界面接上工具模式；⑤ 合成样板接上配方转移（新接口 `ctx.UI.Transfers`）。
+> 离线探针全过，待实机。
+> **10-30 第三十二轮**：作者实机「本轮其他功能无问题」，三件：① 遗留异常的 `[MEI/stray]` 日志回来了，定位到 MEI 之外：多半是蔚蓝机器界面的颜色绑定只给了 RGB 三个分量
+> （引擎结论 §48，蔚蓝侧的改法在 `skybluetech.md` §8.14，没动蔚蓝的代码）；② 工具模式拿着的物品层级 97 / 98 画不出来 → 降到 78（引擎结论 §31）；
+> ③ 调研「每个版本都稳定拿到创造栏全物品表」：SDK 没有接口，但游戏数据里的 `item_catalog/crafting_item_catalog.json` 列着创造栏的全部 aux 变体，
+> 带 userData 的几族（附魔书、烟花、旗帜……）不在里面；服务端 `GetModConfigJson` 的实现没限制路径、可能读得到它 —— 给了片段 `debug/ingame/creative_items_probe.py`
+> 等结果再实现（`item_model.md` §9）。
+> **10-30 第三十三轮**：① 第 0 格作者定**暂不修、进待办**（`README.md` §8 P3-7），诊断输出删了（`[MEI/stray]`、`utils/stray.py`、主节点每帧的检查、grid 的「先放空格」与抛出位置），
+> 绑定入口的静默接住留着；② 工具模式拿着的物品在 78 实机还是画不出来 → 取保守值 40（引擎结论 §31）；③ 片段结果：运行时读不到原版包里的文件，
+> 扫创造栏界面作者否了（滚动视图会剔除）；按作者建议查了整个游戏目录 —— 带 userData 的条目（附魔书、烟花、烟火之星、不祥旗帜）哪儿都没有，
+> 目录里的 aux 变体能在开发期读：`debug/scripts/gen_creative_table.py`（3.9 → 225 项）。做法写在 `item_model.md` §9.7，待作者点头。
+> **10-30 第三十四轮**：作者定创造栏表的做法 ——「拿一遍 json 的 id+aux 表，再照一份现成的物品表补全带 userData 的，总结后写进 vanilla 扩展，后续版本维护只要盯着物品更新」。
+> 写完（上面「已落地」的「创造栏的物品变体」）：那份表 2130 项里带 userData 的正好是四族 91 样（附魔书 41 本最高级、旗帜 17 面、烟花火箭 17 支、烟火之星 16 颗），逐条对过；
+> 颜色照创造栏的顺序改过（那份表用了床的 aux 顺序，旗帜、烟火之星的 aux 却是染料下标）、普通旗帜不带 userData；
+> 新加 `ItemManager.SetPlainHidden` / `ItemFactory.LoadInfo` / `Item.IsPlain`（对外，探测）；生成器换版本时提醒三样。离线探针全过，待实机。
+> **10-30 第三十五轮**：作者实机第三十四轮「没问题」，报了一个 bug：`#保护` 出来全部附魔书、别的附魔名搜不出来 —— 搜索的悬停文字缓存按 (id, aux) 记，
+> 改成按物品实例（上面「物品链路」）；物品栏筛选加「隐藏物品」（加法，上面「物品栏筛选」）；整理这几轮、推荐提交标题；全仓审查一次（不含蔚蓝），
+> 审出来的问题核实后改了能改的（`docs/architecture/README.md` §8 记着审查结论与剩下的）：**快捷合成的服务端**（上面那条）、
+> **存储的强制刷盘拿空表盖掉没读过的数据**（`Store.Flush` 没读过的不写、读炸了这一局只读 —— 原来一局里没开过配方页就关界面，置顶全没了；`persistence.md` §8）、
+> **第三方登记物品分组后物品栏整个抛异常**（组表存的是 id，排物品栏时拿它当 Item）、**配方行的树 / + 按钮按过一次后同一行要点两下**（无状态按钮停在「按下」、
+> 推送缓存没清，下一下点击被当回声吞掉）、第三方配方页脚本的构造抛了整页空白、没图标的类型进不了 TypeTab、关配方页重复执行抛异常、
+> 配方解析一条认不出就整个类型出不来、配方树的首选 / 当原料退出存档时丢、名称排序 str / unicode 混着抛、搜索结果页跨世界不过期、搜索索引开局建两遍。离线探针全过，待实机。
 > **蔚蓝扩展列入待办**（2026-10-26 起不主动推进）。next 适配已提交在蔚蓝仓 `mei-next`
 > （`0b1605e4`，未推送），剩下的：
-> ① 作者按 `docs/thirdparty/skybluetech.md` §8.8 逐台实机 review；
+> ① ~~作者按 `docs/thirdparty/skybluetech.md` §8.8 逐台实机 review~~（第二十二 ~ 二十四轮换成新界面后逐页实机过了，作者「完成」）；
 > ② ~~未接的 N1~N11~~（10-29 第二十二轮随新界面一起接完，见上）；
 > ③ 两处蔚蓝侧问题（集合被同名集合顶掉、金属锤的表客户端加载时不建）要不要提给蔚蓝；
-> ④ 机器模块 docstring 里过时的「典型配方」；⑤ `mei-next` 要不要推送。
+> ④ 机器模块 docstring 里过时的「典型配方」；⑤ `mei-next` 要不要推送（第二十二 ~ 二十四轮 MEI 配方页的改动在蔚蓝仓还没提交）。
 >
 > **已完成**：S0 / S1 / S1b / S1.5-P0 / S2a / S2b；S3 的 U1 止损、U2 槽位点击、
 > U2c 类型导航（实机条件「类型 ≥ 9」已满足）；**U4 动作总线实质已落地**
@@ -689,8 +820,8 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
 > 不在加载时批量找回、except 里拼日志一律 `error_text(e)`。
 >
 > **未开工**：~~U0 实机验证、U3 layout 解释器、U5 显式生命周期~~（10-28 审核：建议作废，U5 剩的一个真问题改名「配方脚本宿主统一」，`README.md` §3 / §8）、
-> S4 剩余（`WorkstationIndex` + 第三查询方向，
-> 全量扫描已实现但**未接线** —— `QueryAll` 零消费方）、~~S6 新配方类型~~
+> S4 剩余（~~`WorkstationIndex`、全量扫描接线~~ 10-29 第二十七轮做了：查工作站的用途就是它服务的类型的全表；第三查询方向不另做、并进了「用途」；
+> 剩工作站图标左键的入口与扫描结果的持久化，`README.md` §8 P2-1）、~~S6 新配方类型~~
 > （**10-29 第十八轮写完原版七种、第十九轮配方页照原版界面重做**，待实机，见上；第三方的类型照旧走扩展）、模组/类型筛选。（组合键 10-29 做了，上面「快捷键」。）
 
 依赖关系与顺序不可调换的硬依赖见 `docs/architecture/README.md` §2。
@@ -733,6 +864,8 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
    > **缓存未命中时是同步直查**，并没有转异步。回退是有意的决定
    > （`structure.md:467`、`tasks_s4.md:13`），目前没有卡顿报告；
    > 但配方树要逐节点查询，那时这条会重新变成真问题（见 `recipe_tree.md`）。
+   > **10-30 起**原版的引擎来源把每个回答按（来源, 方向, 物品）记下（「已落地」的「全量配方扫描与工作站的用途」）：
+   > 查过的物品不论按产物还是按原料都不再问引擎，未命中的那一次仍是同步直查；全表要的时候才分帧扫。
 4. **UI 时序**：`RegisterUI`/`CreateUI`/`PushScreen` 只能在 `UiInitFinished` 之后；
    `PushScreen` 的界面 json 须 `is_showing_menu: true`；控件在 `ScreenNode.Create` 之后才可操作。
 5. **grid + scroll_view 有格子复用机制**：数据驱动一律走集合绑定（binding_collection），
@@ -806,7 +939,7 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
     > 回归位 `probe_action_button.py` A-11。
 11. **`GetItemBasicInfo` 对部分原版物品拿不到个别字段，且返回 0 而不是 None。**
     官方备注原文：**方块类燃料获取不到燃料时长**，弓/弩获取不到武器攻击力，
-    蛋糕获取不到营养值与饱食度，马铠获取不到防具防御力 —— 一律返回 **0**。
+    蛋糕获取不到饱和度与饱食度，马铠获取不到防具防御力 —— 一律返回 **0**。
     > 推论：**「返回 0」与「该物品确实没有这个属性」在这个接口上不可区分**，
     > 任何按 `> 0` 过滤的地方都要问一句「这一类物品是不是恰好在豁免名单里」。
     > 例如熔炉按 `FuelDuration > 0` 筛燃料（`extensions/vanilla/furnace/source.py:80`），
@@ -1017,6 +1150,11 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
    两个 tooltip 宿主原来是 1000（触屏）/ 1010（PC 的 frame），作者调成 80 之后运行基本无问题。
    ⇒ **装着物品渲染器的控件（格子、tooltip、菜单）layer 不超过 100**；不画物品的控件（悬浮窗的按钮、黑底）不受这条限制。
    守则 `engineering.md` §7-14。
+   > **算的是一路累加的有效层级**（JSON 的 `layer` 相对父控件）：tooltip 的 PC frame 是宿主 −10 + 80 = 70、触屏宿主 70 ~ 76，能画；
+   > 工具模式拿着的物品原来是 97 / 98（宿主 97 + 物品 1），作者 2026-10-30 第三十二轮实机报画不出来 ⇒ 降到 78，**第三十三轮实机还是画不出来** ⇒ 降到 40
+   > （`mei_main.json` 的 `tool_layer`：PC 跟光标的宿主 39、物品 +1，触屏那个 40 —— 刚好压在两栏的格子上：悬浮窗模式下两栏 30、格子里的渲染器再 +7 ~ 9）。
+   > 同一个覆盖层里 tooltip（70 多）、配方页的格子（56 ~ 82）照样画得出来，**界线不只是一个数**（推断：算的是一路累加到界面根的层级，各界面的底数不同）——
+   > **新加装物品渲染器的控件取保守值，压得住要压的东西就行，别往 80 附近凑**。不画物品的捕获层（96）、悬浮窗（100）不受限。
 
 32. **input_panel 原生拖拽**（NetEase 官方文档 + SDK 源码，2026-10-28；MEI 的悬浮窗实机可拖）：`"draggable": "both"`（或 `horizontal` / `vertical`），
    **必须写 `button_mappings`** 才能拖（官方例子 `button.menu_select → #netease_to_button_id`），`contained: true` 把它夹在父控件里。
@@ -1150,6 +1288,29 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
    这个事件对 MEI 覆盖层里的 grid 发不发、路径长什么样**未实证**（路径按「一边是另一边的结尾」认，开头那一层有没有都行）。
    回归位 `probe_bookmark_ui.py` K-13b / K-13c、`probe_script_host.py` H-5。
 
+47. **`SetLayer` 开销极大，不建议用**（作者 2026-10-30 审代码时指出）。SDK 文档：缺省 `syncRefresh=True` 同一帧就按这个控件的层级重算，
+   一帧里大量设置要传 False、完事调一次 `ScreenNode.UpdateScreen` —— 开着 MEI 的工作台有两万多个控件（§25），重算一次就不便宜。
+   ⇒ 层级尽量写在 JSON 里、让控件生下来就是要的那一档；非换不可的，先 `GetLayer` 比一比、一样就不写（悬浮窗的两栏，`floating.md` §7）。
+   **游戏也没有「配方变了」的客户端事件**（同日查 SDK：配方相关的只有 `ShapedRecipeTriggeredClientEvent`）—— 服务端 `AddRecipe` / `RemoveRecipe` /
+   `AddBrewingRecipes` 动态改了配方，客户端收不到通知，MEI 记下的答案要到重进世界才换新。
+
+48. **引擎会在 C 层留下没清掉的异常，抛在后面随便哪一行上**（2026-10-30 第三十一轮，作者贴回的日志 + CPython 源码推断，未单独实证）。
+   物品栏第 0 格建面板时 `"/{}{}".format(self.ChildName, index + 1)` 抛 `TypeError: bad argument type for built-in operation` ——
+   这一行只有字符串、整数，自己不会错；这句话是 C 层 `PyErr_BadArgument()` 的（unicode 那一族接口拿到了不是 unicode 的东西），而 py2 的 `str.format`
+   解析自动编号的 `{}` 时会查一次 `PyErr_Occurred`（stringlib 的 `field_name_split`）：**某个 C 函数设了错误却照常返回了值**，错误一直挂着，
+   直到下一个查它的操作把它抛出来。只坏第 0 格，是因为每一轮第 0 格最先建、最先撞上（撞上即清，后面的格子就好了）；只在开着大面积遮挡的界面时坏，
+   说明留下它的那个调用只在那时跑（多半是那个界面上的绑定或引擎调用，没查清）。
+   ⇒ MEI 的绑定回调进门先用同一种操作静默接住一次（`utils/binder.py` 的转发函数，`_PROBE`），第 0 格因此不再空着。
+   **以后看到某一行莫名抛 C 层的 TypeError，先想这一条**。回归位 `probe_modes.py` M-18。
+   > 第三十一 ~ 三十二轮为了找来源加过诊断：接住时记一行 `[MEI/stray]`（在哪接住、哪个界面、上一条跑完的 MEI 绑定）、主节点每帧的几步之间各查一次（`utils/stray.py`）。
+   > **第三十三轮删了**（作者：暂不修，进待办 —— `README.md` §8 P3-7），静默接住留着。
+   > **第三十二轮实机的日志定了方向**：接住处各不相同（物品栏、收藏栏、配方页的第 0 格、悬停探针、模式按钮的悬停字……，都是那一轮第一个被拉的 MEI 绑定），
+   > 「上一条跑完的 MEI 绑定」**一律是 `#mei.tool.touch`**（MEI 覆盖层里最后一条），主节点每帧的几处一次也没接住 ⇒ 不是 MEI 的绑定、也不是 MEI 每帧的处理留下的，
+   > 是每一轮拉绑定开头、MEI 覆盖层之前的 Python 绑定（原版 / 别的模组的控件在树里排在前面）。当时开着**蔚蓝的电动机件加工台**：
+   > 蔚蓝机器界面的颜色绑定（`BF_BindColor`）一律返回三元组 `(r, g, b)`，网易的颜色接口都是 RGBA 四元组（`GetFogColor`、告示牌颜色……）——
+   > 引擎多半按四个分量读、第四个取空，`PyFloat_AsDouble(NULL)` 设的正是这句 `bad argument type for built-in operation`（推断，未单独实证）。
+   > 蔚蓝那边返回 `(r, g, b, 1.0)` 应该就没了（`docs/thirdparty/skybluetech.md` §8.14）；MEI 这边已经接住，不影响。
+
 ## 架构关键点
 
 ### 自带的轮子（2026-10-27 与前置 EterniaModCore 解耦）
@@ -1183,8 +1344,9 @@ S0 止血的四个必炸点 —— `Recipe` 子类缺失导致 import 链断裂�
 
 ### 双端分工
 
-服务端**只做一件事**：`ClientLoadAddonsFinishServerEvent` 时把 `[可见 id 表, 隐藏 id 表]`
-发给客户端（`server/main_sys.py`，结果缓存在 `self.ItemIds`）。
+服务端做三件事：`ClientLoadAddonsFinishServerEvent` 时把 `[可见 id 表, 隐藏 id 表]`
+发给客户端（`server/main_sys.py`，结果缓存在 `self.ItemIds`）；应答快捷合成的搬运与作弊模式的给物品（`network/protocol/`，
+发起者只信引擎给的 `__id__`，`modes.md` §3）。
 **所有配方处理与 UI 逻辑都在客户端**。
 
 客户端 `SyncLoadedItems` 的初始化序列（`client/main_sys.py`）：
@@ -1239,11 +1401,12 @@ libs/（自带库）在最底层：谁都能 import，它不 import MEIScripts �
 `/wrapper/content/<格子路径>/0`，**格子路径的最后一段与绑定组前缀 `mei_ui.recipe.<名字>` 的最后一段一致**（镜像格名字后面带数字）；
 `Render(name, slot, mirrors)` 画一格并挂镜像，`Lore(panel)` 按配方类上的 `LORE`（`.lang` 的键）加一行说明，`ANIMATIONS` 列要重播的 clip 动画。
 引擎给无序配方的形状（`ingredients` + `result`）的，解析用 `ParseShapelessParts`。
-物品表里没有、这个类型又要显示的变体（药水的各种 aux），在包门面导出 `VARIANTS`（`ItemSpec` 表），装配时 `AddItems`（`recipe_types.md` §2 / §3）。
+物品表里没有、这个类型又要显示的变体（药水的各种 aux）**不用类型自己加**：创造栏里有的都由原版扩展的创造栏表加（`creative/`，`item_model.md` §9.8），
+创造栏里没有、又要显示的写进 `creative/families.py`（原来的 `VARIANTS` 10-30 退役）。
 
 然后把包名加进 `vanilla/__init__.py` 的 `TYPES`。装配器会 `RegisterCategory` →
 `RegisterSource` → `RegisterScript(category.Id, ...)`，**不要自己在别处注册**。
-第三方的写法见 `docs/extension_api.md` §0（相同的三样东西，只是要包进函数里）。
+第三方的写法见 `docs/modding/02-recipes.md`（相同的三样东西，只是要包进函数里）。
 查询入口：`RecipeManager.QueryRecipe(item, query_by="output"/"input", types=None)`
 返回 `OrderedDict{category_id: [Recipe, ...]}`（按 `sort_index` 再按注册序）。
 
@@ -1273,3 +1436,6 @@ libs/（自带库）在最底层：谁都能 import，它不 import MEIScripts �
    改哪个文件哪一行、改成什么值、进游戏做什么操作、回传哪些日志/截图。不要只给结论摘要。
 4. 交付前过一遍 `engineering.md` §8 提交前自检清单（compileall + 依赖方向 +
    `isinstance str` 零命中 + `.pyi` 同步 + 文档反漂移 + 游戏内回归）。
+5. **分支与只在本地的目录** —— 改动在 `dev` 分支上做（`master` 是 2026-10-29 重建历史时的单提交基线）。
+   `docs/` 与 `debug/` 被 `.gitignore` 忽略、不入库：文档照旧要同步（规则③），只是 `git status` 里看不到，
+   交付时把改过的文档、探针单独列进「本轮改了哪些文件」。

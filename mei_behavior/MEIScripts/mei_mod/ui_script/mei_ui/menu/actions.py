@@ -238,6 +238,10 @@ def _has_recipes(query_by):
         key = (query_by, getattr(item, "ItemId", None), getattr(item, "AuxValue", None))
         if key not in target.Cache:
             try:
+                if query_by == QueryConst.Input and RecipeManager.StationCategories(item):
+                    # 工作站的用途就是它服务的类型的全表，一定有：不为了灰不灰去要全表（手指划过工作台就会排上整类的扫描）
+                    target.Cache[key] = True
+                    return True
                 result = RecipeManager.QueryRecipe(item, query_by)
                 target.Cache[key] = bool(result) and any(result.values())
             except Exception as e:  # noqa

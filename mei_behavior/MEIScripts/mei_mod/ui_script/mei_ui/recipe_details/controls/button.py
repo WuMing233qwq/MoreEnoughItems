@@ -648,6 +648,12 @@ class RecipeActionBind(object):
             logger.error("[MEI/action] {} 的回调失败(行 {}): {}".format(
                 button.Prefix, row, error_text(e)))
 
+        # 按钮的样子只能直推（引擎结论 §10）：无状态按钮按下后停在「按下」，业务状态没跟着变（收藏满了、转移没成）的也停在点过的样子 ——
+        # 推送缓存里还是旧值、不会再推，下一下点击上报的值又和缓存一样，被当成回声吞掉（要点两下才有反应）。
+        # 清掉这一格的缓存：下一帧照业务状态再推一次，那次的回灌由「先记再推」认出来
+        if button.Momentary or button.ResolveState(row, recipe) != state:
+            self._pushed.pop((row, button.Prefix), None)
+
         # **必须返回 Refresh** —— 官方 toggle 示例就是这么写的.
         # 回调改完业务状态后, 要让引擎重新回读 $toggle_state_binding_name,
         # 否则按钮显示的是它自己的内部状态, 而不是代码算出来的那个.

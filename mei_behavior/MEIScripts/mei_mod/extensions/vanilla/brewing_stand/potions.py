@@ -22,8 +22,6 @@
 物品名、悬停文字里的时长、配方都对得上，CLAUDE.md 引擎结论 §45）。引擎的酿造查询不认 tag 与 aux、药水要传类型全名，
 所以 aux → 名字要自己映射（别的模组也都直接映射）。36 衰变药水没有酿造配方，名字查不到（写的 wither 没核实，用不上）
 """
-from MEIScripts.api.facades.types import ItemSpec
-
 POTION_TYPE = "minecraft:potion_type:"
 
 CONTAINERS = ("minecraft:potion", "minecraft:splash_potion", "minecraft:lingering_potion")
@@ -52,8 +50,3 @@ def type_name(value):  # type: (any) -> str or None
         return None
     name = value[len(POTION_TYPE):]
     return name.encode("utf-8") if isinstance(name, unicode) else name  # noqa  拣出 unicode，同 utils/text.native_str
-
-
-def variants():  # type: () -> list
-    """ 三种瓶子的 aux 1 ~ 46（aux 0 的水瓶本来就在物品表里）：加进物品表，物品栏里才看得到、点得到 """
-    return [ItemSpec(container, aux) for container in CONTAINERS for aux in range(1, len(TYPES))]

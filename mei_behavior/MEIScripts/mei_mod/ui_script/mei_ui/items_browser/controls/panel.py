@@ -22,6 +22,7 @@ from MEIScripts.common.classes.types import Item
 from MEIScripts.constants.texts import ItemText
 from MEIScripts.utils.text import native_str
 from MEIScripts.mei_mod.ui_script.controls.item import ItemPanel
+from MEIScripts.mei_mod.ui_script.controls.item.panel import render_args
 from MEIScripts.registry import ItemOrganizer
 
 
@@ -84,8 +85,8 @@ class GroupItemPanel(ItemPanel):
         item_2 = items[1] if len(items) > 1 else item_1
 
         self.SetBorders(edges)
-        self.Renderer1Control.SetUiItem(item_1.ItemId, item_1.AuxValue, item_1.IsEnchanted, item_1.Attr.UserData)
-        self.Renderer2Control.SetUiItem(item_2.ItemId, item_2.AuxValue, item_2.IsEnchanted, item_2.Attr.UserData)
+        self.Renderer1Control.SetUiItem(*render_args(item_1.stack().get_render_data()))
+        self.Renderer2Control.SetUiItem(*render_args(item_2.stack().get_render_data()))
 
         self.SetItemStack(item_1.stack(count=1))
         # 经 native_str 收敛: 模板是 unicode(见 constants/texts.py), name 来自

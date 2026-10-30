@@ -292,6 +292,12 @@ class Item(object):
             return False
         return True
 
+    @property
+    def IsPlain(self):  # type: () -> bool
+        """ 原件：没有 userData、附魔、自定义 ID、耐久这些区分变体的属性（物品表按 id 注册的就是它）"""
+        attr = self.Attr
+        return not (attr.UserData or attr.EnchantData or attr.ModEnchantData or attr.ExtraId or attr.Durability)
+
     def matches(self, other):  # type: (Item) -> bool
         """ 匹配两个物品是否相同 和__eq__不同 这里只匹配ItemId和AuxValue """
         return (
@@ -421,9 +427,9 @@ class ItemInfo(object):
         self.FuelDuration = fuel_duration  # type: float
         """ 物品燃料时长 """
         self.FoodNutrition = food_nutrition # type: int
-        """ 物品食物营养值 """
-        self.FoodSaturation = food_saturation  # type: float
         """ 物品食物饱食度 """
+        self.FoodSaturation = food_saturation  # type: float
+        """ 物品食物饱和度 """
         self.WeaponDamage = weapon_damage # type: int
         """ 物品武器伤害 """
         self.ArmorDefense = armor_defense  # type: int
