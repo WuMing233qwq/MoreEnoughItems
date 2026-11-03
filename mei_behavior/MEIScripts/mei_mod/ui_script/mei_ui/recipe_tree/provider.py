@@ -23,7 +23,9 @@
 
 - Recipes(key)：做这个物品的配方（RecipeManager.QueryRecipe 按产出查）。同样的原料合并成一格、空格跳过；单次产出取这条配方产出里
   这个物品的数量；工具取 GetShownCatalysts（熔炉的燃料不算，和收藏展开同一个规矩）
-- IsItem(key)：流体这类不是物品的条目（Stack.KIND 不是 "item"）当原料、不查配方
+- IsItem(key)：物品表里认不认得这个键（ItemOf 取得到 Item）。认得的就查配方，和配方页点格子同一个口径 —— 流体这类条目
+  种类（Stack.KIND）不是 "item"，可它的 Item 照样在物品表里（蔚蓝的流体是隐藏方块），配方页点它查得到来源，这里也要展得开；
+  认不得的（没有 Item 的条目）当原料
 - IsPinned(recipe)：置顶的配方先选（PinManager）
 - Supply()：背包（和别的物品来源）里有什么，汇总对照用（用现成的接口 TransferRegistry、只在汇总里写）
 """
@@ -71,7 +73,6 @@ class TreeProvider(object):
         self.__Recipes = {}  # type: dict  # 物品键 -> [TreeRecipe]
         self.__Items = {}  # type: dict  # 物品键 -> Item 或 None
         self.__Stacks = {}  # type: dict  # 物品键 -> 第一次在配方里见到的 Stack（渲染数据以它为准）
-        self.__NonItems = set()  # type: set
         self.__TypeOrder = None  # type: dict or None  # 类型 Id -> 在全部类型里排第几（sort_index）
 
     def Remember(self, item):  # type: (any) -> str or None
@@ -93,7 +94,7 @@ class TreeProvider(object):
         if cached is not None:
             return cached
         result = []
-        item = self.ItemOf(key) if key not in self.__NonItems else None
+        item = self.ItemOf(key)
         if item is not None:
             try:
                 found = RecipeManager.QueryRecipe(item, QueryConst.Output)
@@ -111,7 +112,9 @@ class TreeProvider(object):
         return result
 
     def IsItem(self, key):  # type: (str) -> bool
-        return key not in self.__NonItems
+        # 看它是什么（物品表里有没有），不看它在配方里以什么格子出现过：按格子的种类记的话，同一个流体从自己打开时
+        # 能展开，被树里别的配方当原料、副产物见过一次之后，重新解算时连根都成了「不是物品」
+        return self.ItemOf(key) is not None
 
     @staticmethod
     def IsPinned(recipe):  # type: (TreeRecipe) -> bool
@@ -146,7 +149,7 @@ class TreeProvider(object):
             return None
 
     def __Choices(self, ingredient):  # type: (any) -> tuple
-        """ 一格原料的候选物品键（按配方给的顺序、去重）；顺手记下见过的 Stack 和不是物品的条目 """
+        """ 一格原料的候选物品键（按配方给的顺序、去重）；顺手记下见过的 Stack """
         if ingredient is None:
             return ()
         try:
@@ -163,8 +166,6 @@ class TreeProvider(object):
             found.append(key)
             if key not in self.__Stacks:
                 self.__Stacks[key] = stack
-            if getattr(stack, "KIND", "item") != "item":
-                self.__NonItems.add(key)
         return tuple(found)
 
     def __Outputs(self, recipe, key):  # type: (any, str) -> tuple

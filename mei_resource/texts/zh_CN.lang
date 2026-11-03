@@ -1,4 +1,6 @@
 ## MoreEnoughItems 本地化条目
+## 进存档时问「资源包的文字加载好了没有」用的键（utils/lang.py 的 PACK_PROBE_KEY）：别删、别改名，值随便写，不显示
+mei.lang.probe=已加载
 ## 配方类别显示名（RecipeCategory.NameKey）
 mei.recipe.category.crafting_table=工作台合成
 mei.recipe.category.furnace=熔炉烧炼

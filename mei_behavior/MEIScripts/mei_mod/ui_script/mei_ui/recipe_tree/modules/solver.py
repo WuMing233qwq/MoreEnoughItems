@@ -52,7 +52,7 @@ STATE_CYCLIC = "cyclic"
 STATE_TRUNC = "trunc"
 """ 触到深度 / 节点上限 """
 STATE_NONITEM = "nonitem"
-""" 流体、能量这类不是物品的条目：当原料 """
+""" 物品表里认不出的条目（provider.IsItem 为假，查不了配方）：当原料。流体登记成了隐藏物品，不算这一类、照常展开 """
 
 MAX_DEPTH = 256
 """ 深度上限（16、64 都嫌低，256 的开销也没那么大） """

@@ -18,9 +18,12 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 
+import time
+
 import mod.client.extraClientApi as clientApi
 from mod_log import logger
 
+from MEIScripts.mei_mod.client.item_sync import ItemSync
 from MEIScripts.mei_mod.extensions.loader import ExtensionLoader
 from MEIScripts.constants.codes import NameConst
 from MEIScripts.mei_mod.network.base import Channel, REQUEST_EVENT, RESPONSE_EVENT
@@ -40,6 +43,7 @@ from MEIScripts.mei_mod.state.settings.builtin import BOOKMARKS_WORLD
 from MEIScripts.registry import ItemManager, RecipeManager
 from MEIScripts.registry.search import ItemSearchIndex
 from MEIScripts.utils.events import EventListener
+from MEIScripts.utils.lang import pack_texts_ready, texts_ready
 from MEIScripts.utils.text import to_native
 
 ClientSystem = clientApi.GetClientSystemCls()
@@ -61,6 +65,9 @@ class MainSys(ClientSystem):
         # 设置项只是声明，不碰引擎；任何地方读设置之前都得先登记好。快捷键的键位也是设置项（设置「按键绑定」页）
         RegisterBuiltinSettings()
         hotkey_binds.RegisterSettings()
+
+        # 物品表：服务端的列表到了先记下，本地化文字加载好了再建（item_sync.py）
+        self.ItemSync = ItemSync(self.BuildItemTable, pack_texts_ready, texts_ready, time.time, logger.warn)
 
         self.InitClientListenEvents()
 
@@ -126,6 +133,9 @@ class MainSys(ClientSystem):
         SettingsManager.Watch(BOOKMARKS_WORLD, OnBookmarksWorldChanged)
         # 快捷键：MEI 自己的按键绑定（设置「按键绑定」页改键，docs/architecture/bookmarks.md §12），不注册给引擎
         hotkeys.ResetInput()
+        # 物品表的退路：MEI 自己的键一直查不到（当前语言没有 MEI 的翻译）时等的就是这一下 —— 资源包这时已经加载完。
+        # 换维度时还会再来，没有等着建的列表就不动
+        self.ItemSync.OnUiReady()
 
     def onKeyPress(self, args):
         # 快捷键：裸按键（修饰键自己记、组合精确匹配；设置页正在录键时交给录键）
@@ -141,9 +151,13 @@ class MainSys(ClientSystem):
         item_grid.grid_rearranged(get("path") if get is not None else None)
 
     def SyncLoadedItems(self, args):  # noqa
-        """ 加载来自服务端的物品列表 """
+        """ 收下服务端的物品列表；建表等本地化文字加载好（item_sync.py，CLAUDE.md 引擎结论 §51） """
         # 事件载荷里的字符串可能是 unicode（连远程服务器时），物品 id 都要递给引擎：先收成 str（CLAUDE.md 引擎结论 §2）
         items, hidden_items = to_native(args.get("items", [[], []]))
+        self.ItemSync.Receive(items, hidden_items)
+
+    def BuildItemTable(self, items, hidden_items):
+        """ 建物品表：注册物品 → 扩展装配 → 物品来源 → 搜索索引（ItemSync 等齐了才调） """
         item_list = items + hidden_items
 
         ItemManager.LoadItemIds(item_list, hidden_items)
@@ -184,6 +198,8 @@ class MainSys(ClientSystem):
         > 曾经把后台队列泵在那里, 结果一次都没执行过且毫无日志.
         > 以后要挂每帧逻辑, 挂这里.
         """
+        # 物品表还等着建（本地化文字还没加载好）：每帧再问一次
+        self.ItemSync.Poll()
         # 扩展的每帧节拍(vanilla 用它推进全量配方扫描); 没有扩展要跑时是空转
         ExtensionLoader.Tick()
         self.Channel.Tick()
