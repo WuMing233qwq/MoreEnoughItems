@@ -1,23 +1,304 @@
 {
-    "tree_screen@common.base_screen": {
-        "$background_animations": [],
-        "$screen_animations": [],
-        "$screen_content": "MeiRecipeTree.tree_root",
-        "$use_loading_bars": false,
-        "button_mappings": [
+    "cell": {
+        "type": "panel",
+        "$cell_bg_ignored|default": false,
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            20,
+            20
+        ],
+        "layer": 1,
+        "controls": [
             {
-                "from_button_id": "button.menu_cancel",
-                "mapping_type": "global",
-                "to_button_id": "button.mei.tree.close"
+                "bg": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 1,
+                    "ignored": "$cell_bg_ignored",
+                    "texture": "textures/ui/cell_image"
+                }
             },
             {
-                "from_button_id": "button.menu_inventory_cancel",
-                "mapping_type": "global",
-                "to_button_id": "button.mei.tree.close"
+                "renderer": {
+                    "type": "custom",
+                    "renderer": "inventory_item_renderer",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [
+                        16,
+                        16
+                    ],
+                    "layer": 3
+                }
+            },
+            {
+                "count": {
+                    "type": "label",
+                    "anchor_from": "bottom_right",
+                    "anchor_to": "bottom_right",
+                    "offset": [
+                        0,
+                        1
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 5,
+                    "color": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text": "",
+                    "text_alignment": "right"
+                }
+            },
+            {
+                "crafts": {
+                    "type": "label",
+                    "anchor_from": "bottom_right",
+                    "anchor_to": "bottom_right",
+                    "offset": [
+                        0,
+                        1
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 5,
+                    "visible": false,
+                    "color": [
+                        1.0,
+                        0.88,
+                        0.4
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text": "",
+                    "text_alignment": "right"
+                }
+            },
+            {
+                "have": {
+                    "type": "label",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "offset": [
+                        1,
+                        -1
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 5,
+                    "visible": false,
+                    "color": [
+                        0.75,
+                        0.75,
+                        0.75
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text": ""
+                }
+            },
+            {
+                "fold": {
+                    "type": "label",
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "offset": [
+                        1,
+                        1
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 5,
+                    "visible": false,
+                    "color": [
+                        1.0,
+                        0.88,
+                        0.4
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "unicode",
+                    "localize": false,
+                    "shadow": true,
+                    "text": ""
+                }
+            },
+            {
+                "badge": {
+                    "type": "image",
+                    "anchor_from": "top_right",
+                    "anchor_to": "top_right",
+                    "offset": [
+                        -2,
+                        2
+                    ],
+                    "size": [
+                        2,
+                        2
+                    ],
+                    "layer": 6,
+                    "visible": false,
+                    "color": [
+                        0.75,
+                        0.15,
+                        0.15
+                    ],
+                    "fill": true,
+                    "texture": "textures/ui/mei/white"
+                }
+            },
+            {
+                "multi": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "offset": [
+                        2,
+                        2
+                    ],
+                    "size": [
+                        2,
+                        2
+                    ],
+                    "layer": 6,
+                    "visible": false,
+                    "color": [
+                        0.4,
+                        0.25,
+                        0.85
+                    ],
+                    "fill": true,
+                    "texture": "textures/ui/mei/white"
+                }
+            },
+            {
+                "dim": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 7,
+                    "alpha": 0.45,
+                    "visible": false,
+                    "fill": true,
+                    "texture": "textures/ui/mei/black"
+                }
+            },
+            {
+                "sel": {
+                    "type": "image",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [
+                        "100% + 2px",
+                        "100% + 2px"
+                    ],
+                    "layer": 8,
+                    "visible": false,
+                    "color": [
+                        1.0,
+                        0.9,
+                        0.4
+                    ],
+                    "texture": "textures/ui/mei/white_border"
+                }
+            },
+            {
+                "btn@common.button": {
+                    "type": "button",
+                    "$pressed_button_name|default": "button.mei.tree.cell",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "layer": 9,
+                    "button_mappings": [],
+                    "controls": [
+                        {
+                            "default": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "size": [
+                                    "100%",
+                                    "100%"
+                                ],
+                                "layer": 1
+                            }
+                        },
+                        {
+                            "hover@mei_common.highlight_slot": {}
+                        },
+                        {
+                            "pressed@mei_common.highlight_slot": {}
+                        }
+                    ]
+                }
             }
-        ],
-        "is_showing_menu": true
+        ]
     },
+    "ing_frame": {
+        "type": "image",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            24,
+            24
+        ],
+        "layer": 1,
+        "color": [
+            0.85,
+            0.85,
+            0.89
+        ],
+        "texture": "textures/ui/mei/white_border"
+    },
+    "line": {
+        "type": "image",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            1,
+            1
+        ],
+        "layer": 1,
+        "color": [
+            0.6,
+            0.6,
+            0.65
+        ],
+        "fill": true,
+        "texture": "textures/ui/mei/white"
+    },
+    "namespace": "MeiRecipeTree",
     "tree_root": {
         "type": "panel",
         "anchor_from": "top_left",
@@ -34,8 +315,8 @@
                     "anchor_from": "top_left",
                     "anchor_to": "top_left",
                     "size": [
-                        "100%",
-                        "100%"
+                        "200%+2px",
+                        "200%+0px"
                     ],
                     "layer": 0,
                     "alpha": 0.6,
@@ -110,12 +391,12 @@
                                                 0,
                                                 3
                                             ],
-                                            "orientation": "horizontal",
                                             "size": [
                                                 "100%c",
                                                 14
                                             ],
                                             "layer": 2,
+                                            "orientation": "horizontal",
                                             "controls": [
                                                 {
                                                     "minus@mei_common.menu_button": {
@@ -174,8 +455,8 @@
                                                                     "font_type": "default",
                                                                     "localize": false,
                                                                     "shadow": true,
-                                                                    "text_alignment": "center",
-                                                                    "text": ""
+                                                                    "text": "",
+                                                                    "text_alignment": "center"
                                                                 }
                                                             }
                                                         ]
@@ -422,14 +703,14 @@
                                                             0,
                                                             0
                                                         ],
-                                                        "layer": 1,
-                                                        "draggable": "both",
                                                         "contained": true,
+                                                        "draggable": "both",
+                                                        "layer": 1,
                                                         "button_mappings": [
                                                             {
+                                                                "to_button_id": "#netease_to_button_id",
                                                                 "from_button_id": "button.multi_touch",
-                                                                "mapping_type": "pressed",
-                                                                "to_button_id": "#netease_to_button_id"
+                                                                "mapping_type": "pressed"
                                                             }
                                                         ],
                                                         "controls": [
@@ -565,12 +846,12 @@
                                             "type": "stack_panel",
                                             "anchor_from": "top_left",
                                             "anchor_to": "top_left",
-                                            "orientation": "horizontal",
                                             "size": [
                                                 "100%c",
                                                 14
                                             ],
                                             "layer": 2,
+                                            "orientation": "horizontal",
                                             "controls": [
                                                 {
                                                     "tab_raw@mei_common.menu_button": {
@@ -929,8 +1210,8 @@
                                             "font_type": "default",
                                             "localize": false,
                                             "shadow": false,
-                                            "text_alignment": "center",
-                                            "text": ""
+                                            "text": "",
+                                            "text_alignment": "center"
                                         }
                                     },
                                     {
@@ -1005,9 +1286,9 @@
                     "visible": false,
                     "button_mappings": [
                         {
+                            "to_button_id": "button.mei.tree.menu.backdrop",
                             "from_button_id": "button.menu_select",
-                            "mapping_type": "pressed",
-                            "to_button_id": "button.mei.tree.menu.backdrop"
+                            "mapping_type": "pressed"
                         }
                     ],
                     "controls": [
@@ -1021,8 +1302,8 @@
                                     0
                                 ],
                                 "layer": 1,
-                                "texture": "textures/ui/purpleBorder",
                                 "propagate_alpha": true,
+                                "texture": "textures/ui/purpleBorder",
                                 "controls": [
                                     {
                                         "kind": {
@@ -1280,13 +1561,13 @@
                                                 1
                                             ],
                                             "layer": 2,
+                                            "alpha": 0.75,
                                             "visible": false,
                                             "color": [
                                                 0.24,
                                                 0.15,
                                                 0.42
                                             ],
-                                            "alpha": 0.75,
                                             "fill": true,
                                             "texture": "textures/ui/mei/white"
                                         }
@@ -1488,8 +1769,8 @@
                                                         "font_type": "default",
                                                         "localize": false,
                                                         "shadow": true,
-                                                        "text_alignment": "center",
-                                                        "text": ""
+                                                        "text": "",
+                                                        "text_alignment": "center"
                                                     }
                                                 },
                                                 {
@@ -1516,8 +1797,8 @@
                                                         "font_type": "default",
                                                         "localize": false,
                                                         "shadow": true,
-                                                        "text_alignment": "center",
-                                                        "text": ""
+                                                        "text": "",
+                                                        "text_alignment": "center"
                                                     }
                                                 },
                                                 {
@@ -1662,271 +1943,24 @@
             }
         ]
     },
-    "cell": {
-        "$cell_bg_ignored|default": false,
-        "type": "panel",
-        "anchor_from": "top_left",
-        "anchor_to": "top_left",
-        "size": [
-            20,
-            20
-        ],
-        "layer": 1,
-        "controls": [
+    "tree_screen@common.base_screen": {
+        "$background_animations": [],
+        "$screen_animations": [],
+        "$screen_content": "MeiRecipeTree.tree_root",
+        "$use_loading_bars": false,
+        "button_mappings": [
             {
-                "bg": {
-                    "type": "image",
-                    "anchor_from": "top_left",
-                    "anchor_to": "top_left",
-                    "size": [
-                        "100%",
-                        "100%"
-                    ],
-                    "layer": 1,
-                    "texture": "textures/ui/cell_image",
-                    "ignored": "$cell_bg_ignored"
-                }
+                "from_button_id": "button.menu_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.tree.close"
             },
             {
-                "renderer": {
-                    "type": "custom",
-                    "renderer": "inventory_item_renderer",
-                    "anchor_from": "center",
-                    "anchor_to": "center",
-                    "size": [
-                        16,
-                        16
-                    ],
-                    "layer": 3
-                }
-            },
-            {
-                "count": {
-                    "type": "label",
-                    "anchor_from": "bottom_right",
-                    "anchor_to": "bottom_right",
-                    "offset": [
-                        0,
-                        1
-                    ],
-                    "size": [
-                        "default",
-                        10
-                    ],
-                    "layer": 5,
-                    "color": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "enable_profanity_filter": false,
-                    "font_type": "unicode",
-                    "localize": false,
-                    "shadow": true,
-                    "text_alignment": "right",
-                    "text": ""
-                }
-            },
-            {
-                "crafts": {
-                    "type": "label",
-                    "anchor_from": "bottom_right",
-                    "anchor_to": "bottom_right",
-                    "offset": [
-                        0,
-                        1
-                    ],
-                    "size": [
-                        "default",
-                        10
-                    ],
-                    "layer": 5,
-                    "visible": false,
-                    "color": [
-                        1.0,
-                        0.88,
-                        0.4
-                    ],
-                    "enable_profanity_filter": false,
-                    "font_type": "unicode",
-                    "localize": false,
-                    "shadow": true,
-                    "text_alignment": "right",
-                    "text": ""
-                }
-            },
-            {
-                "have": {
-                    "type": "label",
-                    "anchor_from": "top_left",
-                    "anchor_to": "top_left",
-                    "offset": [
-                        1,
-                        -1
-                    ],
-                    "size": [
-                        "default",
-                        10
-                    ],
-                    "layer": 5,
-                    "visible": false,
-                    "color": [
-                        0.75,
-                        0.75,
-                        0.75
-                    ],
-                    "enable_profanity_filter": false,
-                    "font_type": "unicode",
-                    "localize": false,
-                    "shadow": true,
-                    "text": ""
-                }
-            },
-            {
-                "fold": {
-                    "type": "label",
-                    "anchor_from": "bottom_left",
-                    "anchor_to": "bottom_left",
-                    "offset": [
-                        1,
-                        1
-                    ],
-                    "size": [
-                        "default",
-                        10
-                    ],
-                    "layer": 5,
-                    "visible": false,
-                    "color": [
-                        1.0,
-                        0.88,
-                        0.4
-                    ],
-                    "enable_profanity_filter": false,
-                    "font_type": "unicode",
-                    "localize": false,
-                    "shadow": true,
-                    "text": ""
-                }
-            },
-            {
-                "badge": {
-                    "type": "image",
-                    "anchor_from": "top_right",
-                    "anchor_to": "top_right",
-                    "offset": [
-                        -2,
-                        2
-                    ],
-                    "size": [
-                        2,
-                        2
-                    ],
-                    "layer": 6,
-                    "visible": false,
-                    "color": [
-                        0.75,
-                        0.15,
-                        0.15
-                    ],
-                    "fill": true,
-                    "texture": "textures/ui/mei/white"
-                }
-            },
-            {
-                "multi": {
-                    "type": "image",
-                    "anchor_from": "top_left",
-                    "anchor_to": "top_left",
-                    "offset": [
-                        2,
-                        2
-                    ],
-                    "size": [
-                        2,
-                        2
-                    ],
-                    "layer": 6,
-                    "visible": false,
-                    "color": [
-                        0.4,
-                        0.25,
-                        0.85
-                    ],
-                    "fill": true,
-                    "texture": "textures/ui/mei/white"
-                }
-            },
-            {
-                "dim": {
-                    "type": "image",
-                    "anchor_from": "top_left",
-                    "anchor_to": "top_left",
-                    "size": [
-                        "100%",
-                        "100%"
-                    ],
-                    "layer": 7,
-                    "visible": false,
-                    "alpha": 0.45,
-                    "fill": true,
-                    "texture": "textures/ui/mei/black"
-                }
-            },
-            {
-                "sel": {
-                    "type": "image",
-                    "anchor_from": "center",
-                    "anchor_to": "center",
-                    "size": [
-                        "100% + 2px",
-                        "100% + 2px"
-                    ],
-                    "layer": 8,
-                    "visible": false,
-                    "color": [
-                        1.0,
-                        0.9,
-                        0.4
-                    ],
-                    "texture": "textures/ui/mei/white_border"
-                }
-            },
-            {
-                "btn@common.button": {
-                    "type": "button",
-                    "$pressed_button_name|default": "button.mei.tree.cell",
-                    "anchor_from": "top_left",
-                    "anchor_to": "top_left",
-                    "size": [
-                        "100%",
-                        "100%"
-                    ],
-                    "layer": 9,
-                    "button_mappings": [],
-                    "controls": [
-                        {
-                            "default": {
-                                "type": "panel",
-                                "anchor_from": "top_left",
-                                "anchor_to": "top_left",
-                                "size": [
-                                    "100%",
-                                    "100%"
-                                ],
-                                "layer": 1
-                            }
-                        },
-                        {
-                            "hover@mei_common.highlight_slot": {}
-                        },
-                        {
-                            "pressed@mei_common.highlight_slot": {}
-                        }
-                    ]
-                }
+                "from_button_id": "button.menu_inventory_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.tree.close"
             }
-        ]
+        ],
+        "is_showing_menu": true
     },
     "ws_frame": {
         "type": "panel",
@@ -1976,39 +2010,5 @@
                 }
             }
         ]
-    },
-    "ing_frame": {
-        "type": "image",
-        "anchor_from": "top_left",
-        "anchor_to": "top_left",
-        "size": [
-            24,
-            24
-        ],
-        "layer": 1,
-        "color": [
-            0.85,
-            0.85,
-            0.89
-        ],
-        "texture": "textures/ui/mei/white_border"
-    },
-    "line": {
-        "type": "image",
-        "anchor_from": "top_left",
-        "anchor_to": "top_left",
-        "size": [
-            1,
-            1
-        ],
-        "layer": 1,
-        "color": [
-            0.6,
-            0.6,
-            0.65
-        ],
-        "fill": true,
-        "texture": "textures/ui/mei/white"
-    },
-    "namespace": "MeiRecipeTree"
+    }
 }

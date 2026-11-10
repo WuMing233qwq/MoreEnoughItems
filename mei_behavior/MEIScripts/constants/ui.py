@@ -184,7 +184,7 @@ class FloatConst(object):
     ScreenDef = "mei_main.mei_screen"  # 画布（common.base_screen 派生，路径结构与原版界面相同，主节点的 RootPath 用缺省的就行）
     ScreenKey = "MeiScreen"  # RegisterUI / PushScreen 的 uiKey，命名空间是 NameConst.NameSpace
     ScreenClose = "button.mei.screen.close"  # ESC、背包键在画布上 global 映射到它：关掉这个界面
-
+    BackDropClickBinding = "#mei.backdrop.click"  # backdrop的button mapping绑定id
 
 class ModeConst(object):
     """

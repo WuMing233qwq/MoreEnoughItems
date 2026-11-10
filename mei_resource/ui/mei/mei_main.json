@@ -1,142 +1,4 @@
 {
-    "find_capture@common.button": {
-        "type": "button",
-        "$pressed_button_name|default": "button.mei.find.capture",
-        "size": [
-            "100%",
-            "100%"
-        ],
-        "layer": 95,
-        "visible": false,
-        "button_mappings": [],
-        "controls": [
-            {
-                "default": {
-                    "type": "panel"
-                }
-            },
-            {
-                "hover": {
-                    "type": "panel"
-                }
-            },
-            {
-                "pressed": {
-                    "type": "panel"
-                }
-            }
-        ]
-    },
-    "tool_capture@common.button": {
-        "type": "button",
-        "$pressed_button_name|default": "button.mei.tool.capture",
-        "size": [
-            "100%",
-            "100%"
-        ],
-        "layer": 96,
-        "visible": false,
-        "button_mappings": [],
-        "bindings": [
-            {
-                "binding_name": "#mei.tool.capture",
-                "binding_name_override": "#visible",
-                "binding_condition": "always"
-            }
-        ],
-        "controls": [
-            {
-                "default": {
-                    "type": "panel"
-                }
-            },
-            {
-                "hover": {
-                    "type": "panel"
-                }
-            },
-            {
-                "pressed": {
-                    "type": "panel"
-                }
-            }
-        ]
-    },
-    "tool_item": {
-        "type": "custom",
-        "renderer": "inventory_item_renderer",
-        "size": [
-            24,
-            24
-        ],
-        "layer": 1,
-        "visible": false
-    },
-    "tool_layer": {
-        "type": "panel",
-        "size": [
-            "100%",
-            "100%"
-        ],
-        "layer": 0,
-        "controls": [
-            {
-                "capture@mei_main.tool_capture": {}
-            },
-            {
-                "desktop": {
-                    "type": "input_panel",
-                    "anchor_from": "top_left",
-                    "anchor_to": "top_left",
-                    "size": [
-                        1.0,
-                        1.0
-                    ],
-                    "follows_cursor": true,
-                    "layer": 39,
-                    "visible": false,
-                    "always_handle_pointer": true,
-                    "consume_hover_events": false,
-                    "bindings": [
-                        {
-                            "binding_name": "#mei.tool.follow",
-                            "binding_name_override": "#visible",
-                            "binding_condition": "always"
-                        }
-                    ],
-                    "controls": [
-                        {
-                            "item@mei_main.tool_item": {
-                                "anchor_from": "center",
-                                "anchor_to": "center",
-                                "bindings": [
-                                    {
-                                        "binding_name": "#mei.tool.desktop",
-                                        "binding_name_override": "#visible",
-                                        "binding_condition": "always"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            },
-            {
-                "touch@mei_main.tool_item": {
-                    "anchor_from": "top_left",
-                    "anchor_to": "top_left",
-                    "layer": 40,
-                    "bindings": [
-                        {
-                            "binding_name": "#mei.tool.touch",
-                            "binding_name_override": "#visible",
-                            "binding_condition": "always"
-                        }
-                    ]
-                }
-            }
-        ]
-    },
     "filter_chips": {
         "type": "panel",
         "size": [
@@ -340,24 +202,24 @@
                         },
                         {
                             "chips@common.scrolling_panel": {
-                                "anchor_from": "top_left",
-                                "anchor_to": "top_left",
-                                "size": [
-                                    142,
-                                    14
+                                "$allow_scroll_even_when_content_fits": false,
+                                "$scroll_size": [
+                                    4,
+                                    "100%"
                                 ],
-                                "layer": 2,
                                 "$scrolling_content": "mei_main.filter_chips",
                                 "$scrolling_pane_size": [
                                     "100%",
                                     "100%"
                                 ],
-                                "$scroll_size": [
-                                    4,
-                                    "100%"
-                                ],
                                 "$show_background": false,
-                                "$allow_scroll_even_when_content_fits": false
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "layer": 2,
+                                "size": [
+                                    142,
+                                    14
+                                ]
                             }
                         },
                         {
@@ -434,12 +296,12 @@
                                     1
                                 ],
                                 "layer": 2,
+                                "alpha": 0.75,
                                 "color": [
                                     0.24,
                                     0.15,
                                     0.42
                                 ],
-                                "alpha": 0.75,
                                 "fill": true,
                                 "texture": "textures/ui/mei/white"
                             }
@@ -461,16 +323,63 @@
             }
         ]
     },
-    "float_backdrop@common.button": {
+    "find_capture@common.button": {
         "type": "button",
-        "$pressed_button_name|default": "button.mei.float.backdrop",
+        "$pressed_button_name|default": "button.mei.find.capture",
         "size": [
-            "200%+0px",
-            "200%+0px"
+            "100%",
+            "100%"
         ],
-        "layer": 30,
+        "layer": 95,
         "visible": false,
         "button_mappings": [],
+        "controls": [
+            {
+                "default": {
+                    "type": "panel"
+                }
+            },
+            {
+                "hover": {
+                    "type": "panel"
+                }
+            },
+            {
+                "pressed": {
+                    "type": "panel"
+                }
+            }
+        ]
+    },
+    "float_backdrop@common.button": {
+        "type": "button",
+        "$focus_enabled|default": false,
+        "$focus_wrap_enabled|default": false,
+        "$mei_backdrop_button_id": "#mei.backdrop.click",
+        "$pressed_button_name|default": "button.mei.float.backdrop",
+        "size": [
+            "100%+0px",
+            "100%+0px"
+        ],
+        "layer": 35,
+        "visible": false,
+        "button_mappings": [
+            {
+                "to_button_id": "$mei_backdrop_button_id",
+                "from_button_id": "button.menu_select",
+                "mapping_type": "pressed"
+            },
+            {
+                "to_button_id": "$mei_backdrop_button_id",
+                "from_button_id": "button.controller_back",
+                "mapping_type": "pressed"
+            },
+            {
+                "to_button_id": "$mei_backdrop_button_id",
+                "from_button_id": "button.menu_ok",
+                "mapping_type": "pressed"
+            }
+        ],
         "controls": [
             {
                 "default@mei_main.float_backdrop_face": {
@@ -492,8 +401,8 @@
     "float_backdrop_face": {
         "type": "image",
         "size": [
-            "100%",
-            "100%"
+            "200%+0px",
+            "200%+0px"
         ],
         "alpha": 0.3,
         "fill": true,
@@ -535,6 +444,14 @@
         ],
         "layer": 1,
         "texture": "$float_face_texture"
+    },
+    "float_left_wrapper@MeiItemsSidebar.items_sidebar_ui": {
+        "$mei_float_side_layer|default": 30,
+        "layer": "$mei_float_side_layer"
+    },
+    "float_right_wrapper@MeiItemsBrowser.items_browser_ui": {
+        "$mei_float_side_layer|default": 30,
+        "layer": "$mei_float_side_layer"
     },
     "float_window": {
         "type": "input_panel",
@@ -775,14 +692,6 @@
             }
         ]
     },
-    "float_right_wrapper@MeiItemsBrowser.items_browser_ui": {
-        "$mei_float_side_layer|default": 30,
-        "layer": "$mei_float_side_layer"
-    },
-    "float_left_wrapper@MeiItemsSidebar.items_sidebar_ui": {
-        "$mei_float_side_layer|default": 30,
-        "layer": "$mei_float_side_layer"
-    },
     "mei_screen@common.base_screen": {
         "$background_animations": [],
         "$screen_animations": [],
@@ -809,5 +718,115 @@
             "100%"
         ]
     },
-    "namespace": "mei_main"
+    "namespace": "mei_main",
+    "tool_capture@common.button": {
+        "type": "button",
+        "$pressed_button_name|default": "button.mei.tool.capture",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 96,
+        "visible": false,
+        "button_mappings": [],
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_condition": "always",
+                "binding_name": "#mei.tool.capture"
+            }
+        ],
+        "controls": [
+            {
+                "default": {
+                    "type": "panel"
+                }
+            },
+            {
+                "hover": {
+                    "type": "panel"
+                }
+            },
+            {
+                "pressed": {
+                    "type": "panel"
+                }
+            }
+        ]
+    },
+    "tool_item": {
+        "type": "custom",
+        "renderer": "inventory_item_renderer",
+        "size": [
+            24,
+            24
+        ],
+        "layer": 1,
+        "visible": false
+    },
+    "tool_layer": {
+        "type": "panel",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "layer": 0,
+        "controls": [
+            {
+                "capture@mei_main.tool_capture": {}
+            },
+            {
+                "desktop": {
+                    "type": "input_panel",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": [
+                        1.0,
+                        1.0
+                    ],
+                    "follows_cursor": true,
+                    "layer": 39,
+                    "visible": false,
+                    "always_handle_pointer": true,
+                    "consume_hover_events": false,
+                    "bindings": [
+                        {
+                            "binding_name_override": "#visible",
+                            "binding_condition": "always",
+                            "binding_name": "#mei.tool.follow"
+                        }
+                    ],
+                    "controls": [
+                        {
+                            "item@mei_main.tool_item": {
+                                "anchor_from": "center",
+                                "anchor_to": "center",
+                                "bindings": [
+                                    {
+                                        "binding_condition": "always",
+                                        "binding_name": "#mei.tool.desktop",
+                                        "binding_name_override": "#visible"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "touch@mei_main.tool_item": {
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "bindings": [
+                        {
+                            "binding_condition": "always",
+                            "binding_name": "#mei.tool.touch",
+                            "binding_name_override": "#visible"
+                        }
+                    ],
+                    "layer": 40
+                }
+            }
+        ]
+    }
 }

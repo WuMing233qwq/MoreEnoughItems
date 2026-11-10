@@ -79,6 +79,10 @@
                         {
                             "background": {
                                 "type": "image",
+                                "size": [
+                                    "200%+0px",
+                                    "200%+0px"
+                                ],
                                 "layer": 1,
                                 "alpha": 0.25,
                                 "fill": true,
@@ -99,7 +103,7 @@
                         "100%cm+0px",
                         "100%+-31px"
                     ],
-                    "layer": 50,
+                    "layer": 40,
                     "controls": [
                         {
                             "crafting_stations": {

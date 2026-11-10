@@ -33,11 +33,13 @@ from MEIScripts.mei_mod.ui_script.mei_ui.floating.state import (
 )
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.window import MEI, QUERY, FloatWindow
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.manager import is_touch
+from MEIScripts.utils.binder import ScreenBinder
 from MEIScripts.utils.events import EventListener
 from MEIScripts.utils.text import error_text
 
-BACKDROP = "backdrop"
+ViewBinder = clientApi.GetViewBinderCls()
 
+BACKDROP = "backdrop"
 
 def layer_of(control):  # type: (any) -> int or None
     """ 控件的 GetLayer；没有控件、读不出、给的不是数（布尔也不算）给 None """
@@ -71,6 +73,9 @@ class FloatController(object):
     """
     def __init__(self, main, kind):
         self.MainNode = main
+        self.ScreenNode = None
+        self.Bindings = None  # type: ScreenBinder or None
+        self.ContextInited = False  # type: bool
         self.Kind = kind  # type: str  # state.KIND_*：支持的界面 / HUD / 强制兼容
         self.Mode = MODE_EXPANDED  # type: str
         self.Forced = False  # type: bool  # 设置「启用悬浮窗模式」：开界面时读
@@ -94,11 +99,18 @@ class FloatController(object):
         self.Sidebar = IsBookmarksVisible()
         self.Touch = is_touch()
         self.__Clicks = []
+        if not self.ContextInited:
+            self.ScreenNode = self.MainNode.ScreenNode
+            self.Bindings = ScreenBinder(self.ScreenNode)
+        self.ContextInited = True
+
         control = self.MainNode.GetUIControl(UiPathConst.Backdrop)
         self.Backdrop = control.asButton() if control is not None else None
         if self.Backdrop is not None:
-            self.Backdrop.AddTouchEventParams({"isSwallow": True})
-            self.Backdrop.SetButtonTouchUpCallback(self.OnBackdrop)
+            # 这里改用绑定 SetButtonTouchUpCallback 会穿透控件交互 导致bug
+            self.Bindings.Bind(self.OnBackdrop, ViewBinder.BF_ButtonClickUp, FloatConst.BackDropClickBinding)
+            # self.Backdrop.AddTouchEventParams({"isSwallow": True})
+            # self.Backdrop.SetButtonTouchUpCallback(self.OnBackdrop)
         # 悬浮窗上的查询那一格：只在触屏出
         self.Window.OnCreate(self.Touch)
         self.Find.OnCreate()
@@ -118,6 +130,7 @@ class FloatController(object):
             self.Events = None
         self.Find.Exit()
         self.Window.OnDestroy()
+        self.Bindings.UnbindAll()
         self.__Clicks = []
 
     def OnScreenSizeChanged(self, _args=None):

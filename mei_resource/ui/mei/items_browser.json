@@ -101,7 +101,7 @@
                                     "100%+0px",
                                     "0%+22px"
                                 ],
-                                "layer": 20,
+                                "layer": 36,
                                 "orientation": "horizontal",
                                 "controls": [
                                     {
@@ -156,7 +156,8 @@
                                                             "100%+1px",
                                                             "100%+-2px"
                                                         ],
-                                                        "layer": 1,
+                                                        "priority": 100,
+                                                        "layer": 10,
                                                         "max_length": 512
                                                     }
                                                 },
@@ -270,7 +271,7 @@
                                                             "100%y+-4px",
                                                             "100%+-4px"
                                                         ],
-                                                        "layer": 2,
+                                                        "layer": 12,
                                                         "button_mappings": [],
                                                         "default_control": "default",
                                                         "hover_control": "hover",
@@ -355,7 +356,7 @@
                                                             "100%y+-4px",
                                                             "100%+-4px"
                                                         ],
-                                                        "layer": 2,
+                                                        "layer": 12,
                                                         "button_mappings": [],
                                                         "default_control": "default",
                                                         "hover_control": "hover",
@@ -591,7 +592,7 @@
                                     "100%+0px",
                                     "0%+22px"
                                 ],
-                                "layer": 1,
+                                "layer": 36,
                                 "orientation": "horizontal",
                                 "controls": [
                                     {

@@ -1,4 +1,127 @@
 {
+    "bookmark_highlight": {
+        "type": "image",
+        "size": [
+            "100%+-2px",
+            "100%+-2px"
+        ],
+        "layer": 1,
+        "alpha": 0.45,
+        "visible": "#visible",
+        "color": [
+            0.45,
+            0.8,
+            1.0
+        ],
+        "fill": true,
+        "texture": "textures/ui/mei/white",
+        "property_bag": {
+            "#visible": false
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "$item_highlight_visible_binding_name"
+            }
+        ]
+    },
+    "bookmark_item_panel@mei_common.slot_base": {
+        "$binding_name_prefix|default": "meiui.item_panel",
+        "$item_highlight_visible_binding_name": "('#' + $binding_name_prefix + '.item.highlight.visible')",
+        "$item_marker_text_binding_name": "('#' + $binding_name_prefix + '.item.marker.text')",
+        "$item_marker_visible_binding_name": "('#' + $binding_name_prefix + '.item.marker.visible')",
+        "controls": [
+            {
+                "background@mei_common.slot_background_bordered": {
+                    "color": [
+                        0.6,
+                        0.6,
+                        0.6
+                    ],
+                    "texture": "textures/ui/mei/white"
+                }
+            },
+            {
+                "highlight@MeiItemsSidebar.bookmark_highlight": {}
+            },
+            {
+                "item@mei_common.slot_item": {}
+            },
+            {
+                "marker@MeiItemsSidebar.bookmark_marker": {}
+            },
+            {
+                "overlay@mei_common.slot_overlay": {
+                    "$overlay_btn_control": "mei_common.slot_overlay_button_flat",
+                    "$overlay_layer": 20
+                }
+            }
+        ]
+    },
+    "bookmark_marker": {
+        "type": "label",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "offset": [
+            1.0,
+            0.0
+        ],
+        "size": [
+            "default",
+            10.0
+        ],
+        "layer": 12,
+        "visible": "#visible",
+        "color": [
+            1.0,
+            0.85,
+            0.35
+        ],
+        "font_scale_factor": 0.75,
+        "font_type": "unicode",
+        "shadow": true,
+        "text": "#text",
+        "property_bag": {
+            "#text": "",
+            "#visible": false
+        },
+        "bindings": [
+            {
+                "binding_name_override": "#visible",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always",
+                "binding_type": "collection",
+                "binding_name": "$item_marker_visible_binding_name"
+            },
+            {
+                "binding_name_override": "#text",
+                "binding_collection_name": "$collection_name",
+                "binding_condition": "always_when_visible",
+                "binding_type": "collection",
+                "binding_name": "$item_marker_text_binding_name"
+            }
+        ]
+    },
+    "bordered_item_panel@mei_common.slot_base": {
+        "$binding_name_prefix|default": "meiui.item_panel",
+        "controls": [
+            {
+                "background@mei_common.slot_background_bordered": {}
+            },
+            {
+                "item@mei_common.slot_item_marked": {}
+            },
+            {
+                "overlay@mei_common.slot_overlay": {
+                    "$overlay_btn_control": "mei_common.slot_overlay_button_flat",
+                    "$overlay_layer": 20
+                }
+            }
+        ]
+    },
     "items_sidebar_ui": {
         "type": "panel",
         "anchor_from": "left_middle",
@@ -27,7 +150,7 @@
                                     "100%+0px",
                                     "0%+22px"
                                 ],
-                                "layer": 1,
+                                "layer": 36,
                                 "orientation": "horizontal",
                                 "controls": [
                                     {
@@ -343,8 +466,8 @@
                                                 {
                                                     "bookmarks": {
                                                         "type": "grid",
-                                                        "$collection_name": "items_sidebar_bookmarks",
                                                         "$binding_name_prefix": "meiui.items_sidebar_bookmarks",
+                                                        "$collection_name": "items_sidebar_bookmarks",
                                                         "size": [
                                                             "100%+0px",
                                                             "default"
@@ -383,8 +506,8 @@
                                                             {
                                                                 "history": {
                                                                     "type": "grid",
-                                                                    "$collection_name": "items_sidebar_history",
                                                                     "$binding_name_prefix": "meiui.items_sidebar_history",
+                                                                    "$collection_name": "items_sidebar_history",
                                                                     "anchor_from": "bottom_middle",
                                                                     "anchor_to": "bottom_middle",
                                                                     "size": [
@@ -421,7 +544,7 @@
                                     "100%+0px",
                                     "0%+22px"
                                 ],
-                                "layer": 20,
+                                "layer": 36,
                                 "orientation": "horizontal",
                                 "controls": [
                                     {
@@ -772,128 +895,5 @@
         ]
     },
     "main": {},
-    "namespace": "MeiItemsSidebar",
-    "bordered_item_panel@mei_common.slot_base": {
-        "$binding_name_prefix|default": "meiui.item_panel",
-        "controls": [
-            {
-                "background@mei_common.slot_background_bordered": {}
-            },
-            {
-                "item@mei_common.slot_item_marked": {}
-            },
-            {
-                "overlay@mei_common.slot_overlay": {
-                    "$overlay_layer": 20,
-                    "$overlay_btn_control": "mei_common.slot_overlay_button_flat"
-                }
-            }
-        ]
-    },
-    "bookmark_marker": {
-        "type": "label",
-        "anchor_from": "top_left",
-        "anchor_to": "top_left",
-        "offset": [
-            1.0,
-            0.0
-        ],
-        "size": [
-            "default",
-            10.0
-        ],
-        "layer": 12,
-        "visible": "#visible",
-        "color": [
-            1.0,
-            0.85,
-            0.35
-        ],
-        "font_scale_factor": 0.75,
-        "font_type": "unicode",
-        "shadow": true,
-        "text": "#text",
-        "property_bag": {
-            "#text": "",
-            "#visible": false
-        },
-        "bindings": [
-            {
-                "binding_name_override": "#visible",
-                "binding_collection_name": "$collection_name",
-                "binding_condition": "always",
-                "binding_type": "collection",
-                "binding_name": "$item_marker_visible_binding_name"
-            },
-            {
-                "binding_name_override": "#text",
-                "binding_collection_name": "$collection_name",
-                "binding_condition": "always_when_visible",
-                "binding_type": "collection",
-                "binding_name": "$item_marker_text_binding_name"
-            }
-        ]
-    },
-    "bookmark_highlight": {
-        "type": "image",
-        "size": [
-            "100%+-2px",
-            "100%+-2px"
-        ],
-        "layer": 1,
-        "texture": "textures/ui/mei/white",
-        "fill": true,
-        "color": [
-            0.45,
-            0.8,
-            1.0
-        ],
-        "alpha": 0.45,
-        "visible": "#visible",
-        "property_bag": {
-            "#visible": false
-        },
-        "bindings": [
-            {
-                "binding_name_override": "#visible",
-                "binding_collection_name": "$collection_name",
-                "binding_condition": "always",
-                "binding_type": "collection",
-                "binding_name": "$item_highlight_visible_binding_name"
-            }
-        ]
-    },
-    "bookmark_item_panel@mei_common.slot_base": {
-        "$binding_name_prefix|default": "meiui.item_panel",
-        "$item_highlight_visible_binding_name": "('#' + $binding_name_prefix + '.item.highlight.visible')",
-        "$item_marker_text_binding_name": "('#' + $binding_name_prefix + '.item.marker.text')",
-        "$item_marker_visible_binding_name": "('#' + $binding_name_prefix + '.item.marker.visible')",
-        "controls": [
-            {
-                "background@mei_common.slot_background_bordered": {
-                    "texture": "textures/ui/mei/white",
-                    "color": [
-                        0.6,
-                        0.6,
-                        0.6
-                    ]
-                }
-            },
-            {
-                "highlight@MeiItemsSidebar.bookmark_highlight": {}
-            },
-            {
-                "item@mei_common.slot_item": {}
-            },
-            {
-                "marker@MeiItemsSidebar.bookmark_marker": {}
-            },
-            {
-                "overlay@mei_common.slot_overlay": {
-                    "$overlay_layer": 20,
-                    "$overlay_btn_control": "mei_common.slot_overlay_button_flat"
-                }
-            }
-        ]
-    }
+    "namespace": "MeiItemsSidebar"
 }

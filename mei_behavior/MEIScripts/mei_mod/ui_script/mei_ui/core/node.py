@@ -138,6 +138,7 @@ class UIMainNode(UIScriptMain):
 		# 三种模式（docs/architecture/modes.md）：工具模式拿起的物品、捕获层一个界面一份；每次开界面问一次服务端有没有作弊的权限
 		self.Tool = ToolHost(self)
 		self.Tool.OnCreate()
+
 		self.Filters = FilterMenu(self)
 		self.Filters.OnCreate()
 		ModeManager.OnScreenOpen()
