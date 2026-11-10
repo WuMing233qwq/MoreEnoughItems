@@ -312,8 +312,6 @@
             {
                 "backdrop": {
                     "type": "image",
-                    "anchor_from": "top_left",
-                    "anchor_to": "top_left",
                     "size": [
                         "200%+2px",
                         "200%+0px"
