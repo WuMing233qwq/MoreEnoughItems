@@ -2,13 +2,15 @@
 
 > 上一篇：[01 · 从 0 开始](01-getting-started.md)。接口签名：[api.md](api.md)。
 
-## 1. 一个配方类型是三样东西
+## 1. 注册一个配方类型
 
-| 样 | 类 | 回答什么 |
-|---|---|---|
-| **类型** | `ctx.Types.RecipeCategory` | 标识、名字、图标、用哪个 JSON 控件画、工作站 |
-| **来源** | `ctx.Types.RecipeSource`（或现成的 `StaticRecipeSource`）| 「有哪些配方」：按产物查、按原料查、给全表 |
-| **配方页脚本** | `ctx.UI.Binding.RecipeUIScript` 的子类 | 把一条配方画进那个控件（[03 篇](03-recipe-page.md)）|
+在注册一个配方类型前 你需要了解以下概念   
+
+|  | 类 | 回答什么                                   |
+|--|---|----------------------------------------|
+| **类型** | `ctx.Types.RecipeCategory` | 标识、名字、图标、用哪个 JSON 控件画、工作站              |
+| **来源** | `ctx.Types.RecipeSource`（或现成的 `StaticRecipeSource`）| 「有哪些配方」：按产物查、按原料查、给全表                  |
+| **配方页脚本** | `ctx.UI.Binding.RecipeUIScript` 的子类 | 把一条配方画进哪个控件（[03 篇](03-recipe-page.md)） |
 
 ```python
 def OnRegister(self, ctx):
@@ -35,23 +37,25 @@ def OnUnload(self, ctx):
 ```
 
 <a id="category"></a>
-## 2. 类型 `RecipeCategory`（[api §4.1](api.md#source-registry)）
+## 2. 配方类型 `RecipeCategory`（[api §4.1](api.md#source-registry)）
 
 `RecipeCategory(category_id, name_key="", icon=None, control_def="", stations=None, sort_index=0, preview_def=自动)`
 
-- `category_id`：带命名空间。**不能覆盖别人的**：同一个 Id 注册第二次返回 False、记警告（原版的 `crafting_table` / `furnace` / `fuel` 也一样）。
-- `icon`：`(物品 id, aux)`，类型页签上画它。`sort_index`：类型页签的先后，小的在前（原版 0 ~ 20）。
-- `control_def`：配方页的控件定义（`"命名空间.RECIPES_GRID"`）；tooltip 里的配方预览缺省按它推出 `"命名空间.PREVIEW"`，不要预览写 `preview_def=None`（[03 §1](03-recipe-page.md#json)）。
-- `stations`：工作站，**只收 `ItemStack`**；它们画在配方页顶上，玩家**查工作站的用途**时这个类型排在最前、带上它的全部配方。
+- `category_id`：带命名空间。**不能覆盖已注册的的**：同一个 Id 重复注册返回 False、记警告（包括内置类型）。
+- `icon`：`(物品 id, aux)`，类型页签的显示物品图标。
+- `sort_index`：类型页签的先后。
+- `control_def`：配方页的控件定义（`"命名空间.RECIPES_GRID"`）；tooltip 里的配方预览缺省按它推出 
+- `"命名空间.PREVIEW"`，不要预览写 `preview_def=None`（[03 §1](03-recipe-page.md#json)）。
+- `stations`：工作站，**只可传入 `ItemStack`**；它们画在配方页顶上，玩家**查工作站的用途**时这个类型排在最前、带上它的全部配方。
 
 <a id="source"></a>
-## 3. 来源（[api §5](api.md#types)）
+## 3. 配方来源（[api §5](api.md#types)）
 
-- **一次给全**：`StaticRecipeSource(category_id)`，`Add(recipe)` / `AddAll(recipes)` / `Remove(recipe_id)` / `Clear()`；按产物、按原料（含催化剂）的索引它自己建。
-- **按需查**（配方表在引擎里、或太大）：继承 `RecipeSource`，实现 `QueryByOutput(item)` / `QueryByInput(item)`（返回 `[Recipe]`）。
-  能给全表的再把 `CAN_ENUMERATE` 置真、实现 `GetAll()`；全表要慢慢凑的（边扫边给）覆写 `IsAllComplete()`，凑齐之前给 False ——
+- **一次给全，让MEI管理配方**：`StaticRecipeSource(category_id)`，`Add(recipe)` / `AddAll(recipes)` / `Remove(recipe_id)` / `Clear()`；按产物、按原料（含催化剂）的索引它自己建。
+- **按需查，交给自己的引擎**（配方表在引擎里、或太大）：继承 `RecipeSource`，实现 `QueryByOutput(item)` / `QueryByInput(item)`（返回 `[Recipe]`）。
+  能给全表的再把 `CAN_ENUMERATE` 置真、实现 `GetAll()`；全表要扫描的，覆写 `IsAllComplete()`，完成之前返回 False ——
   配方页的页码后面写「扫描中」，凑齐后自动刷新一次。只实现了 `QueryBy*` 的来源，工作站的用途里只出真用到它的那几条。
-- `RegisterSource` 只认**已注册的**类型：顺序反了返回 False（记警告）。
+- `RegisterSource` 只接受**已注册的**类型：顺序反了返回 False。
 
 <a id="recipe"></a>
 ## 4. 配方对象（[api §5](api.md#types)）
@@ -59,15 +63,15 @@ def OnUnload(self, ctx):
 `Recipe(recipe_type, inputs, outputs, catalysts=None, data=None, recipe_id=None)`：
 
 - `inputs` / `outputs` / `catalysts` 是 `[Ingredient]`；一格的候选用 `Ingredient(stacks, amount=1, tag_id=None, chance=1.0)`，单个物品 `Ingredient.of(stack, amount)`。
-- `data` 放展示用的数值（耗电、耗时）—— **不进 `Recipe.Id`**。
-- 要网格语义（有序配方）就继承 `Recipe`，覆写 `GetShape()`（给 `(宽, 高)`）与 `_extra_to_canonical()`；并 `register_recipe_class` 登记以便序列化。
-  ⚠ `_extra_to_canonical()` 写错会毁掉 `Recipe.Id` 的稳定性，照着原版的写。
+- `data` 放展示用的数值（耗电、耗时）—— **数据不会参与 `Recipe.Id`计算**。
+- 要网格语义（有序配方）就继承 `Recipe`，覆写 `GetShape()`（给 `(宽, 高)`）与 `_extra_to_canonical()`；并 `register_recipe_class` 登记以便序列化。   
+  ⚠ `_extra_to_canonical()` 写错会毁掉 `Recipe.Id` 的稳定性，照着原版的写。   
   ⚠ 配方对象的存盘 / 读回（`ToDict` / `FromDict`）MEI 自己没用（收藏、置顶只存 `Recipe.Id`），读回的物品没有物品信息、也不带 userData —— 别拿它存配方。
-- 物品的 userData 不进 `Recipe.Id`、也不进按物品查配方的索引：两条配方只差在原料是哪一本附魔书，Id 一样（后登记的那条被当成重复）。
+- 物品的 userData 不进 `Recipe.Id`、也不进按物品查配方的索引：两条配方只差在原料是哪一本附魔书，Id 一样。
 
 ### 4.1 `Recipe.Id` 要稳定
 
-收藏、置顶存的就是 `Recipe.Id`（配方内容的稳定哈希）。它变了，玩家的收藏与置顶就找不回来。所以：
+收藏、置顶存的就是 `Recipe.Id`（配方内容的稳定哈希）。其改变后，玩家的收藏与置顶就会彻底失效。所以：
 
 - **tag 原料别展开**：引擎把 tag 展开成物品列表给你的，折回 tag（`Ingredient(..., tag_id="minecraft:planks")`）—— 模组往 tag 里加物品，Id 不变。
 - **驱动机器的东西不进配方**：燃料、能量（RF / EU）、流体动力这类**每条配方都一样、任选其一就能开机**的东西，不放 `inputs`、也不放 `catalysts`。
@@ -76,7 +80,7 @@ def OnUnload(self, ctx):
 <a id="catalysts"></a>
 ## 5. 不消耗的东西放 `catalysts`
 
-工具、模具、刻印模版这类**做配方时不扣**的放 `catalysts=[...]`，别为了对槽位塞进 `inputs`：
+工具、模具、刻印模版这类**做配方时不扣**的放 `catalysts=[...]`，而不是 `inputs`：
 
 - MEI 把 `inputs` 当成消耗品 —— 收藏栏展开配方时原料乘倍数，塞进去的工具会跟着乘；
 - 催化剂照样查得到用途（`StaticRecipeSource` 把它一并索引进「按原料查」）；界面上从 `recipe.GetCatalysts()` 取来画；

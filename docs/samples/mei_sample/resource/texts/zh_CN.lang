@@ -1,0 +1,4 @@
+## MEI 样例扩展（docs/samples/mei_sample）
+sample.mei.ext.name=MEI 样例扩展
+sample.mei.ext.desc=一个配方类型「研磨」：圆石 → 沙砾 → 沙子、骨头 → 骨粉
+sample.mei.category.grinding=研磨（样例）
