@@ -33,8 +33,23 @@ ADAPTIVE_LAYOUT = "adaptive_layout"
 FIND_BUTTON = "find_button"
 """ 搜索框旁的查询按钮（只在触屏出现：点一下进查找状态，再点要查的格子出二级菜单）；开界面时读 """
 
+SCREEN_BOUNDS = "screen_bounds"
+"""
+二级菜单真实尺寸自适应：开着时 tooltip、触屏菜单、配方树的节点菜单贴整个屏幕的边（界面最外层的控件）；
+关着（缺省）贴 MEI 挂载的根面板（去掉安全区边距的可用区域）—— 有的机型安全区里的按钮点不到。每次摆位置时读
+"""
+
 ITEM_GROUPS = "item_groups"
 """ 物品栏的物品分组（可收起 / 展开的组头）；关掉时物品一样一样平铺。建物品栏的分页时读 """
+
+GROUP_STACK = "group_stack"
+""" 组头叠着画组里前两样（两个小图标错开）；关掉时组头只画第一样（普通的一个图标）。组头建出来时读 """
+
+GROUP_BADGE = "group_badge"
+""" 组头右下角的 +/- 角标（收着 / 展开）；关掉时不画。组头建出来时读 """
+
+SEARCH_FULL_GROUP = "search_full_group"
+""" 搜索时组里没搜到的也跟着出来（整组）；关掉时组里只有搜到的那几样（照样按组折成组头）。排物品栏的分页时读 """
 
 BOOKMARKS_VISIBLE = "bookmarks_visible"
 """ 显示左侧栏（收藏与最近浏览）；开界面时读 """
@@ -83,8 +98,12 @@ def RegisterBuiltinSettings():  # type: () -> None
         Slider(ROW_ITEMS, "options.mei.general.row_items", 1, 12, step=1, default=DEFAULT_ROW_ITEMS),
         Slider(SIDE_UI_SCALE, "options.mei.general.side_ui_scale", 0, 1, step=1, default=1),
         Toggle(ADAPTIVE_LAYOUT, "options.mei.general.adaptive", default=True),
+        Toggle(SCREEN_BOUNDS, "options.mei.general.screen_bounds", default=False),
         Toggle(FIND_BUTTON, "options.mei.general.find_button", default=True),
         Toggle(ITEM_GROUPS, "options.mei.general.item_groups", default=True),
+        Toggle(GROUP_STACK, "options.mei.general.group_stack", default=True),
+        Toggle(GROUP_BADGE, "options.mei.general.group_badge", default=True),
+        Toggle(SEARCH_FULL_GROUP, "options.mei.general.search_full_group", default=True),
         Toggle(BOOKMARKS_VISIBLE, "options.mei.general.bookmarks_visible", default=True),
         Toggle(BOOKMARKS_WORLD, "options.mei.general.bookmarks_world", default=False),
         Toggle(ADVANCED_TOOLTIP, "options.mei.general.advanced_tooltip", default=True),
@@ -156,6 +175,26 @@ def IsFindButtonEnabled():  # type: () -> bool
 def IsItemGroupsEnabled():  # type: () -> bool
     """ 物品栏分不分组；设置项没登记时按分 """
     return SettingsManager.Get(ITEM_GROUPS) is not False
+
+
+def IsScreenBoundsEnabled():  # type: () -> bool
+    """ 二级菜单按整个屏幕算边界；设置项没登记时按关（贴挂载的根面板）"""
+    return SettingsManager.Get(SCREEN_BOUNDS) is True
+
+
+def IsGroupStackEnabled():  # type: () -> bool
+    """ 组头叠着画两样；设置项没登记时按开 """
+    return SettingsManager.Get(GROUP_STACK) is not False
+
+
+def IsGroupBadgeEnabled():  # type: () -> bool
+    """ 组头的 +/- 角标；设置项没登记时按开 """
+    return SettingsManager.Get(GROUP_BADGE) is not False
+
+
+def IsSearchFullGroupEnabled():  # type: () -> bool
+    """ 搜索时补全整组；设置项没登记时按开 """
+    return SettingsManager.Get(SEARCH_FULL_GROUP) is not False
 
 
 def IsFloatModeForced():  # type: () -> bool

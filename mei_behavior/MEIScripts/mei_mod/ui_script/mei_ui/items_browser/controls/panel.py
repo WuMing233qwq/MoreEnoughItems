@@ -22,9 +22,13 @@ from MEIScripts.common.classes.types import Item
 from MEIScripts.constants.texts import ItemText
 from MEIScripts.utils.lang import localize
 from MEIScripts.utils.text import native_str
+from MEIScripts.mei_mod.state.settings import IsGroupBadgeEnabled, IsGroupStackEnabled
 from MEIScripts.mei_mod.ui_script.controls.item import ItemPanel
 from MEIScripts.mei_mod.ui_script.controls.item.panel import render_args
 from MEIScripts.registry import ItemOrganizer
+
+BADGE_HIDDEN = 2
+""" 组头角标都不画：JSON 里两张图的显隐表达式是 (#group_expanded = 0) / (= 1)，给 2 两张都不亮（items_browser.json 的 badge）"""
 
 
 class GroupItemPanel(ItemPanel):
@@ -44,7 +48,7 @@ class GroupItemPanel(ItemPanel):
         self.BorderTopVisible = False
         self.BorderBottomVisible = False
         self.GroupRendererVisible = False
-        self.GroupExpanded = 0  # type: int  # 分组头的角标：0 收起（+）、1 展开（-）
+        self.GroupExpanded = 0  # type: int  # 分组头的角标：0 收起（+）、1 展开（-）、BADGE_HIDDEN 都不画
 
         self.Renderer1Control = None
         self.Renderer2Control = None
@@ -80,12 +84,18 @@ class GroupItemPanel(ItemPanel):
         # 收起 / 展开由右下角的 +/- 角标表示（JSON 的 badge，看 GroupExpanded）；slot_item_marked 那个写死「+」的角字不再亮，免得叠在一起
         self.LabelVisible = False
         self.BackgroundVisible = True
-        self.GroupRendererVisible = True
-        self.ItemRendererVisible = False
+        # 设置「启用组头堆叠显示」：开着叠着画组里前两样（两个小图标），关着只画第一样（普通的那个图标）
+        stacked = IsGroupStackEnabled()
+        self.GroupRendererVisible = stacked
+        self.ItemRendererVisible = not stacked
         self.IsGroupHead = True
 
         self.Group, name, items, length, edges = data_dict["GroupHead"]["Group"], data_dict["GroupHead"]["Name"], data_dict["GroupHead"]["Items"], data_dict["GroupHead"]["Length"], data_dict["GroupHead"]["Edges"]
-        self.GroupExpanded = 1 if data_dict["GroupHead"].get("Expanded") else 0
+        # 设置「启用组头状态显示」关着：给一个两条表达式（= 0 / = 1）都不认的值，两张角标都不亮 —— 显隐照旧全在 JSON
+        if IsGroupBadgeEnabled():
+            self.GroupExpanded = 1 if data_dict["GroupHead"].get("Expanded") else 0
+        else:
+            self.GroupExpanded = BADGE_HIDDEN
         item_1 = items[0]
         item_2 = items[1] if len(items) > 1 else item_1
 
@@ -105,7 +115,7 @@ class GroupItemPanel(ItemPanel):
         一起画 —— 不然行列数一变，分组头只剩底色
         """
         suc = ItemPanel.SetUiItem(self)
-        if self.IsGroupHead:
+        if self.IsGroupHead and self.GroupRendererVisible:
             for control, args in zip((self.Renderer1Control, self.Renderer2Control), self.GroupRenderData):
                 if control is not None:
                     control.SetUiItem(*args)

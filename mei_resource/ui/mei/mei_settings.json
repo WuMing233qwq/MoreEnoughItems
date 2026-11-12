@@ -166,6 +166,20 @@
                 }
             },
             {
+                "screen_bounds@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.screen_bounds",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.screen_bounds",
+                    "$option_binding_name": "#mei.settings.screen_bounds.state"
+                }
+            },
+            {
+                "screen_bounds_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.screen_bounds.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
                 "find_button@settings_common.option_toggle": {
                     "$option_label": "options.mei.general.find_button",
                     "$option_enabled_binding_name": "#mei.settings.enabled",
@@ -180,6 +194,12 @@
                 }
             },
             {
+                "groups_group@settings_common.option_group_label": {
+                    "$text": "options.mei.general.group.groups",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
                 "item_groups@settings_common.option_toggle": {
                     "$option_label": "options.mei.general.item_groups",
                     "$option_enabled_binding_name": "#mei.settings.enabled",
@@ -190,6 +210,48 @@
             {
                 "item_groups_hint@mei_settings.tips_label": {
                     "$text": "options.mei.general.item_groups.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "group_stack@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.group_stack",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.group_stack",
+                    "$option_binding_name": "#mei.settings.group_stack.state"
+                }
+            },
+            {
+                "group_stack_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.group_stack.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "group_badge@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.group_badge",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.group_badge",
+                    "$option_binding_name": "#mei.settings.group_badge.state"
+                }
+            },
+            {
+                "group_badge_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.group_badge.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "search_full_group@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.search_full_group",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.search_full_group",
+                    "$option_binding_name": "#mei.settings.search_full_group.state"
+                }
+            },
+            {
+                "search_full_group_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.search_full_group.hint",
                     "$text_color": [ 0.5, 0.5, 0.5 ]
                 }
             },

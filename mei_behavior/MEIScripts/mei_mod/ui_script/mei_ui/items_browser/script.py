@@ -22,7 +22,7 @@ import mod.client.extraClientApi as clientApi
 
 from MEIScripts.constants.ui import CollectionConst, ItemsBrowserPath, PanelProtoConst, UiPathConst
 from MEIScripts.mei_mod.state import CacheManager, PrefsManager
-from MEIScripts.mei_mod.state.settings import IsFindButtonEnabled, IsItemGroupsEnabled
+from MEIScripts.mei_mod.state.settings import IsFindButtonEnabled, IsItemGroupsEnabled, IsSearchFullGroupEnabled
 from MEIScripts.mei_mod.ui_script.mei_ui.common.base import BaseItemsGridScript
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.controls.grid import GroupItemsGrid
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.controls.panel import GroupItemPanel
@@ -172,15 +172,22 @@ class ItemsBrowserScript(BaseItemsGridScript):
             self.ItemsPage = cached
 
     def BuildItemsPage(self, items):  # type: (list) -> PageWithGroup
-        """ 分组、分页；选了排序时组里照排好的先后，没选照组自己的顺序；设置关了「启用物品分组」就平铺 """
+        """
+        分组、分页；选了排序时组里照排好的先后，没选照组自己的顺序；设置关了「启用物品分组」就平铺；
+        关了「启用搜索结果展示完整分组」时组里只有搜到 / 筛出来的那几样（照样折成组头），不补全同组别的
+        """
         layout = self.Layout
         return BuildPage(items, layout.Cols, layout.Rows, keep_order=bool(PrefsManager.GetItemSort()),
-                         grouped=IsItemGroupsEnabled())
+                         grouped=IsItemGroupsEnabled(), complete=IsSearchFullGroupEnabled())
 
     @staticmethod
     def __Fresh(page):  # type: (any) -> bool
-        """ 缓存的分页还能用：分没分组和现在的设置一样（设置页里切了「启用物品分组」，下次开界面就得重排）"""
-        return getattr(page, "Grouped", True) == IsItemGroupsEnabled()
+        """
+        缓存的分页还能用：分没分组、补不补全组和现在的设置一样（设置页里切了「启用物品分组」「启用搜索结果展示完整分组」，
+        下次开界面就得重排）
+        """
+        return (getattr(page, "Grouped", True) == IsItemGroupsEnabled()
+                and getattr(page, "Complete", True) == IsSearchFullGroupEnabled())
 
     @staticmethod
     def HasItemView():  # type: () -> bool

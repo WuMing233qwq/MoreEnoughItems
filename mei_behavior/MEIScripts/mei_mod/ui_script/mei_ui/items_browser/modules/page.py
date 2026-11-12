@@ -190,11 +190,12 @@ class PageWithGroup(Page):
         self._clamp_index(strict=False)
 
 
-def group_items(items, keep_order=False, grouped=True):  # type: (list, bool, bool) -> (list, dict)
+def group_items(items, keep_order=False, grouped=True, complete=True):  # type: (list, bool, bool, bool) -> (list, dict)
     """
     对列表进行分组，用于展示折叠。组头在它第一个成员的位置；组里搜到的在前、同组别的跟着（藏起来的不跟）。
     keep_order 为假（物品栏没选排序）时组里照组自己的顺序排（ItemOrganizer.GetGroupOrder：创造栏的组是木 → 石 → 铜 → 铁 → 金 → 钻石 → 下界合金）；
-    选了排序就照列表原来的先后。grouped 为假（设置关了「启用物品分组」）时不分组，照原样平铺
+    选了排序就照列表原来的先后。grouped 为假（设置关了「启用物品分组」）时不分组，照原样平铺。
+    complete 为假（设置关了「启用搜索结果展示完整分组」）时同组别的不跟：组里只有列表里有的（搜到的、筛出来的），照样折成组头
     """
     if not grouped:
         return list(items), OrderedDict()
@@ -242,16 +243,18 @@ def group_items(items, keep_order=False, grouped=True):  # type: (list, bool, bo
             order = ItemOrganizer.GetGroupOrder(cat_name)
             if not keep_order:
                 matched_items = ranked(matched_items, order)
-            # 组表存的是 id(旁表不持有池对象), 这里按组的顺序反查回实例
-            group_all = []
-            for group_item_id in order:
-                group_all.extend(ItemManager.GetItemsById(group_item_id))
-            # 同一个 id 在几个组里时归最后登记的那个组（item_to_category）：别的组不再把它当「同组别的」带上，免得一样东西出现两次
-            other_items = [
-                item for item in group_all
-                if item.ItemId not in matched_ids and not ItemManager.IsHidden(item)
-                and item_to_category.get(item.ItemId) == cat_name
-            ]
+            other_items = []
+            if complete:
+                # 组表存的是 id(旁表不持有池对象), 这里按组的顺序反查回实例
+                group_all = []
+                for group_item_id in order:
+                    group_all.extend(ItemManager.GetItemsById(group_item_id))
+                # 同一个 id 在几个组里时归最后登记的那个组（item_to_category）：别的组不再把它当「同组别的」带上，免得一样东西出现两次
+                other_items = [
+                    item for item in group_all
+                    if item.ItemId not in matched_ids and not ItemManager.IsHidden(item)
+                    and item_to_category.get(item.ItemId) == cat_name
+                ]
             result.append({cat_name: matched_items + other_items})
             index_map[len(result) - 1] = cat_name
             cat_entry = next(cat_iter, None)
@@ -265,12 +268,15 @@ def ranked(items, order):  # type: (list, list) -> list
     return sorted(items, key=lambda item: rank.get(item.ItemId, last))
 
 
-def BuildPage(items, cols, rows, keep_order=False, grouped=True):  # type: (list, int, int, bool, bool) -> PageWithGroup
+def BuildPage(items, cols, rows, keep_order=False, grouped=True, complete=True):
+    # type: (list, int, int, bool, bool, bool) -> PageWithGroup
     """
-    keep_order：物品栏选了排序（组里照列表的先后，不照组自己的顺序）；grouped：分不分组（设置「启用物品分组」）。
-    分页记着自己分没分组（Grouped）：缓存的分页和现在的设置对不上就不能拿来用
+    keep_order：物品栏选了排序（组里照列表的先后，不照组自己的顺序）；grouped：分不分组（设置「启用物品分组」）；
+    complete：组里补不补全同组别的（设置「启用搜索结果展示完整分组」）。
+    分页记着自己是按哪样排的（Grouped / Complete）：缓存的分页和现在的设置对不上就不能拿来用
     """
-    items_input, group_index = group_items(items, keep_order, grouped)
+    items_input, group_index = group_items(items, keep_order, grouped, complete)
     page = PageWithGroup(items_input, group_index, cols, rows)
     page.Grouped = bool(grouped)
+    page.Complete = bool(complete)
     return page

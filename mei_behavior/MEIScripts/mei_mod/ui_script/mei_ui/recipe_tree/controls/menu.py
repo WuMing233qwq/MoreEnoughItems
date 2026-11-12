@@ -32,7 +32,7 @@ import mod.client.extraClientApi as clientApi
 from mod_log import logger
 
 from MEIScripts.constants.ui import TreeConst, TreePath
-from MEIScripts.mei_mod.state.settings import IsTreePreviewEnabled
+from MEIScripts.mei_mod.state.settings import IsScreenBoundsEnabled, IsTreePreviewEnabled
 from MEIScripts.mei_mod.ui_script.mei_ui.menu import layout
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.layout import place_beside
 from MEIScripts.utils import utilities
@@ -538,8 +538,9 @@ class TreeMenu(object):
 
     def __Bounds(self):  # type: () -> tuple
         """
-        菜单能摆的范围 (左, 上, 右, 下)，相对界面根面板（菜单宿主是它的子控件，anchor 也是相对它的）：整个屏幕（界面最外层的控件），
-        不是根面板 —— 根面板只是去掉安全区边距的可用区域，菜单贴它的边会被无故挤开。量不到屏幕时退回根面板
+        菜单能摆的范围 (左, 上, 右, 下)，相对界面根面板（菜单宿主是它的子控件，anchor 也是相对它的）。
+        设置「启用二级菜单真实尺寸自适应」开着：整个屏幕（界面最外层的控件），安全区那一圈也能摆；
+        关着（缺省）、量不到屏幕时：根面板（去掉安全区边距的可用区域 —— 有的机型安全区里的按钮点不到）
         """
         root = self.Screen.GetBaseUIControl(TreePath.Root)
         try:
@@ -547,7 +548,7 @@ class TreeMenu(object):
             root_w, root_h = root.GetSize()
         except Exception:  # noqa
             root_x, root_y, root_w, root_h = 0, 0, 427, 240
-        screen = utilities.GetScreenRect(self.Screen, TreePath.Root)
+        screen = utilities.GetScreenRect(self.Screen, TreePath.Root) if IsScreenBoundsEnabled() else None
         if screen is None:
             return 0, 0, int(root_w), int(root_h)
         (s_left, s_top), (s_right, s_bottom) = screen

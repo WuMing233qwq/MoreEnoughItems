@@ -65,7 +65,7 @@ from mod_log import logger
 from MEIScripts.constants.codes import QueryConst
 from MEIScripts.constants.texts import TooltipText
 from MEIScripts.constants.ui import ModeConst, TooltipKind, TooltipPath
-from MEIScripts.mei_mod.state.settings import IsAdvancedTooltipEnabled, IsTouchOppositeSide
+from MEIScripts.mei_mod.state.settings import IsAdvancedTooltipEnabled, IsScreenBoundsEnabled, IsTouchOppositeSide
 from MEIScripts.mei_mod.ui_script.controls.item.panel import panel_controls
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.state import KIND_HUD
 from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
@@ -176,6 +176,7 @@ class TooltipManager(object):
         self.Enabled = True  # type: bool  # 设置「启用高级Tooltip」：开界面时读，关着时什么都不出
         self.ReplacesVanillaName = True  # type: bool  # 会出 MEI tooltip 的格子不出原版物品名（只在 PC 上、设置开着时）
         self.OppositeSide = False  # type: bool  # 设置「触控tooltip是否沿对面侧显示」：触屏菜单摆到点的那一格另一侧的屏幕边上。开界面时读
+        self.ScreenBounds = False  # type: bool  # 设置「启用二级菜单真实尺寸自适应」：贴整个屏幕的边；关着贴 MEI 挂载的根面板。开界面时读
         self.Current = None  # type: str or None  # 亮着（或正在建）的是哪一种：TooltipKind.Items / Recipe；藏着时 None
         self.Phase = None  # type: str or None  # PHASE_BUILDING / PHASE_SHOWN
         self.Content = None  # type: str or None  # 内容控件的路径（显示中或藏着）
@@ -213,6 +214,7 @@ class TooltipManager(object):
         """
         self.Enabled = IsAdvancedTooltipEnabled()
         self.OppositeSide = IsTouchOppositeSide()
+        self.ScreenBounds = IsScreenBoundsEnabled()
         # HUD 上一律用触屏宿主：游戏界面没有光标，PC 那个 follows_cursor 的宿主只在 PushScreen 建的界面里管用（官方文档），
         # 一直亮着的 input_panel 也不该挂在游戏界面上（floating.md §6）
         on_hud = getattr(self.MainNode, "Kind", None) == KIND_HUD
@@ -792,9 +794,12 @@ class TooltipManager(object):
         self.__SetTouchAlpha(1.0)
 
     def __ScreenRect(self):  # type: () -> tuple or None
-        """ 整个屏幕的全局矩形（主节点给）；主节点没有这个接口、量不到时给 None，调用方退回 tooltip 根 """
+        """
+        整个屏幕的全局矩形（主节点给）；设置「启用二级菜单真实尺寸自适应」关着（缺省）、主节点没有这个接口、量不到时给 None，
+        调用方退回 tooltip 根（MEI 挂载的根面板：去掉安全区边距的可用区域）
+        """
         get = getattr(self.MainNode, "GetScreenRect", None)
-        if get is None:
+        if not self.ScreenBounds or get is None:
             return None
         try:
             return get()
