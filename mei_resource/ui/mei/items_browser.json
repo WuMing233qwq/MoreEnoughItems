@@ -1,8 +1,8 @@
 {
     "group_item_panel@mei_common.slot_base": {
         "$binding_name_prefix|default": "meiui.item_panel",
-        "$item_group_renderer_visible_binding_name": "('#' + $binding_name_prefix + '.item.group.renderer.visible')",
         "$item_group_expanded_binding_name": "('#' + $binding_name_prefix + '.item.group.expanded')",
+        "$item_group_renderer_visible_binding_name": "('#' + $binding_name_prefix + '.item.group.renderer.visible')",
         "controls": [
             {
                 "background@mei_common.slot_background_bordered": {
@@ -86,49 +86,49 @@
                         {
                             "plus@mei_icons.group_badge_plus": {
                                 "alpha": 0.8,
-                                "visible": "#visible",
-                                "property_bag": {
-                                    "#group_expanded": 0,
-                                    "#visible": false
-                                },
                                 "bindings": [
                                     {
-                                        "binding_name_override": "#group_expanded",
                                         "binding_collection_name": "$collection_name",
                                         "binding_condition": "always",
-                                        "binding_type": "collection",
-                                        "binding_name": "$item_group_expanded_binding_name"
+                                        "binding_name": "$item_group_expanded_binding_name",
+                                        "binding_name_override": "#group_expanded",
+                                        "binding_type": "collection"
                                     },
                                     {
                                         "binding_type": "view",
                                         "source_property_name": "(#group_expanded = 0)",
                                         "target_property_name": "#visible"
                                     }
-                                ]
+                                ],
+                                "property_bag": {
+                                    "#group_expanded": 0,
+                                    "#visible": false
+                                },
+                                "visible": "#visible"
                             }
                         },
                         {
                             "minus@mei_icons.group_badge_minus": {
                                 "alpha": 0.8,
-                                "visible": "#visible",
-                                "property_bag": {
-                                    "#group_expanded": 0,
-                                    "#visible": false
-                                },
                                 "bindings": [
                                     {
-                                        "binding_name_override": "#group_expanded",
                                         "binding_collection_name": "$collection_name",
                                         "binding_condition": "always",
-                                        "binding_type": "collection",
-                                        "binding_name": "$item_group_expanded_binding_name"
+                                        "binding_name": "$item_group_expanded_binding_name",
+                                        "binding_name_override": "#group_expanded",
+                                        "binding_type": "collection"
                                     },
                                     {
                                         "binding_type": "view",
                                         "source_property_name": "(#group_expanded = 1)",
                                         "target_property_name": "#visible"
                                     }
-                                ]
+                                ],
+                                "property_bag": {
+                                    "#group_expanded": 0,
+                                    "#visible": false
+                                },
+                                "visible": "#visible"
                             }
                         }
                     ]
@@ -177,7 +177,7 @@
                                 "anchor_from": "top_right",
                                 "anchor_to": "top_right",
                                 "size": "$mei_side_bar_size",
-                                "layer": 36,
+                                "layer": 10,
                                 "orientation": "horizontal",
                                 "controls": [
                                     {
@@ -571,7 +571,7 @@
                                 "anchor_from": "bottom_right",
                                 "anchor_to": "bottom_right",
                                 "size": "$mei_side_bar_size",
-                                "layer": 36,
+                                "layer": 10,
                                 "orientation": "horizontal",
                                 "controls": [
                                     {
