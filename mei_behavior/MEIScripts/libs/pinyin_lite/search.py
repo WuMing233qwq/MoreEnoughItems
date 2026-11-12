@@ -33,6 +33,15 @@ MAX_PATHS = 32
 SYLLABLE_SCORE = 0.85
 """ 逐字匹配（首字母 / 整个读音 / 读音前缀混着打）全部吃完时的满分，再乘吃掉的字数占比 """
 
+MID_START = 0.8
+""" 按字对齐的命中从名字中间某个字起头（不是第一个字）：比从头起的低一档 """
+
+RARE_READING = 0.6
+""" 只靠多音字的别的读音才命中（主读音那种拼法不行）：排在常用读音的命中后面 """
+
+INITIALS2 = (u"zh", u"ch", u"sh")
+""" 两个字母的声母：按字对齐时整个当首字母吃 """
+
 _LETTERS = re.compile(u"^[a-z]+$")
 _EMPTY = frozenset()
 
@@ -227,6 +236,61 @@ def _match_from(query, qi, units, si, failed):  # type: (unicode, int, list, int
     return 0
 
 
+def _aligned_from(query, qi, units, si, failed):  # type: (unicode, int, list, int, set) -> int
+    """
+    query[qi:] 能不能从第 si 个字起「按字对齐」吃完：中间每个字吃首字母（zh / ch / sh 两个字母一起）或整个读音，
+    最后一个字还可以只吃读音的前缀（至少两个字母）。多音字的每个读音都试。返回吃完时到了第几个字（不含），吃不完给 0
+    """
+    if qi >= len(query):
+        return si
+    if si >= len(units) or (qi, si) in failed:
+        return 0
+    rest = query[qi:]
+    for syllable in units[si]:
+        if not syllable:
+            continue
+        if len(rest) >= 2 and syllable.startswith(rest):
+            return si + 1  # 最后一个字：读音前缀（或整个读音）把剩下的吃完
+        for take in (syllable, syllable[:2] if syllable[:2] in INITIALS2 else None, syllable[0]):
+            if take and rest.startswith(take):
+                end = _aligned_from(query, qi + len(take), units, si + 1, failed)
+                if end:
+                    return end
+    failed.add((qi, si))
+    return 0
+
+
+def _aligned(query, units):  # type: (unicode, list) -> tuple or None
+    """ 从名字里任意一个字起按字对齐吃完 query：返回 (起头的字, 吃到第几个字)，从前往后试第一个成的；吃不完给 None """
+    for start in range(len(units)):
+        end = _aligned_from(query, 0, units, start, set())
+        if end:
+            return start, end
+    return None
+
+
+def _aligned_keys(units):  # type: (list) -> tuple
+    """
+    按字对齐的命中头一两个字母可能是什么：(各个字的读音首字母, 两个字母的开头)。
+    两个字母的开头只有两种来路 —— 一个字的读音前两个字母（吃整个读音、读音前缀、zh / ch / sh），
+    或这个字的首字母接下一个字的首字母（这个字只吃了首字母）
+    """
+    starts, pairs = set(), set()
+    count = len(units)
+    for index in range(count):
+        following = units[index + 1] if index + 1 < count else ()
+        for reading in units[index]:
+            if not reading:
+                continue
+            starts.add(reading[0])
+            if len(reading) >= 2:
+                pairs.add(reading[:2])
+            for after in following:
+                if after:
+                    pairs.add(reading[0] + after[0])
+    return starts, pairs
+
+
 def _initials(found):  # type: (tuple) -> tuple
     """ 几个读音的首字母，去重、保持先后 """
     result = []
@@ -258,7 +322,9 @@ class _Entry(object):
 
 class PinyinIndex(object):
     """
-    拼音 / 首字母 / 原文的模糊搜索索引；多音字的每个读音都能搜到
+    拼音 / 首字母 / 原文的模糊搜索索引；多音字的每个读音都能搜到。
+    拼音词**先严后宽**：先只认原文片段、整串拼音与「按字对齐」（从任意一个字的开头起，每个字吃首字母或整个读音，
+    最后一个字可以只吃读音前缀）；一条都没有才退回宽的那一套（拼音里任意位置的片段、字母按顺序散在拼音里的子序列）
     """
     def __init__(self):
         self.__Entries = []  # type: list
@@ -266,6 +332,8 @@ class PinyinIndex(object):
         self.__Letters = {}  # type: dict  # 首字母片段 → 条目下标
         self.__Text = {}  # type: dict  # 原文（小写）片段 → 条目下标
         self.__Heads = {}  # type: dict  # 第一段的首字母 → 条目下标
+        self.__Starts = {}  # type: dict  # 按字对齐的命中可能的头一个字母 → 条目下标（任意一个字的首字母）
+        self.__Pairs = {}  # type: dict  # 按字对齐的命中可能的头两个字母 → 条目下标（_aligned_keys）
 
     def Add(self, items):  # type: (list) -> None
         """ 加一批字（str 或 unicode）；Search 返回的就是这里给的对象 """
@@ -274,10 +342,13 @@ class PinyinIndex(object):
             doc = len(self.__Entries)
             self.__Entries.append(entry)
             heads = set(reading[0] for reading in entry.Units[0] if reading) if entry.Units else ()
+            starts, pairs = _aligned_keys(entry.Units)
             for index, keys in ((self.__Pinyin, windows(entry.Units, MAX_PINYIN_LEN)),
                                 (self.__Letters, windows(entry.Initials, MAX_PINYIN_LEN)),
                                 (self.__Text, substrings(entry.Text, MAX_TEXT_LEN)),
-                                (self.__Heads, heads)):
+                                (self.__Heads, heads),
+                                (self.__Starts, starts),
+                                (self.__Pairs, pairs)):
                 for key in keys:
                     bucket = index.get(key)
                     if bucket is None:
@@ -286,12 +357,21 @@ class PinyinIndex(object):
                         bucket.add(doc)
 
     def Search(self, query, min_score=0.0):  # type: (any, float) -> list
-        """ 搜索，按分数从高到低返回 Add 时给的对象（同名的只留一个）；空格隔开的几个词要都命中 """
+        """
+        搜索，按分数从高到低返回 Add 时给的对象（同名的只留一个）；空格隔开的几个词要都命中。
+        先按严的认（PinyinIndex 的说明），一条都没有、里头又有拼音词时才按宽的再来一遍 —— 打错一两个字母照样有结果
+        """
         query = to_unicode(query).strip().lower()
         parts = query.split()
         if not parts:
             return []
-        found = [self.__SearchPart(part) for part in parts]
+        items = self.__Rank(query, parts, [self.__SearchPart(part, True) for part in parts], min_score)
+        if not items and any(_LETTERS.match(part) for part in parts):
+            items = self.__Rank(query, parts, [self.__SearchPart(part, False) for part in parts], min_score)
+        return items
+
+    def __Rank(self, query, parts, found, min_score):  # type: (unicode, list, list, float) -> list
+        """ 几个词都命中的条目按总分排好，给 Add 时的对象 """
         common = set(found[0])
         for result in found[1:]:
             common &= set(result)
@@ -330,6 +410,8 @@ class PinyinIndex(object):
         self.__Letters.clear()
         self.__Text.clear()
         self.__Heads.clear()
+        self.__Starts.clear()
+        self.__Pairs.clear()
 
     def __Find(self, index, key, max_len, field):  # type: (dict, unicode, int, str) -> set
         """ 查一个片段；比索引存的长时取前缀那一桶，再按 field（Text / Paths / Letters）逐条核对。返回的集合不许改 """
@@ -346,8 +428,8 @@ class PinyinIndex(object):
                 result.add(doc)
         return result
 
-    def __SearchPart(self, part):  # type: (unicode) -> dict
-        """ 一个词命中了哪些条目、各多少分 """
+    def __SearchPart(self, part, strict=True):  # type: (unicode, bool) -> dict
+        """ 一个词命中了哪些条目、各多少分；strict 只管拼音词（汉字、原文照旧） """
         results = {}
         chinese = _has_hanzi(part)
         letters = bool(_LETTERS.match(part))
@@ -368,10 +450,18 @@ class PinyinIndex(object):
         elif letters:
             pinyin_hits = self.__Find(self.__Pinyin, part, MAX_PINYIN_LEN, "Paths")
             letter_hits = self.__Find(self.__Letters, part, MAX_PINYIN_LEN, "Letters")
-            head_hits = self.__Heads.get(part[0], _EMPTY)
-            candidates.update(pinyin_hits)
-            candidates.update(letter_hits)
-            candidates.update(head_hits)
+            if strict:
+                # 严的只认按字对齐与原文片段：候选是头一两个字母对得上的（可以从名字中间的字起头）加原文里有它的
+                if len(part) >= 2:
+                    candidates.update(self.__Pairs.get(part[:2], _EMPTY))
+                else:
+                    candidates.update(self.__Starts.get(part, _EMPTY))
+                candidates.update(self.__Find(self.__Text, part, MAX_TEXT_LEN, "Text"))
+            else:
+                head_hits = self.__Heads.get(part[0], _EMPTY)
+                candidates.update(pinyin_hits)
+                candidates.update(letter_hits)
+                candidates.update(head_hits)
         else:
             candidates.update(self.__Find(self.__Text, part, MAX_TEXT_LEN, "Text"))
 
@@ -382,6 +472,8 @@ class PinyinIndex(object):
                 score = self.__ScoreMixed(entry, hanzi_part, pinyin_part)
             if not letters:
                 score = max(score, _score_text(entry.Text, part))
+            elif strict:
+                score = self.__ScoreStrict(entry, part, doc in pinyin_hits, doc in letter_hits)
             else:
                 score = self.__ScorePinyin(entry, part, doc in pinyin_hits, doc in letter_hits, doc in head_hits)
             if score > 0:
@@ -406,10 +498,45 @@ class PinyinIndex(object):
         return max(hanzi_score, pinyin_score)
 
     @staticmethod
+    def __ScoreStrict(entry, part, in_pinyin, in_letters):  # type: (_Entry, unicode, bool, bool) -> float
+        """
+        严的拼音词：只有按字对齐吃得完（整串拼音也是）、或原文里有这一截的才算命中 —— 字母散在拼音里的（子序列）、
+        从一个字中间开始的片段（hong 碰上 zhong）、中间的字只吃一半的都不算。
+        分照宽的那一套给（整串 1.0 > 拼音片段 > 首字母 > 逐字吃掉的占比），按字对齐从名字中间的字起头的 × MID_START；
+        主读音那种拼法对不上、只靠多音字别的读音才对上的 × RARE_READING（排在常用读音的后面）
+        """
+        if not entry.Units:
+            return 0.0
+        hit = _aligned(part, [unit[:1] for unit in entry.Units])
+        rare = False
+        if hit is None and len(entry.Paths) > 1:
+            hit = _aligned(part, entry.Units)
+            rare = hit is not None
+        text = part in entry.Text
+        if hit is None and not text:
+            return 0.0
+        score = 0.0
+        if hit is not None:
+            start, end = hit
+            score = SYLLABLE_SCORE * (end - start) / float(len(entry.Units)) * (MID_START if start else 1.0)
+        if part in entry.Paths:
+            score = 1.0
+        else:
+            if in_pinyin:
+                score = max(score, _score_contained(entry.Paths, part, 0.9, 0.7))
+            if in_letters:
+                if part in entry.Letters:
+                    score = max(score, 0.8)
+                score = max(score, _score_contained(entry.Letters, part, 0.7, 0.5))
+        if text:
+            score = max(score, _score_text(entry.Text, part))
+        return score * RARE_READING if rare else score
+
+    @staticmethod
     def __ScorePinyin(entry, part, in_pinyin, in_letters, in_heads):  # type: (_Entry, unicode, bool, bool, bool) -> float
         """
-        拼音词的分：整串相同 1.0 > 拼音片段 > 首字母整串 0.8 > 首字母片段 > 子序列 0.4 × 占比；逐字匹配最高 SYLLABLE_SCORE。
-        in_* 是检索时它在不在拼音桶 / 首字母桶 / 首段那一桶里 —— 不在就不可能有那一项分，省得逐个拼法扫
+        宽的拼音词（严的一条都没有时才用）：整串相同 1.0 > 拼音片段 > 首字母整串 0.8 > 首字母片段 > 子序列 0.4 × 占比；
+        逐字匹配最高 SYLLABLE_SCORE。in_* 是检索时它在不在拼音桶 / 首字母桶 / 首段那一桶里 —— 不在就不可能有那一项分，省得逐个拼法扫
         """
         score = 0.0
         if in_pinyin:
