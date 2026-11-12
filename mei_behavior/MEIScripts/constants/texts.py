@@ -172,12 +172,6 @@ class FilterText(object):
     Mute = u"§7{}"  # 不能点的（不排序时的升 / 降）
 
 
-class HotkeyText(object):
-    # 快捷键（mei_ui/hotkeys/）：按住 Alt 出的帮助
-    HelpTitle = u"§e快捷键§r（松开 Alt 收起）"
-    HelpLine = u"§7{}§r  {}"  # 依次为键位（「Ctrl + C」）、名字（.lang 的 key.mei.<id>）
-
-
 class TreeText(object):
     # 配方树（mei_ui/recipe_tree/）。按钮两到四个字，和触屏菜单一样
     # 顶栏

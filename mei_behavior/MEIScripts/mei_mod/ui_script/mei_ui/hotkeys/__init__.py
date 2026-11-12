@@ -27,7 +27,7 @@
 - capture.py  录键的状态机：点一下开始录、按过的键都记下、再点一下保存
 - actions.py  每个快捷键做什么（收藏的操作和触屏菜单共用 menu.actions 的 op_*）
 - manager.py  收裸按键与滚轮、派发、录键（OnKeyPress / OnWheel / ToggleCapture / KeyText）
-- hover.py    按着修饰键悬停（PC）：Ctrl / Shift 高亮同一条配方收藏、Alt 出快捷键帮助；主节点每帧调 Tick
+- hover.py    按着修饰键悬停（PC）：Ctrl / Shift 高亮同一条配方收藏；主节点每帧调 Tick
 
 门面不做导入 —— keys / table / capture 是纯数据，探针只想要它们时不该被拖进引擎
 """

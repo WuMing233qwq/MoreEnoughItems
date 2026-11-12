@@ -337,7 +337,7 @@ class UIMainNode(UIScriptMain):
 		floating = self.Float
 		if floating is not None:
 			floating.Update()
-		# 按着修饰键悬停（PC）：Ctrl / Shift 高亮同一条配方收藏、Alt 出快捷键帮助
+		# 按着修饰键悬停（PC）：Ctrl / Shift 高亮同一条配方收藏
 		hover.Tick(self)
 
 	def OnDestroy(self):
