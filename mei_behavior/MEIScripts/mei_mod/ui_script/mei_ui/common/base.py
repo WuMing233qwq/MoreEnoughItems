@@ -24,7 +24,8 @@ import mod.client.extraClientApi as clientApi
 from mod_log import logger
 
 from MEIScripts.constants.codes import NameConst
-from MEIScripts.mei_mod.ui_script.layout import GroupBorderCalculator, row_room
+from MEIScripts.mei_mod.ui_script.layout import GridLayout, GroupBorderCalculator, row_room
+from MEIScripts.mei_mod.ui_script.mei_ui.common.scale import NORMAL
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.modules import SlotMapper
 from MEIScripts.mei_mod.ui_script.mei_ui import context
 from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys.binds import WheelTaken
@@ -43,6 +44,9 @@ class BaseItemsGridScript(object):
         self.GameComp = clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId())
 
         self.Layout = None
+        self.Scale = NORMAL  # 两侧UI缩放的哪一档（common/scale.py）：格子边长与上下栏的高，ApplyScale 换
+        self.ItemSize = NORMAL.Cell  # type: int
+        self.RowItems = 1  # type: int  # 每行最多几格（设置「每行最大物品显示数量」），子类开界面时读
         self.AbsoluteRootWidth = 0
 
         self.__LastOccludedSlots = set()
@@ -68,6 +72,15 @@ class BaseItemsGridScript(object):
         self.ItemsPage = None
         self.SlotMapper = SlotMapper()
         self.Timer = None
+
+    def ApplyScale(self, scale):  # type: (any) -> None
+        """
+        这一栏按哪一档排（common/scale.py 的 SideScale）：格子边长与上下栏的高进 GridLayout，行数照它算。
+        要和建这一栏控件的那一档一致 —— 主节点建好控件、开脚本之前给（UIMainNode.EnsureScripts）
+        """
+        self.Scale = scale
+        self.ItemSize = scale.Cell
+        self.Layout = GridLayout(scale.Cell, self.RowItems, scale.Bar)
 
     def InitScript(self):
         if not self.Inited:

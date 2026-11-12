@@ -109,9 +109,7 @@ class ItemsSidebarScript(BaseItemsGridScript):
         self.__HighlightKey = None  # type: str or None  # 修饰键高亮：高亮的是哪一条收藏（layout.highlight_key）
 
         self.BookmarksRows = 1
-        self.ItemSize = 20
         self.HistoryRows = 3
-        self.HistoryHeight = self.HistoryRows * self.ItemSize  # JSON 里最近浏览的高写的 default（行数 × 格子），跟着行数走
 
         self.HistoryItems = []
         self.__LastHistorySignature = None
@@ -254,7 +252,9 @@ class ItemsSidebarScript(BaseItemsGridScript):
 
         layout.Recalculate(root_height)
 
-        bookmarks_height = max(self.ItemSize, layout.GridHeight - self.HistoryHeight)
+        # 最近浏览的高：JSON 里写的 default（行数 × 格子），按这一档的格子现算（两侧UI缩放换了格子大小）
+        history_height = self.HistoryRows * self.ItemSize
+        bookmarks_height = max(self.ItemSize, layout.GridHeight - history_height)
         self.BookmarksRows = max(1, bookmarks_height // self.ItemSize)
 
         current_wrapper_size = utilities.GetControlSizeInt(self.WrapperControl)

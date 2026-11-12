@@ -17,7 +17,7 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 from .builtin import (
-    GetFloatThreshold, GetRowItems, IsAdaptiveEnabled, IsAdvancedTooltipEnabled, IsBookmarksVisible,
+    GetFloatThreshold, GetRowItems, GetSideUiScale, IsAdaptiveEnabled, IsAdvancedTooltipEnabled, IsBookmarksVisible,
     IsBookmarksWorldSpecific, IsFindButtonEnabled, IsFloatCompat, IsFloatModeForced, IsFloatOnHud, IsFloatQuickCollapse,
     IsItemGroupsEnabled,
     IsItemIdShown, IsNamespaceShown, IsTouchOppositeSide, IsTreePreviewEnabled, RegisterBuiltinSettings,
@@ -30,6 +30,7 @@ __all__ = [
     "Choice",
     "GetFloatThreshold",
     "GetRowItems",
+    "GetSideUiScale",
     "IsAdaptiveEnabled",
     "IsAdvancedTooltipEnabled",
     "IsBookmarksVisible",

@@ -25,6 +25,9 @@ canvas（可拖的 input_panel，contained）。画布 C 比视口 V 大时 canv
 拖拽偏移 d 夹在 [0, I − V]：d = I − V 时看到画布的左上，d = 0 时看到右下；画布比视口小时整块挪到中间（content 的偏移）。
 画布里一点 p 在视口里的位置 s = p + 居中偏移 + d + V − I —— 重排之后按它把同一格摆回原处，视野不跳。
 
+**视口的宽跟着右侧汇总栏**（SetSide）：汇总栏占掉的宽从视口里扣掉（cut 的宽 = 窗口 − 8 − 汇总栏），树不会被它挡住；
+展开 / 收起时视口中心那一点留在视口中心（按上面的式子反算 d），过渡里每帧调一次，树跟着汇总栏平移。
+
 **控件池**：格子、工作方块的框、原料组的框、连线各一个池，重排只挪位置、改内容，不删不建；不够才建（CreateChildControl，
 一批不刷新、这一帧建完 UpdateScreen 一次），多出来的藏起来。**分帧画**：建控件、写内容排成一串小活，每帧限时做一段；
 一帧做不完就先藏起整块画布、写「绘制中」，做完一起显示 —— 不会看到画了一半的树。
@@ -55,6 +58,9 @@ CLICK_SLOP = 4
 
 VIEW_FRAMES = 3
 """ 改完画布大小后这么多帧里，拖拽偏移被引擎按旧大小夹过就再写一遍；最后一帧还对不上（大小没生效、偏移被夹了）记一行警告 """
+
+CUT_MARGIN = 8
+""" 视口比窗口窄多少（JSON 里 cut 的 "100% - 8px"，左右各 4）"""
 
 
 def set_size(control, size):  # type: (any, tuple) -> None
@@ -89,6 +95,7 @@ class TreeCanvas(object):
         self.Screen = screen
         self.OnClick = on_click
         get = screen.GetBaseUIControl
+        self.Window = get(TreePath.Window)
         self.Cut = get(TreePath.Cut)
         self.Drag = get(TreePath.DragPanel)
         self.CanvasControl = get(TreePath.Canvas)
@@ -108,6 +115,7 @@ class TreeCanvas(object):
         self.Outer = (0, 0)  # type: tuple  # dragpanel 的大小 D = 2I − V
         self.Shift = (0, 0)  # type: tuple  # 画布比视口小时 content 的居中偏移
         self.View = (0, 0)  # type: tuple  # 视口大小 V
+        self.Side = 0  # type: int  # 右侧汇总栏占掉的宽（连同它和视口之间的空）
         self.Wanted = None  # type: tuple or None  # 要写的拖拽偏移（改完大小后再写几帧）
         self.WantedFrames = 0  # type: int
         self.Selected = None  # type: tuple or None
@@ -228,11 +236,18 @@ class TreeCanvas(object):
     # 视野
 # ======================================================================================================================
     def __ViewSize(self):  # type: () -> tuple
+        """ 视口多大：高读 cut，宽按窗口减去边距与汇总栏算（刚改过 cut 的宽，这一帧读回来的可能还是旧的）"""
         try:
             size = self.Cut.GetSize()
-            return int(size[0]), int(size[1])
+            width, height = int(size[0]), int(size[1])
         except Exception:  # noqa
             return self.View
+        if self.Window is not None:
+            try:
+                width = int(self.Window.GetSize()[0]) - CUT_MARGIN - self.Side
+            except Exception:  # noqa
+                pass
+        return max(1, width), height
 
     def __Delta(self):  # type: () -> tuple
         try:
@@ -258,9 +273,8 @@ class TreeCanvas(object):
         root = self.Scene.Cells[0].Target
         return anchor, (self.ScreenPos(anchor) if anchor is not None else None), self.ScreenPos(root)
 
-    def __Fit(self, scene):
-        """ 按画布大小设 dragpanel / canvas 的大小、content 的居中偏移，再按锚点算拖拽偏移 """
-        view = self.__ViewSize()
+    def __Resize(self, scene, view):  # type: (Scene, tuple) -> None
+        """ 按画布大小与视口设 dragpanel / canvas 的大小、content 的居中偏移 """
         self.View = view
         width, height = scene.Size
         inner = (max(view[0], width), max(view[1], height))
@@ -270,6 +284,12 @@ class TreeCanvas(object):
         set_size(self.Drag, self.Outer)
         set_size(self.CanvasControl, inner)
         self.Content.SetPosition(self.Shift)
+
+    def __Fit(self, scene):
+        """ 设大小（__Resize），再按锚点算拖拽偏移 """
+        view = self.__ViewSize()
+        self.__Resize(scene, view)
+        inner = self.Inner
         root = scene.Cells[0] if scene.Cells else None
         if root is None:
             self.SetDelta((0, 0))
@@ -281,6 +301,28 @@ class TreeCanvas(object):
             pos = root.Pos
             screen = root_screen or (view[0] // 2 - 10, 18)
         self.SetDelta(tuple(screen[axis] - pos[axis] - self.Shift[axis] - view[axis] + inner[axis] for axis in (0, 1)))
+
+    def SetSide(self, side):  # type: (int) -> None
+        """
+        右侧汇总栏占掉多宽（展开 / 收起的过渡里每帧调）：视口跟着变窄 / 变宽，视口中心那一点留在新视口的中心 ——
+        中心 p = I − V/2 − 居中偏移 − d（s = V/2 反算），新的 d = I' − V'/2 − p − 居中偏移'。
+        cut 的宽写成「父控件 100% − 边距 − 汇总栏」（SetFullSize 跟随父控件）：屏幕尺寸变了照样对
+        """
+        side = max(0, int(round(side)))
+        if not self.__Ready or side == self.Side:
+            return
+        center = None
+        if self.Scene is not None and self.View[0] > 0:
+            delta = self.__Delta()
+            center = tuple(self.Inner[axis] - self.View[axis] / 2.0 - self.Shift[axis] - delta[axis] for axis in (0, 1))
+        self.Side = side
+        self.Cut.SetFullSize("x", {"followType": "parent", "relativeValue": 1.0, "absoluteValue": -(CUT_MARGIN + side)})
+        if self.Scene is None:
+            return  # 还没有画好的画面：画完 __Fit 按新的视口摆
+        self.__Resize(self.Scene, self.__ViewSize())
+        if center is not None:
+            self.SetDelta(tuple(self.Inner[axis] - self.View[axis] / 2.0 - center[axis] - self.Shift[axis]
+                                for axis in (0, 1)))
 
     def SetDelta(self, delta):  # type: (tuple) -> None
         """ 写拖拽偏移（夹在 [0, I − V]）；刚改过大小时引擎可能按旧大小夹，之后几帧不对就再写 """

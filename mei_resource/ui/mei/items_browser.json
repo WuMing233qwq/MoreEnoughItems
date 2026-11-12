@@ -85,6 +85,7 @@
                     "controls": [
                         {
                             "plus@mei_icons.group_badge_plus": {
+                                "alpha": 0.8,
                                 "visible": "#visible",
                                 "property_bag": {
                                     "#group_expanded": 0,
@@ -108,6 +109,7 @@
                         },
                         {
                             "minus@mei_icons.group_badge_minus": {
+                                "alpha": 0.8,
                                 "visible": "#visible",
                                 "property_bag": {
                                     "#group_expanded": 0,
@@ -136,6 +138,22 @@
     },
     "items_browser_ui": {
         "type": "panel",
+        "$mei_side_area_size|default": [
+            "100%+0px",
+            "100%+-44px"
+        ],
+        "$mei_side_bar_size|default": [
+            "100%+0px",
+            "0%+22px"
+        ],
+        "$mei_side_progress_offset|default": [
+            0.0,
+            9.0
+        ],
+        "$mei_slot_size|default": [
+            20.0,
+            20.0
+        ],
         "anchor_from": "right_middle",
         "anchor_to": "right_middle",
         "size": [
@@ -158,10 +176,7 @@
                                 "type": "stack_panel",
                                 "anchor_from": "top_right",
                                 "anchor_to": "top_right",
-                                "size": [
-                                    "100%+0px",
-                                    "0%+22px"
-                                ],
+                                "size": "$mei_side_bar_size",
                                 "layer": 36,
                                 "orientation": "horizontal",
                                 "controls": [
@@ -373,97 +388,6 @@
                                                             }
                                                         ]
                                                     }
-                                                },
-                                                {
-                                                    "question@common.button": {
-                                                        "type": "button",
-                                                        "$control_alpha": 1.0,
-                                                        "$default_texture": "",
-                                                        "$hover_texture": "",
-                                                        "$is_new_nine_slice": false,
-                                                        "$label_color": [
-                                                            1,
-                                                            1,
-                                                            1
-                                                        ],
-                                                        "$label_font_scale_factor": 1.0,
-                                                        "$label_font_size": "large",
-                                                        "$label_layer": 3,
-                                                        "$label_offset": [
-                                                            0,
-                                                            0
-                                                        ],
-                                                        "$label_text": "Button",
-                                                        "$nine_slice_buttom": 0,
-                                                        "$nine_slice_left": 0,
-                                                        "$nine_slice_right": 0,
-                                                        "$nine_slice_top": 0,
-                                                        "$nineslice_size": [
-                                                            0,
-                                                            0,
-                                                            0,
-                                                            0
-                                                        ],
-                                                        "$pressed_button_name": "%netease_editor_template_namespace.click",
-                                                        "$pressed_texture": "",
-                                                        "$texture_layer": 2,
-                                                        "anchor_from": "right_middle",
-                                                        "anchor_to": "right_middle",
-                                                        "offset": [
-                                                            -12.0,
-                                                            0.0
-                                                        ],
-                                                        "size": [
-                                                            "100%y+-4px",
-                                                            "100%+-4px"
-                                                        ],
-                                                        "layer": 12,
-                                                        "button_mappings": [],
-                                                        "default_control": "default",
-                                                        "hover_control": "hover",
-                                                        "is_handle_button_move_event": true,
-                                                        "pressed_control": "pressed",
-                                                        "bindings": [
-                                                            {
-                                                                "binding_type": "collection_details",
-                                                                "binding_collection_name": "",
-                                                                "binding_condition": "always_when_visible"
-                                                            }
-                                                        ],
-                                                        "controls": [
-                                                            {
-                                                                "default@mei_icons.btn_question": {
-                                                                    "texture": "",
-                                                                    "visible": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "hover@mei_common.hover_content": {
-                                                                    "$hover_content_text|default": "搜索栏:\n支持拼音搜索\n@开头匹配命名空间\n#开头匹配所有文本\n&开头精确搜索\n$开头匹配英文ID\n|表示或 -排除\n支持空格组合",
-                                                                    "anchor_from": "bottom_middle",
-                                                                    "anchor_to": "top_middle",
-                                                                    "offset": [
-                                                                        0,
-                                                                        4
-                                                                    ]
-                                                                }
-                                                            },
-                                                            {
-                                                                "pressed@mei_icons.btn_question": {
-                                                                    "texture": "",
-                                                                    "visible": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "button_label@netease_editor_template_namespace.button_label": {
-                                                                    "visible": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "icon@mei_icons.btn_question": {}
-                                                            }
-                                                        ]
-                                                    }
                                                 }
                                             ]
                                         }
@@ -599,10 +523,7 @@
                         {
                             "items": {
                                 "type": "panel",
-                                "size": [
-                                    "100%+0px",
-                                    "100%+-44px"
-                                ],
+                                "size": "$mei_side_area_size",
                                 "layer": 1,
                                 "controls": [
                                     {
@@ -649,10 +570,7 @@
                                 "type": "stack_panel",
                                 "anchor_from": "bottom_right",
                                 "anchor_to": "bottom_right",
-                                "size": [
-                                    "100%+0px",
-                                    "0%+22px"
-                                ],
+                                "size": "$mei_side_bar_size",
                                 "layer": 36,
                                 "orientation": "horizontal",
                                 "controls": [
@@ -760,10 +678,7 @@
                                                         ],
                                                         "$progress_bar_empty_texture": "textures/ui/mei/white",
                                                         "$progress_bar_filled_texture": "textures/ui/mei/white",
-                                                        "offset": [
-                                                            0.0,
-                                                            9.0
-                                                        ],
+                                                        "offset": "$mei_side_progress_offset",
                                                         "size": [
                                                             "100%+2px",
                                                             2.0
@@ -804,69 +719,7 @@
                                                         "font_type": "unicode",
                                                         "hide_hyphen": true,
                                                         "text": "0/0",
-                                                        "text_alignment": "center",
-                                                        "controls": [
-                                                            {
-                                                                "gr_left": {
-                                                                    "type": "custom",
-                                                                    "renderer": "gradient_renderer",
-                                                                    "anchor_from": "right_middle",
-                                                                    "anchor_to": "right_middle",
-                                                                    "offset": [
-                                                                        "-50%+0px",
-                                                                        0.0
-                                                                    ],
-                                                                    "size": [
-                                                                        "50%+20px",
-                                                                        "100%+1px"
-                                                                    ],
-                                                                    "layer": -1,
-                                                                    "color1": [
-                                                                        1.0,
-                                                                        1.0,
-                                                                        1.0,
-                                                                        0.0
-                                                                    ],
-                                                                    "color2": [
-                                                                        1.0,
-                                                                        1.0,
-                                                                        1.0,
-                                                                        0.1372549019607843
-                                                                    ],
-                                                                    "gradient_direction": "horizontal"
-                                                                }
-                                                            },
-                                                            {
-                                                                "gr_right": {
-                                                                    "type": "custom",
-                                                                    "renderer": "gradient_renderer",
-                                                                    "anchor_from": "left_middle",
-                                                                    "anchor_to": "left_middle",
-                                                                    "offset": [
-                                                                        "50%+0px",
-                                                                        0.0
-                                                                    ],
-                                                                    "size": [
-                                                                        "50%+20px",
-                                                                        "100%+1px"
-                                                                    ],
-                                                                    "layer": -1,
-                                                                    "color1": [
-                                                                        1.0,
-                                                                        1.0,
-                                                                        1.0,
-                                                                        0.1372549019607843
-                                                                    ],
-                                                                    "color2": [
-                                                                        1.0,
-                                                                        1.0,
-                                                                        1.0,
-                                                                        0.0
-                                                                    ],
-                                                                    "gradient_direction": "horizontal"
-                                                                }
-                                                            }
-                                                        ]
+                                                        "text_alignment": "center"
                                                     }
                                                 }
                                             ]
@@ -936,6 +789,14 @@
                             }
                         }
                     ]
+                }
+            },
+            {
+                "cell_mark": {
+                    "type": "panel",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "size": "$mei_slot_size"
                 }
             }
         ]

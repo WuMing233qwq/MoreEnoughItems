@@ -45,7 +45,7 @@ from .controls.canvas import Scene, TreeCanvas
 from .controls.cell import CellSpec, TreeCell, short_count
 from .controls.menu import (STRIP_PREVIEW, TreeMenuButton, TreeMenuModel, TreeMenuRow, TreeMenu, control_width, fit_text,
                             fit_width, stepper)
-from .controls.summary import TAB_BYPRODUCT, TAB_LACK, TAB_RAW, TAB_TOOL, TreeSummary, tab_rows
+from .controls.summary import TAB_BYPRODUCT, TAB_LACK, TAB_RAW, TAB_TOOL, TreeSummary, list_rows, set_tip
 from .modules import (DEFAULT, STATE_LEAF, STATE_OK, Solver, TreeState, choice_sig, clamp_qty, key_of, place, shortfall,
                       summarize)
 from .provider import TreeProvider
@@ -75,9 +75,11 @@ class RecipeTreeScript(object):
     SolveBudgetMs = 4.0  # 每帧解算多久（node.py 里调）
     DrawBudgetMs = 6.0  # 每帧画多久
     ToastTicks = 60  # 提示留多少帧（每秒 30 帧）
-    TitleX = 24  # 顶栏根物品名从哪儿开始（根格 20 + 间隔 4，与 JSON 里 title 的 offset 一致）
-    BarGaps = ("gap_0", "gap_1", "gap_2", "gap_3", "gap_4", "gap_5", "gap_6", "gap_7", "gap_8", "close")
-    """ 顶栏按钮条里不随字变的那几个（间隔、小 x）：宽在 JSON 里，脚本读回来算按钮条一共多宽 """
+    TitleX = 40  # 顶栏根物品名从哪儿开始（返回 14 + 间隔 2 + 根格 20 + 间隔 4，与 JSON 里 title 的 offset 一致）
+    RootPos = (16, 0)  # 顶栏根格的位置（「返回」14 + 间隔 2，与 JSON 里 root 的 offset 一致）：TreeCell.Apply 会 SetPosition，写 (0, 0) 就叠到「返回」上
+    BarGaps = ("gap_0", "gap_1", "gap_2", "gap_3", "gap_4", "gap_5", "gap_6", "gap_7", "gap_8",
+               "center", "unfold", "fold2", "save", "side", "close")
+    """ 顶栏按钮条里不随字变的那几个（间隔、图标按钮）：宽在 JSON 里，脚本读回来算按钮条一共多宽 """
     HistoryMax = 16  # 「返回」最多记几棵
 
     def __init__(self, screen, param=None, provider=None, prefs=None):
@@ -112,6 +114,10 @@ class RecipeTreeScript(object):
         self.ToastLeft = 0  # type: int
         self.CloseRequested = False  # type: bool
         self.AfterClose = None  # type: tuple or None  # (物品, 查询方向)：关掉之后在下面的界面开它的配方页
+        self.SideOpen = True  # type: bool  # 右侧汇总栏开着没有（全局记着，TreePrefsManager.SideOpen）
+        self.SideShown = 0.0  # type: float  # 汇总栏现在占掉多宽（连同它和视口之间的空），过渡里每帧变
+        self.SideFrom = 0.0  # type: float
+        self.SideFrame = 0  # type: int  # 过渡还剩几帧（0 是没在动）
         self.Ready = False  # type: bool
 
     # 生命周期
@@ -126,6 +132,9 @@ class RecipeTreeScript(object):
         self.Menu = TreeMenu(self.Screen, self.Bindings, self.CloseMenu, self.OnStripClick)
         self.SummaryPanel = TreeSummary(self.Screen, self.Bindings, self.OnTab, self.OnRefresh, self.OnSummaryCell)
         self.__InitTop()
+        self.SideOpen = self.Prefs.SideOpen()
+        self.__ApplySide(self.__SideTarget())
+        self.__RefreshSideButton()
         self.Bindings.Bind(self.OnCloseKey, ViewBinder.BF_ButtonClickUp, TreeConst.CloseName)
         self.Bindings.Bind(self.OnCloseButton, ViewBinder.BF_ButtonClickUp, TreeConst.TopClose)
         system = clientApi.GetSystem(NameConst.NameSpace, NameConst.ClientSysName)
@@ -173,6 +182,7 @@ class RecipeTreeScript(object):
                 self.__OnSolved()
             else:
                 self.__SetLabel("status", TreeText.Solving.format(len(solver.Nodes)))
+        self.__StepSide()
         if self.Canvas.Tick(self.DrawBudgetMs):
             self.__OnDrawn()
         self.Menu.Tick()  # 菜单里的配方预览建齐了才排版、显示
@@ -297,20 +307,25 @@ class RecipeTreeScript(object):
             if button is not None:
                 button.AddTouchEventParams({"isSwallow": True})
                 button.SetButtonTouchUpCallback(self.OnRootCellUp)
-        texts = {"minus": TreeText.Minus, "plus": TreeText.Plus, "x64": TreeText.X64, "center": TreeText.Center,
-                 "unfold": TreeText.Unfold, "fold2": TreeText.Fold2, "back": TreeText.Back, "save": TreeText.Save}
+        texts = {"minus": TreeText.Minus, "plus": TreeText.Plus, "x64": TreeText.X64}
+        tips = {"center": TreeText.Center, "unfold": TreeText.Unfold, "fold2": TreeText.Fold2, "back": TreeText.TipBack,
+                "save": TreeText.TipSave, "side": TreeText.TipSideClose}
         for name in TreeConst.TopButtons:
-            control = get(TreePath.Bar + "/" + name)
+            control = get(TreePath.TopBack if name == "back" else TreePath.Bar + "/" + name)
             self.TopControls[name] = control
-            label = control.GetChildByPath(TreePath.ButtonLabel) if control is not None else None
-            if label is not None:
-                label.asLabel().SetText(native_str(texts.get(name, "")))
-            # 按字改宽（「收藏」那个也放得下「更新」）。按钮在 stack_panel 里：用 SetFullSize 改尺寸规则，stack_panel 才跟着重排（引擎结论 §28）
-            width = fit_width([texts.get(name, "")] + ([TreeText.Update] if name == "save" else []))
-            self.TopWidths[name] = width
-            if control is not None:
-                control.SetFullSize("x", {"absoluteValue": width})
+            if name in TreeConst.TopTextButtons:
+                label = control.GetChildByPath(TreePath.ButtonLabel) if control is not None else None
+                if label is not None:
+                    label.asLabel().SetText(native_str(texts[name]))
+                # 按字改宽。按钮在 stack_panel 里：用 SetFullSize 改尺寸规则，stack_panel 才跟着重排（引擎结论 §28）
+                width = fit_width([texts[name]])
+                self.TopWidths[name] = width
+                if control is not None:
+                    control.SetFullSize("x", {"absoluteValue": width})
+            else:
+                set_tip(control, tips.get(name, u""))
             self.Bindings.Bind(self.__TopHandler(name), ViewBinder.BF_ButtonClickUp, TreeConst.ButtonName.format(name))
+        set_tip(get(TreePath.TopClose), TreeText.TipClose)
         self.BarFixed = sum(control_width(get(TreePath.Bar + "/" + name)) for name in self.BarGaps)
 
     def __TopHandler(self, name):
@@ -344,11 +359,13 @@ class RecipeTreeScript(object):
             self.Back()
         elif name == "save":
             self.Save()
+        elif name == "side":
+            self.ToggleSide()
 
     def __RefreshTop(self):
         root = self.State.Root
         if self.RootCell is not None:
-            self.RootCell.Apply(CellSpec((TARGET_NODE, ROOT_SIG), (0, 0), self.Provider.RenderData(root),
+            self.RootCell.Apply(CellSpec((TARGET_NODE, ROOT_SIG), self.RootPos, self.Provider.RenderData(root),
                                          count=short_count(self.State.Qty)))
         qty_text = TreeText.Qty.format(self.State.Qty)
         qty_w = fit_width([qty_text], 20)
@@ -361,16 +378,57 @@ class RecipeTreeScript(object):
         room = control_width(self.Screen.GetBaseUIControl(TreePath.Top)) - self.TitleX - bar_w - 4
         self.__SetLabel("title", fit_text(self.Provider.NameOf(root), max(0, room)))
         self.__SetEnabled("back", bool(self.History))
-        save = self.TopControls.get("save")
-        label = save.GetChildByPath(TreePath.ButtonLabel) if save is not None else None
-        if label is not None:
-            label.asLabel().SetText(native_str(TreeText.Update if self.__SavedIndex() is not None else TreeText.Save))
+        # 收藏过的树：星染绿、悬停写「更新收藏」
+        saved = self.__SavedIndex() is not None
+        self.__SetIconOn("save", saved)
+        set_tip(self.TopControls.get("save"), TreeText.TipUpdate if saved else TreeText.TipSave)
 
     def __SetEnabled(self, name, enabled):
         control = self.TopControls.get(name)
         mask = control.GetChildByPath(TreePath.ButtonMask) if control is not None else None
         if mask is not None:
             mask.SetVisible(not enabled)
+
+    def __SetIconOn(self, name, on):
+        control = self.TopControls.get(name)
+        icon = control.GetChildByPath("/icon") if control is not None else None
+        if icon is not None:
+            icon.asImage().SetSpriteColor(TreeConst.IconOnColor if on else TreeConst.IconColor)
+
+    # 右侧汇总栏：展开 / 收起有约 0.2 秒的过渡，树跟着平移（视口中心那一点留在视口中心，canvas.SetSide）
+# ======================================================================================================================
+    def __SideTarget(self):  # type: () -> float
+        width = self.SummaryPanel.Width if self.SummaryPanel is not None else TreeConst.SideMinWidth
+        return float(width + TreeConst.SideGap) if self.SideOpen else 0.0
+
+    def ToggleSide(self):
+        self.SideOpen = not self.SideOpen
+        self.Prefs.SetSideOpen(self.SideOpen)
+        self.SideFrom = self.SideShown
+        self.SideFrame = TreeConst.SideFrames
+        self.__RefreshSideButton()
+        if self.SideOpen:
+            self.__RefreshSummary()  # 收着的时候没排：按现在的高重排一遍
+
+    def __RefreshSideButton(self):
+        self.__SetIconOn("side", self.SideOpen)
+        set_tip(self.TopControls.get("side"), TreeText.TipSideClose if self.SideOpen else TreeText.TipSideOpen)
+
+    def __StepSide(self):
+        """ 每帧推一步过渡（缓出：先快后慢）"""
+        if self.SideFrame <= 0:
+            return
+        self.SideFrame -= 1
+        t = 1.0 - float(self.SideFrame) / TreeConst.SideFrames
+        eased = 1.0 - (1.0 - t) ** 3
+        self.__ApplySide(self.SideFrom + (self.__SideTarget() - self.SideFrom) * eased)
+
+    def __ApplySide(self, shown):  # type: (float) -> None
+        self.SideShown = shown
+        if self.SummaryPanel is not None:
+            self.SummaryPanel.SetShown(shown - TreeConst.SideGap if shown > TreeConst.SideGap else 0)
+        if self.Canvas is not None:
+            self.Canvas.SetSide(shown)
 
     def SetQty(self, qty):  # type: (int) -> None
         qty = clamp_qty(qty)
@@ -407,12 +465,13 @@ class RecipeTreeScript(object):
         if self.Summary is None:
             return
         summary = self.Summary
-        rows = tab_rows(self.Tab, summary, self.Have, summary.Flags, self.Lack)
-        # 右上的说明只在数字有保留时写：树太大没算完（部分结果）。副产物抵扣之后不再有「逐个相加（上界）」
-        note = TreeText.Partial if self.Solver.Truncated else u""
+        rows = list_rows(self.Tab, summary, self.Have, summary.Flags, self.Lack)
         lacking = sum(1 for key in summary.Raw if self.Lack.get(key, 0) > 0)
         foot = TreeText.Foot.format(len(summary.Raw), len(summary.Raw) - lacking, lacking)
-        self.SummaryPanel.SetRows(self.Tab, rows, note, foot, self.Provider.RenderData)
+        # 说明只在数字有保留时写：树太大没算完（部分结果），写在统计前面一行。副产物抵扣之后不再有「逐个相加（上界）」
+        if self.Solver.Truncated:
+            foot = TreeText.Partial + u"\n" + foot
+        self.SummaryPanel.SetRows(self.Tab, rows, foot, self.Provider.RenderData, self.Provider.NameOf)
 
     def OnTab(self, tab):  # type: (str) -> None
         if tab == self.Tab:

@@ -24,6 +24,9 @@ ROW_ITEMS = "row_items"
 
 DEFAULT_ROW_ITEMS = 6
 
+SIDE_UI_SCALE = "side_ui_scale"
+""" 两侧UI缩放：1 是现在的大小（格子 20、上下栏 22），0 是小一档（格子 18、栏 20，mei_ui/common/scale.py）；开界面建两栏时读 """
+
 ADAPTIVE_LAYOUT = "adaptive_layout"
 """ 自适应：被原版界面盖住的格子留空、搜索栏与翻页栏缩窄避让；关掉两者都停 """
 
@@ -78,6 +81,7 @@ def RegisterBuiltinSettings():  # type: () -> None
         return
     for spec in (
         Slider(ROW_ITEMS, "options.mei.general.row_items", 1, 12, step=1, default=DEFAULT_ROW_ITEMS),
+        Slider(SIDE_UI_SCALE, "options.mei.general.side_ui_scale", 0, 1, step=1, default=1),
         Toggle(ADAPTIVE_LAYOUT, "options.mei.general.adaptive", default=True),
         Toggle(FIND_BUTTON, "options.mei.general.find_button", default=True),
         Toggle(ITEM_GROUPS, "options.mei.general.item_groups", default=True),
@@ -101,6 +105,12 @@ def RegisterBuiltinSettings():  # type: () -> None
 def GetRowItems():  # type: () -> int
     """ 每行最多几格；设置项没登记时给默认值 """
     return SettingsManager.Get(ROW_ITEMS) or DEFAULT_ROW_ITEMS
+
+
+def GetSideUiScale():  # type: () -> int
+    """ 两侧UI缩放：1 是现在的大小、0 是小一档；设置项没登记时是 1 """
+    value = SettingsManager.Get(SIDE_UI_SCALE)
+    return 1 if value is None else int(value)
 
 
 def IsAdaptiveEnabled():  # type: () -> bool

@@ -51,9 +51,10 @@ PC 的悬停：格子 hover 控件上的绑定（always_when_visible）在悬停
 关了再开、开了再关都回得来（界面状态跨开关存活，§22）。设置页和容器界面不会同时开着，所以不用订阅改动。
 
 移动端宿主就是触屏的二级菜单（mei_ui/menu，tooltip.md §6）：内容由这里建，框里别的东西由菜单填。设置关着时菜单照出（触屏上它是唯一的
-操作入口），内容只给「只有标题」的那种（ShowTitleFor 不受设置管）。菜单是**一个框**（tooltip.md §6.12）：
-框（touch/frame）画 purpleBorder，内容控件在触屏上换成透明图、不画自己的底；框里每样东西摆在哪由菜单按内容尺寸算（SetTouchLayout），
-这里只把框摆到屏幕上。框整体透明着建、和内容一起拉回不透明。
+操作入口），内容只给「只有标题」的那种（ShowTitleFor 不受设置管）。菜单是**一张信息卡 + 图标操作条**（tooltip.md §6.14）：
+框（touch/frame）画扁平的弹出层底（flat/pop），内容控件在触屏上换成透明图、不画自己的底；框里每样东西摆在哪由菜单按内容尺寸算
+（SetTouchLayout），这里只把框摆到屏幕上；菜单里变了样（「更多」展开 / 收起）时它让这里当场重摆（Relayout）。
+框整体透明着建、和内容一起拉回不透明。PC 上内容自己的底（tooltip_background）同样是扁平的弹出层底。
 显示出来以后那一格换了内容（翻页、重排，panel.ContentKey 变了）或被拆了就收起 —— 翻页这类不用一个个去接
 """
 import re
@@ -393,6 +394,19 @@ class TooltipManager(object):
         """
         self.TouchLayout = layout
 
+    def Relayout(self):  # type: () -> bool
+        """
+        触屏菜单的框里变了样（「更多」展开 / 收起，框变高 / 变矮）：照现在的内容尺寸当场重排、重摆（贴边按新尺寸算）。
+        还在建的不用管 —— 建好显示的那一刻本来就要排；不是触屏、没在显示返回 False
+        """
+        if self.Host != HOST_TOUCH or self.Phase != PHASE_SHOWN or self.Content is None:
+            return False
+        tip = self.MainNode.GetUIControl(self.Content)
+        if tip is None:
+            return False
+        self.__PlaceTouch(tip.GetSize())
+        return True
+
     def Release(self):
         """
         放掉归属，内容照样亮着、不随旧格子收起：触屏菜单要改收藏（−1 / +1、上移下移）时先放，收藏栏一重排格子全是新的，
@@ -644,7 +658,7 @@ class TooltipManager(object):
 
     def __Bare(self, path):
         """
-        触屏：内容控件不画自己的 purpleBorder，换成 1×1 的透明图 —— 菜单的框已经画了一个（tooltip.md §6.12）。
+        触屏：内容控件不画自己的底，换成 1×1 的透明图 —— 菜单的框已经画了一个（tooltip.md §6.12、§6.14）。
         只换底图：尺寸照旧跟着内容（「100%c+8px」），透明着建、拉回不透明也照旧靠它。PC 上不换
         """
         image = self.MainNode.GetUIControl(path, "image")
@@ -848,7 +862,7 @@ class TooltipManager(object):
         """
         移动端（触屏菜单）：不跟手指走；这个宿主不是 follows_cursor，可以挪。
         框多大、框里的东西摆在哪由菜单按内容尺寸算（SetTouchLayout）；没给就是只有内容那么大、内容摆在左上角。
-        宿主与框都写成这个尺寸（吞点击的底板盖得住整个菜单，purpleBorder 画满）。
+        宿主与框都写成这个尺寸（吞点击的底板盖得住整个菜单，框的底画满）。
         设置「触控tooltip是否沿对面侧显示」开着时摆到点的那一格另一侧的屏幕边上（place_opposite，方便双手操作）；
         否则菜单给了区域就摆在区域外侧（place_outside：物品栏的格子摆在物品栏左边、收藏栏的摆在右边、配方页的摆在配方页右边，
         竖直方向跟着那一格），没给就摆在格子旁（place_beside）；都会贴屏幕边兜底

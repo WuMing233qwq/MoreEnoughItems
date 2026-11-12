@@ -33,10 +33,9 @@ class RecipeText(object):
     # 查询无结果时的提示. {} 为物品显示名.
     NoRecipesForOutput = u"没有能做出 {} 的配方"
     NoRecipesForInput = u"没有用到 {} 的配方"
-    # 配方页第二行: 查工作站的用途时这个类型的全表还在扫. {} 是页码 (1/37).
+    # 配方页顶栏的页码: 查工作站的用途时这个类型的全表还在扫. {} 是页码 (1/37).
+    # （点了 + 没成的原因不在这里拼：直接写在顶栏的标题处，挂几秒换回类型名）
     Scanning = u"{} · 扫描中"
-    # 配方页第二行: 点了 + 没成时挂在页码后面几秒. {} 依次是页码、原因.
-    Notice = u"{} · {}"
     # 配方行动作按钮的悬停文字（星标、置顶两种状态各一句）.
     StarHover = u"收藏这条配方"
     UnstarHover = u"取消收藏"
@@ -91,7 +90,7 @@ class TooltipText(object):
 
 
 class MenuText(object):
-    # 触屏二级菜单的按钮文字（两到四个字；按钮按字算宽）
+    # 触屏二级菜单的按钮文字（两到五个字；「更多」里的按钮按字算宽，操作条上的按钮用 Bar 开头的短字，两三个字）
     Source = u"来源"
     Uses = u"用途"
     Bookmark = u"收藏"
@@ -119,6 +118,9 @@ class MenuText(object):
     NextCandidate = u"下一个"
     RecipeTree = u"配方树"
     OpenTree = u"打开配方树"
+    More = u"更多"
+    # 操作条上的短字（按钮等宽、一排最多六个，放不下长字）
+    BarOpen = u"打开"
 
 
 class MenuSectionText(object):
@@ -146,6 +148,7 @@ class MenuKindText(object):
     BookmarkTree = u"收藏 · 配方树"
     BookmarkInvalid = u"收藏 · 已失效"
     RecipePart = u"收藏 · 配方原料"  # 展开配方里的原料 / 工具格
+    Counted = u"{}  §f{}"  # 收藏格的种类后面跟着数量（{} 依次为种类、「×2」），数量白字
 
 
 class ModeText(object):
@@ -188,6 +191,15 @@ class TreeText(object):
     Save = u"收藏"
     Update = u"更新"  # 这个根已经收藏过：再存就是更新那一条
     Qty = u"×{}"
+    # 顶栏图标按钮的悬停字（「回到顶部」「全部展开」「折叠2层」照上面的写法）
+    TipBack = u"返回上一棵树"
+    TipSave = u"收藏这棵树"
+    TipUpdate = u"更新收藏"
+    TipSideOpen = u"展开汇总"
+    TipSideClose = u"收起汇总"
+    TipClose = u"关闭"
+    TipPrev = u"上一页"
+    TipNext = u"下一页"
     # 汇总
     TabRaw = u"所需原料"
     TabByproduct = u"副产物"  # 合成多出来的 + 配方的其他产出（中间物不单列）
@@ -200,6 +212,13 @@ class TreeText(object):
     Partial = u"部分结果 (已到达计算上限)"
     Foot = u"原料 {} 种 · 背包已有 {} 种 · 缺少 {} 种"
     Page = u"{}/{}"
+    # 汇总清单每一行的第二行（灰字；§ 颜色码只写在最后一段，免得要「恢复颜色」）
+    RowNeedHave = u"需 {} · 有 {}"
+    RowLack = u" · §c缺 {}"
+    RowEnough = u" · §a够了"
+    RowExtra = u"多出 {}"
+    RowChance = u" · §d含概率产出"
+    RowLackOnly = u"有 {} · §c缺 {}"
     # 画布
     Status = u"{} 格 · {} 层"
     Solving = u"计算中… {} 格"

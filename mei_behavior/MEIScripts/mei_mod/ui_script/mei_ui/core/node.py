@@ -24,6 +24,7 @@ from MEIScripts.constants.ui import FocusConst, RecipeDetailsPath, UiPathConst
 from MEIScripts.constants.codes import NameConst, QueryConst
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.node import ItemsBrowserNode
 from MEIScripts.mei_mod.ui_script.mei_ui.items_sidebar.node import ItemsSidebarNode
+from MEIScripts.mei_mod.ui_script.mei_ui.common import scale as side_scale
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.manager import TouchMenu
 from MEIScripts.mei_mod.ui_script.mei_ui import context
 from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys import hover
@@ -54,6 +55,9 @@ RECIPE_ADAPTIVE_KEY = "recipe_details:"
 _HIDDEN_MAIN = {}
 """ screenDef -> 原版主内容的路径：MEI 藏了还没显回来的。界面状态跨开关存活（引擎结论 §22），下次开这个界面时兜底显回来 """
 
+_BUILT_CELL = {}
+""" (screenDef, 两栏的路径) -> 建那一栏时用的那一档的格子边长：两栏根上的记号读不出大小时认这个（覆盖层跨开关存活，引擎结论 §22）"""
+
 class UIMainNode(UIScriptMain):
 	def __init__(self, proxy_instance, kind=KIND_SUPPORTED, params=None):
 		screen_node = proxy_instance.ScreenNode
@@ -64,9 +68,9 @@ class UIMainNode(UIScriptMain):
 		self.Tool = None  # type: ToolHost or None  # 工具模式拿起的物品（docs/architecture/modes.md），OnCreate 建、OnDestroy 拆
 		self.Filters = None  # type: FilterMenu or None  # 物品栏的筛选与排序菜单（mei_ui/filters/），OnCreate 建、OnDestroy 拆
 		self.Covered = False  # type: bool  # 注入的界面被别的界面盖着（Cover / Uncover）：不推每帧
-		# 覆盖层用哪个定义：支持的界面两栏写死在 JSON 里（平时那一档的层级）；注入的界面用不带两栏的那个，第一次展开才建两栏（EnsureScripts）——
-		# HUD 上平时只多一个悬浮窗，不把两栏几百个控件塞进游戏界面的每次重排。MEI 自己的界面也用不带两栏的，一打开就按悬浮窗那一档的定义建：
-		# 它一打开就是点开的样子，用带两栏的那个就得每次开都 SetLayer（很贵：要重算整个界面的层级）
+		# 覆盖层用哪个定义：两种都不带两栏，两栏由 EnsureScripts 按「两侧UI缩放」的那一档建（支持的界面开界面就建，平时那一档的层级；
+		# 注入的界面第一次展开才建、MEI 自己的界面一打开就建，都是悬浮窗那一档的层级 —— HUD 上平时只多一个悬浮窗，
+		# 不把两栏几百个控件塞进游戏界面的每次重排；生下来就是要的层级，不用每次开都 SetLayer（很贵：要重算整个界面的层级））
 		self.RootDef = UiPathConst.ProxyRootDef if kind == KIND_SUPPORTED else UiPathConst.FloatRootDef  # type: str
 		self.AllowChangeVisible = {}  # type: dict  # 代理参数 AllowChangeVisible 解析成 {目标: 布尔}（core/params.py）
 		self.RecipeAdaptive = False  # type: bool  # 配方页开着：它的几块登记成了避让目标
@@ -146,24 +150,53 @@ class UIMainNode(UIScriptMain):
 	def EnsureScripts(self):
 		"""
 		物品栏、收藏栏（「显示左侧栏」开着才建）的控件与脚本建起来，建过的不再建。
-		支持的界面两栏写在覆盖层的 JSON 里，这里只建脚本；注入的界面、MEI 自己的界面覆盖层里没有两栏，先把控件建出来 ——
-		按悬浮窗管事时那一档层级的定义建（这几种界面两栏一露面就是悬浮窗管事），不用再 SetLayer
+		两栏一律建在覆盖层下面（名字取路径最后一段），定义按设置「两侧UI缩放」的那一档选（common/scale.py）：
+		支持的界面用平时那一档层级的，注入的界面、MEI 自己的界面用悬浮窗那一档的（这几种界面两栏一露面就是悬浮窗管事，不用再 SetLayer）。
+		已经建着、却是另一档建的（改了设置）就先拆脚本、拆控件，再按现在的那一档重建 —— 建好的控件改不了尺寸（变量在建控件时求值）。
+		所以改了设置，下次打开容器（HUD 上是下次展开）才生效
 		"""
-		if not self.ItemsBrowserIns.Inited and self.__EnsureWrapper(UiPathConst.RightWrapper, UiPathConst.FloatRightWrapperDef):
-			self.ItemsBrowserIns.OnCreate()
-		if (IsBookmarksVisible() and not self.ItemsSidebarIns.Inited
-				and self.__EnsureWrapper(UiPathConst.LeftWrapper, UiPathConst.FloatLeftWrapperDef)):
-			self.ItemsSidebarIns.OnCreate()
+		scale = side_scale.current()
+		floating = self.Kind != KIND_SUPPORTED
+		self.__EnsureSide(self.ItemsBrowserIns, UiPathConst.RightWrapper, scale, floating)
+		if IsBookmarksVisible():
+			self.__EnsureSide(self.ItemsSidebarIns, UiPathConst.LeftWrapper, scale, floating)
 
-	def __EnsureWrapper(self, path, control_def):  # type: (str, str) -> bool
-		""" 一栏的控件在不在，不在就建在覆盖层下面（名字取路径最后一段）；建不出来返回 False """
-		if self.GetUIControl(path) is not None:
-			return True
-		mei_root = self.GetMEIRootControl()
-		if mei_root is None:
-			return False
-		self.CreateChildControl(control_def, path.rsplit("/", 1)[-1], mei_root, True)
-		return self.GetUIControl(path) is not None
+	def __EnsureSide(self, script, path, scale, floating):  # type: (any, str, any, bool) -> None
+		""" 一栏：控件不在、或是另一档建的就（拆了）按这一档建；脚本没建就按这一档建 """
+		control = self.GetUIControl(path)
+		if control is not None and self.BuiltCell(path) != scale.Cell:
+			if script.Inited:
+				script.OnDestroy()
+			self.RemoveChildControl(control)
+			control = None
+		if control is None:
+			mei_root = self.GetMEIRootControl()
+			if mei_root is None:
+				return
+			self.CreateChildControl(scale.WrapperDef(path, floating), path.rsplit("/", 1)[-1], mei_root, True)
+			if self.GetUIControl(path) is None:
+				return
+			_BUILT_CELL[(self.GetScreenDef(), path)] = scale.Cell
+		if not script.Inited:
+			script.ApplyScale(scale)
+			script.OnCreate()
+
+	def BuiltCell(self, path):  # type: (str) -> int or None
+		"""
+		这一栏是按哪一档建的（格子边长）：读它根上的记号 cell_mark（大小就是 $mei_slot_size），读不出来认建的时候记下的；
+		都没有给 None（EnsureScripts 当成对不上、重建一次）
+		"""
+		mark = self.GetUIControl(path + UiPathConst.CellMark)
+		if mark is not None:
+			try:
+				size = mark.GetSize()
+			except Exception:  # noqa
+				size = None
+			if size and len(size) > 0:
+				found = side_scale.by_cell(int(round(size[0])))
+				if found is not None:
+					return found.Cell
+		return _BUILT_CELL.get((self.GetScreenDef(), path))
 
 	def FocusRoots(self):  # type: () -> list
 		"""

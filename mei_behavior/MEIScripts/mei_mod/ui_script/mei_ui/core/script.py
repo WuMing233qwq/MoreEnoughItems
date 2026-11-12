@@ -209,6 +209,47 @@ class UIScriptMain(object):
             grids.append(getattr(sidebar, "HistoryGridIns", None))
         return [grid for grid in grids if grid is not None]
 
+    def RowSpan(self, panel):  # type: (any) -> tuple or None
+        """
+        这一格所在那一行里能显示东西的那一段（被原版界面挡住、留空的格子不算）的全局矩形 ((左, 上), (右, 下))：
+        按它摆触屏菜单（menu.manager.menu_region），菜单贴着这一行真正露出来的边、不贴整栏的边。
+        遮挡和 grid 排物品用的是同一个入口（DetectAdaptiveOccludedSlots，避让关着、悬浮窗管事时就是整行）；
+        这一格不在物品栏 / 收藏栏 / 最近浏览的 grid 里给 None
+        """
+        control = getattr(panel, "Control", None)
+        if control is None:
+            return None
+        try:
+            path = control.GetPath()
+            x, y = control.GetGlobalPosition()
+        except Exception:  # noqa  格子刚被拆
+            return None
+        for grid in self.__ItemGrids():
+            grid_control = getattr(grid, "Control", None)
+            cols, rows = getattr(grid, "Cols", 0), getattr(grid, "Rows", 0)
+            if grid_control is None or not cols or not rows:
+                continue
+            try:
+                if not path.startswith(grid_control.GetPath() + "/"):
+                    continue
+                (left, top), (right, bottom) = utilities.GetControlRectSize(grid_control)
+            except Exception:  # noqa
+                continue
+            if right <= left or bottom <= top:
+                return None
+            cell_w, cell_h = float(right - left) / cols, float(bottom - top) / rows
+            col = max(0, min(cols - 1, int((x - left + cell_w / 2.0) / cell_w)))
+            row = max(0, min(rows - 1, int((y - top + cell_h / 2.0) / cell_h)))
+            blocked = self.DetectAdaptiveOccludedSlots(left, top, cols, rows, int(round(cell_w)), applied=True)
+            first = last = col
+            while first > 0 and row * cols + first - 1 not in blocked:
+                first -= 1
+            while last < cols - 1 and row * cols + last + 1 not in blocked:
+                last += 1
+            row_top = int(top + row * cell_h)
+            return (int(left + first * cell_w), row_top), (int(round(left + (last + 1) * cell_w)), int(round(row_top + cell_h)))
+        return None
+
     def ShowBookmarkedRecipe(self, entry):  # type: (dict) -> bool
         """
         从收藏点开一条配方：找得回就打开它的探针物品并翻到这一条；找不回仍打开显示物品在该类型下的配方（NEI 的退化方式）

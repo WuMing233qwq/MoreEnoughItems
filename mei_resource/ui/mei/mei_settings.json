@@ -136,6 +136,22 @@
                 }
             },
             {
+                "side_ui_scale@mei_settings.slider_row": {
+                    "$option_label": "#mei.settings.side_ui_scale.label",
+                    "$slider_name": "#mei.settings.side_ui_scale.slider",
+                    "$slider_value_binding_name": "#mei.settings.side_ui_scale.value",
+                    "$slider_steps_binding_name": "#mei.settings.side_ui_scale.steps",
+                    "$slider_tts_text_value": "#mei.settings.side_ui_scale.label",
+                    "$label_bindings": [ { "binding_name": "#mei.settings.side_ui_scale.label" } ]
+                }
+            },
+            {
+                "side_ui_scale_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.side_ui_scale.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
                 "adaptive_layout@settings_common.option_toggle": {
                     "$option_label": "options.mei.general.adaptive",
                     "$option_enabled_binding_name": "#mei.settings.enabled",

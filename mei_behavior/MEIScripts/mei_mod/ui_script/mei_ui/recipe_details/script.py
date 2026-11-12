@@ -84,7 +84,7 @@ class RecipeDetailsScript(object):
         self.Craftable = CraftableCache()
         """ 可合成性预检缓存，一次会话算一次；转移成功后失效 """
         self.NoticeText = None  # type: unicode or None
-        """ 点了 + 没成时挂在页码后面的一句话（ShowNotice），到 NoticeUntil 那一刻节拍里收掉 """
+        """ 点了 + 没成时顶栏标题处挂的一句话（ShowNotice），到 NoticeUntil 那一刻节拍里换回类型名 """
         self.NoticeUntil = 0.0
         self.RecipesPage = None
         self.RecipeUIScriptCls = None
@@ -130,17 +130,19 @@ class RecipeDetailsScript(object):
         self.RecipesGridControl = None
         self.MainContentControl = None
         self.CraftingItemsControl = None
+        self.TypeTabsControl = None  # 右边竖页签那一列（滚轮在它上面时翻页签）
+        self.TypeTabAreaControl = None  # 竖页签中间放页签的那一块，一页放几个按它的高算
         self.TypeTabsGridControl = None
-        self.TopOverlayPageUpBtn = None
-        self.TopOverlayPageDownBtn = None
-        self.TopLine1LabelControl = None
-        self.TopLine2LabelControl = None
-        self.TopLine1PageUpBtn = None
-        self.TopLine1PageDownBtn = None
-        self.TopLine2PageUpBtn = None
-        self.TopLine2PageDownBtn = None
-        self.RightCloseBtn = None
-        self.RightBackBtn = None
+        self.TabsPageUpBtn = None
+        self.TabsPageDownBtn = None
+        self.TitleLabelControl = None
+        self.PageLabelControl = None
+        self.PageUpBtn = None
+        self.PageDownBtn = None
+        self.CloseBtn = None
+        self.BackBtn = None
+
+        self.TypeTabsPerPage = self.TYPE_TABS_PER_PAGE  # type: int  # 竖页签一页放几个（FitTypeTabs 按页签区的高算）
 
         # 导航状态**不在这里** —— 它是缓存态, 统一由 CacheManager.GetRecipeNav() 持有,
         # 这样去重(LRUHistory)与容量上限只有一处实现。见 state/cache.py 的 RecipeNav。
@@ -165,10 +167,6 @@ class RecipeDetailsScript(object):
         self.GetTypeTabIdAuxWrapper = None
 
         self.AnimTimer = None   # type: any  # 本页唯一的节拍 timer
-        self.PendingSwitchTimer = None  # type: any
-        """
-        待执行的类型切换。连按逐个切换时用它合并重建 —— 见 StepType。
-        """
         self.AnimTicks = 0          # type: int  # 从 1 起, 每 ANIM_TICK_INTERVAL 秒 +1
 
 
@@ -178,56 +176,46 @@ class RecipeDetailsScript(object):
         self.MainContentControl = self.MainNode.GetRootBaseUIControl(RecipeDetailsPath.Content)
         self.CraftingItemsControl = self.MainNode.GetRootBaseUIControl(RecipeDetailsPath.CraftingItems)
 
+        self.TypeTabsControl = self.MainNode.GetRootBaseUIControl(RecipeDetailsPath.CraftingStations)
+        self.TypeTabAreaControl = self.MainNode.GetRootBaseUIControl(RecipeDetailsPath.TypeTabArea)
         self.TypeTabsGridControl = self.MainNode.GetUIControl(
             RecipeDetailsPath.TypeTabGrid, "grid")
 
-        self.TopOverlayPageUpBtn = self.MainNode.GetUIControl(
+        self.TabsPageUpBtn = self.MainNode.GetUIControl(
             RecipeDetailsPath.StationsPageUpBtn, "button")
-        self.TopOverlayPageDownBtn = self.MainNode.GetUIControl(
+        self.TabsPageDownBtn = self.MainNode.GetUIControl(
             RecipeDetailsPath.StationsPageDownBtn, "button")
 
-        self.TopLine1LabelControl = self.MainNode.GetUIControl(
+        self.TitleLabelControl = self.MainNode.GetUIControl(
             RecipeDetailsPath.DisplayNameLabel, "label")
-        self.TopLine2LabelControl = self.MainNode.GetUIControl(
-            RecipeDetailsPath.Line2PageIndexLabel, "label")
+        self.PageLabelControl = self.MainNode.GetUIControl(
+            RecipeDetailsPath.PageIndexLabel, "label")
 
-        self.TopLine1PageUpBtn = self.MainNode.GetUIControl(
-            RecipeDetailsPath.Line1PageUpBtn, "button")
-        self.TopLine1PageDownBtn = self.MainNode.GetUIControl(
-            RecipeDetailsPath.Line1PageDownBtn, "button")
+        self.PageUpBtn = self.MainNode.GetUIControl(
+            RecipeDetailsPath.PageUpBtn, "button")
+        self.PageDownBtn = self.MainNode.GetUIControl(
+            RecipeDetailsPath.PageDownBtn, "button")
 
-        self.TopLine2PageUpBtn = self.MainNode.GetUIControl(
-            RecipeDetailsPath.Line2PageUpBtn, "button")
-        self.TopLine2PageDownBtn = self.MainNode.GetUIControl(
-            RecipeDetailsPath.Line2PageDownBtn, "button")
-
-        self.RightCloseBtn = self.MainNode.GetUIControl(
+        self.CloseBtn = self.MainNode.GetUIControl(
             RecipeDetailsPath.CloseBtn, "button")
-        self.RightBackBtn = self.MainNode.GetUIControl(
+        self.BackBtn = self.MainNode.GetUIControl(
             RecipeDetailsPath.BackBtn, "button")
 
-        self.TopOverlayPageUpBtn.AddTouchEventParams({"isSwallow": True})
-        self.TopOverlayPageDownBtn.AddTouchEventParams({"isSwallow": True})
-        self.TopLine1PageUpBtn.AddTouchEventParams({"isSwallow": True})
-        self.TopLine1PageDownBtn.AddTouchEventParams({"isSwallow": True})
-        self.TopLine2PageUpBtn.AddTouchEventParams({"isSwallow": True})
-        self.TopLine2PageDownBtn.AddTouchEventParams({"isSwallow": True})
-        self.RightCloseBtn.AddTouchEventParams({"isSwallow": True})
-        self.RightBackBtn.AddTouchEventParams({"isSwallow": True})
+        for button in (self.TabsPageUpBtn, self.TabsPageDownBtn, self.PageUpBtn, self.PageDownBtn,
+                       self.CloseBtn, self.BackBtn):
+            button.AddTouchEventParams({"isSwallow": True})
 
-        # 三组翻页按钮，语义各不相同：
-        #   overlay -> tab 条整页翻（不换选中）
-        #   line1   -> 逐个切换类型（跨页时 tab 条跟过去，到头循环）
-        #   line2   -> 当前类型下的配方翻页
-        self.TopOverlayPageUpBtn.SetButtonTouchDownCallback(self.TypeTabPageUp)
-        self.TopOverlayPageDownBtn.SetButtonTouchDownCallback(self.TypeTabPageDown)
-        self.TopLine1PageUpBtn.SetButtonTouchDownCallback(self.TypeStepNext)
-        self.TopLine1PageDownBtn.SetButtonTouchDownCallback(self.TypeStepPrev)
-        self.TopLine2PageUpBtn.SetButtonTouchDownCallback(self.RecipesPageUp)
-        self.TopLine2PageDownBtn.SetButtonTouchDownCallback(self.RecipesPageDown)
+        # 两组翻页按钮，语义不同：
+        #   竖页签上下两头 -> 页签整页翻（不换选中）
+        #   顶栏的 ◀ ▶    -> 当前类型下的配方翻页
+        # 换类型只靠点页签
+        self.TabsPageUpBtn.SetButtonTouchDownCallback(self.TypeTabPageUp)
+        self.TabsPageDownBtn.SetButtonTouchDownCallback(self.TypeTabPageDown)
+        self.PageUpBtn.SetButtonTouchDownCallback(self.RecipesPageUp)
+        self.PageDownBtn.SetButtonTouchDownCallback(self.RecipesPageDown)
 
-        self.RightCloseBtn.SetButtonTouchUpCallback(self.Close)
-        self.RightBackBtn.SetButtonTouchUpCallback(self.GoBack)
+        self.CloseBtn.SetButtonTouchUpCallback(self.Close)
+        self.BackBtn.SetButtonTouchUpCallback(self.GoBack)
 
         station_items_grid = self.MainNode.GetUIControl(
             RecipeDetailsPath.CraftingItemsGrid, "grid")
@@ -293,12 +281,6 @@ class RecipeDetailsScript(object):
         self.AnimTicks = 0
         self.AnimTimer = self.GameComp.AddRepeatedTimer(
             BaseRecipeUIScript.ANIM_TICK_INTERVAL, self.OnAnimTimer)
-
-    def CancelPendingSwitch(self):
-        """ 取消还没跑的类型切换 —— 关页时必须调, 否则回调会摸到已销毁的控件 """
-        if self.PendingSwitchTimer is not None:
-            self.GameComp.CancelTimer(self.PendingSwitchTimer)
-            self.PendingSwitchTimer = None
 
     def StopAnimTimer(self):
         if self.AnimTimer is None:
@@ -383,7 +365,6 @@ class RecipeDetailsScript(object):
 
     def DestroyScript(self):
         self.StopAnimTimer()
-        self.CancelPendingSwitch()
         self.Bindings.UnbindAll()
         self.ClearUICache()
 
@@ -627,7 +608,7 @@ class RecipeDetailsScript(object):
         target = self.Craftable.TransferTarget(ctx.Recipe, self.CurrentType)
         if target is not None:
             # 交给当前界面登记的转移处理器：MEI 算好清单，处理器自己做。写成了关掉配方页回到那个界面；
-            # 不在按钮回调里同步关（引擎结论 §10）。没成就把原因挂在页码后面。
+            # 不在按钮回调里同步关（引擎结论 §10）。没成就把原因挂在顶栏的标题处。
             # 清单按点下去这一刻的背包算（开页时采的供给可能已经过时），顺带让 + 的结论重问
             self.Craftable.Invalidate()
             request = self.Craftable.Request(target, ctx.Recipe, self.CurrentType, wants_max=True)
@@ -649,7 +630,7 @@ class RecipeDetailsScript(object):
         SendTransfer(plan, self.__OnTransferDone)
 
     def __OnTransferDone(self, result):  # type: (any) -> None
-        """ 服务端回执。成功就关掉配方页 —— 玩家的下一步是回工作台按合成；一格都没放进去就在页码后面说一声 """
+        """ 服务端回执。成功就关掉配方页 —— 玩家的下一步是回工作台按合成；一格都没放进去就在顶栏的标题处说一声 """
         if result.Filled <= 0:
             self.ShowNotice(TransferText.NothingMoved)
             return
@@ -736,7 +717,7 @@ class RecipeDetailsScript(object):
 
     def UpdateBackButton(self):
         utilities.SetButtonEnable(
-            self.RightBackBtn, bool(CacheManager.GetRecipeNav().Depth()))
+            self.BackBtn, bool(CacheManager.GetRecipeNav().Depth()))
 
 # 其他逻辑
 # ======================================================================================================================
@@ -798,7 +779,13 @@ class RecipeDetailsScript(object):
         self.RecipeUIReady = True
 
     TYPE_TABS_PER_PAGE = 8
-    """ tab 条一页放几个。改它要同时改 UpdateTypeTabsGrid 的 SetGridDimension """
+    """ 竖页签一页放几个的初值：页签区的高还没量到时用它（FitTypeTabs 量到了就换成量出来的）"""
+
+    TYPE_TAB_HEIGHT = 22
+    """ 竖页签一格的高，与 recipe_details.json 的 crafting_station_panel 一致（探针对账）"""
+
+    TYPE_TABS_MAX = 32
+    """ 竖页签一页最多放几个，与 JSON 里页签 grid 的 maximum_grid_items 一致 """
 
     def BuildTypeNav(self, types):
         """ 构建合成方式数据的页面 """
@@ -818,59 +805,70 @@ class RecipeDetailsScript(object):
 
         # 带上当前类型: 重排/刷新之后视图要停在原处, 而不是跳回第一页
         self.TypeNav.SetTypes(
-            data, self.TYPE_TABS_PER_PAGE,
+            data, self.TypeTabsPerPage,
             key_of=lambda entry: entry[0],
             current_key=self.CurrentType or None)
 
-    def UpdateTopLine1Label(self, crafting_type=None):
+    def UpdateTitleLabel(self):
         """
-        更新顶部第一行的 label 控件
-
-        `crafting_type` 显式传入是给**逐个切换**用的：那时页面还没重建，
-        `CurrentType` 仍是旧值，而类型名要立刻跟着按键走（见 StepType）。
+        顶栏的标题：类型名；点了 + 没成时这几秒换成原因（ShowNotice）。标题那一格裁边，写不下的截掉，不会把右边的翻页、关闭挤出去
         """
+        notice = self.NoticeText
+        if notice:
+            self.TitleLabelControl.SetText(native_str(notice))
+            return
         # 和 tooltip、配方树同一个来源：不交键给标签自己本地化（别处在 Python 里查，一个名字就成了两条路）
-        display_name = RecipeManager.GetDisplayText(crafting_type or self.CurrentType)
-        self.TopLine1LabelControl.SetText(native_str(display_name))
+        display_name = RecipeManager.GetDisplayText(self.CurrentType)
+        self.TitleLabelControl.SetText(native_str(display_name))
 
-    def UpdateTopLine2Label(self):
-        """ 更新顶部第二行的 label 控件；这个类型的全表还在扫（查工作站的用途时），页码后面写「扫描中」"""
+    def UpdatePageLabel(self):
+        """ 顶栏的页码；这个类型的全表还在扫（查工作站的用途时），页码后面写「扫描中」（页码那一格跟着字宽，标题让出来）"""
         page_index = "{}/{}".format(self.RecipesPage.current_page_number, self.RecipesPage.total_page)
         if self.CurrentType in self.ScanPending:
             page_index = RecipeText.Scanning.format(page_index)
-        notice = getattr(self, "NoticeText", None)
-        if notice:
-            page_index = RecipeText.Notice.format(page_index, notice)
-        self.TopLine2LabelControl.SetText(native_str(page_index))
+        self.PageLabelControl.SetText(native_str(page_index))
 
     NOTICE_SECONDS = 3.0
-    """ 点了 + 没成时，原因在页码后面挂几秒 """
+    """ 点了 + 没成时，原因在顶栏的标题处挂几秒 """
 
     def ShowNotice(self, text):  # type: (unicode) -> None
-        """ 页码后面挂一句话（点了 + 没成的原因），NOTICE_SECONDS 秒后节拍里收掉 """
+        """ 顶栏的标题换成一句话（点了 + 没成的原因），NOTICE_SECONDS 秒后节拍里换回类型名 """
         if not text:
             return
-        # 第三方给的原因多半是 utf-8 字节串：先解开，不然挂着的这 3 秒里每次刷新页码都抛（在 #visible 回调里就带走了绑定）
+        # 第三方给的原因多半是 utf-8 字节串：先解开，不然挂着的这 3 秒里每次刷新标题都抛（在 #visible 回调里就带走了绑定）
         self.NoticeText = to_unicode(text)
         self.NoticeUntil = time.time() + self.NOTICE_SECONDS
         try:
-            self.UpdateTopLine2Label()
+            self.UpdateTitleLabel()
         except Exception as e:  # noqa  页面还没建好时只是这次不显示
             logger.error("[MEI/ui] 配方页提示写不上: {}".format(error_text(e)))
 
     def ExpireNotice(self):  # type: () -> bool
-        """ 节拍里调：提示到期了收掉、把页码写回去 """
+        """ 节拍里调：提示到期了收掉、把类型名写回去 """
         if self.NoticeText is None or time.time() < self.NoticeUntil:
             return False
         self.NoticeText = None
-        self.UpdateTopLine2Label()
+        self.UpdateTitleLabel()
         return True
 
+    def FitTypeTabs(self):  # type: () -> bool
+        """
+        竖页签一页放几个：页签区（右边那一列去掉上下两头的翻页按钮）的高 ÷ 一格的高。配方页的高跟着屏幕走，
+        所以每次重画页签都量一次（一次引擎调用）；量不到（控件还没排好）就照旧。变了视图挪到能看见选中项的那一页，返回是否变了
+        """
+        area = self.TypeTabAreaControl
+        height = utilities.GetControlSizeInt(area)[1] if area is not None else 0
+        if height < self.TYPE_TAB_HEIGHT:
+            return False
+        self.TypeTabsPerPage = min(self.TYPE_TABS_MAX, height // self.TYPE_TAB_HEIGHT)
+        return self.TypeNav.SetPageSize(self.TypeTabsPerPage)
+
     def UpdateTypeTabsGrid(self):
-        """ 更新合成方法选择网格 """
+        """ 更新配方类型的竖页签（一列，行数 = 这一页的类型数） """
+        self.FitTypeTabs()
         types_data = self.TypeNav.PageItems
-        max_type_tab = min(self.TYPE_TABS_PER_PAGE, len(types_data))
-        self.TypeTabsGridControl.SetGridDimension((max_type_tab, 1))
+        max_type_tab = min(self.TypeTabsPerPage, len(types_data))
+        self.TypeTabsGridControl.SetGridDimension((1, max_type_tab))
         # grid 重建 -> 新控件停在默认态、且都还没被渲染过。两样都要重置：
         #   闩锁不重新武装 -> 新 grid 上没有一格会亮
         #   SeenTabIndex 不清 -> 会把新控件当成"已渲染过"而立刻去碰模板控件
@@ -879,6 +877,26 @@ class RecipeDetailsScript(object):
         self.TypeTabsGridReady = True
         # 这里不绑 type_tab.item_id_aux: 唯一调用方 UpdateRecipeUI 紧接着会绑一次并留下句柄,
         # 这里再绑一次、wrapper 又丢弃的话**解不掉**, 纯属泄漏 (recipe_ui_api.md §2.7-3).
+
+    STATIONS_TOP = 21
+    """
+    左边工作站一列的框（TabLeftFrontTopMost 底）离配方页顶多远：和右边竖页签的页签区、配方行一样从顶栏下面开始。
+    与 recipe_details.json 里 crafting_items 的 offset 一致（探针对账）
+    """
+
+    STATIONS_PADDING = 8
+    """ 工作站的框比格子高出来的：上下各 4（JSON 里框是 grid 高 + 8、grid 离框顶 4）"""
+
+    STATION_SLOT = 20
+    """ 工作站一格的高（mei_common.item_panel）"""
+
+    def StationRowsFit(self):  # type: () -> int
+        """
+        工作站一列最多排几行：框从 STATIONS_TOP 开始、框底不超出配方页底边，放不下就往左再起一列（UpdateStationItemsGrid 按它折列）。
+        至少 1 行
+        """
+        room = self.MainContentHeight - self.STATIONS_TOP - self.STATIONS_PADDING
+        return max(1, room // self.STATION_SLOT)
 
     def UpdateStationItemsGrid(self):
         """
@@ -895,7 +913,7 @@ class RecipeDetailsScript(object):
             rows, cols = 1, 0
         else:
             item_length = len(self.CraftingStationItems)
-            rows = min(self.MainContentHeight // 20, item_length)
+            rows = min(self.StationRowsFit(), item_length)
             cols = int(math.ceil(item_length / float(rows)))
 
         grid = self.StationItemsGridIns
@@ -933,9 +951,9 @@ class RecipeDetailsScript(object):
             if self.BuildRecipesPage():
                 # 翻到了要定位的那一页（最后一页可能不满）：行数按这一页的条数重推，不然多出几行空壳
                 self.UpdateRecipesGrid()
-            self.UpdateTopLine1Label()
+            self.UpdateTitleLabel()
             self.UpdateTypeTabsGrid()
-        self.UpdateTopLine2Label()
+        self.UpdatePageLabel()
         self.PrepareRecipeUIScript()
         self.UpdateStationItemsGrid()
         self.UpdateButtons()
@@ -1023,12 +1041,20 @@ class RecipeDetailsScript(object):
 
         self.TypeTabsGridReady = False
 
+    RECIPES_TOP = 21
+    """
+    配方行从配方页顶往下多少开始排：顶栏（离顶 4、高 15）加 2 的间隔，与 recipes/common.json 里 recipes_grid 的 offset 一致（探针对账）。
+    一页放几行 = (配方页高 - RECIPES_TOP + 1) ÷ 行高：最后一行可以压到底边上 1 像素 —— 每一行底下本来就留着 2 像素的空
+    """
+
     def UpdateRecipesGrid(self):
         """ 更新 RecipesGrid 控件的属性 """
         self.UpdateRecipeHeight()
         self.RecipesGridControl = self.MainNode.GetUIControl(
             RecipeDetailsPath.Recipes, "grid")
-        max_height = utilities.GetControlSizeInt(self.MainContentControl)[1] - 34 - 5
+        # 配方页的高跟着屏幕走（转屏、改界面尺寸），每次现量；工作站一列折几行也按它（UpdateStationItemsGrid 紧接着用）
+        self.MainContentHeight = utilities.GetControlSizeInt(self.MainContentControl)[1]
+        max_height = self.MainContentHeight - self.RECIPES_TOP + 1
         recipe_height = self.RecipeHeight
 
         self.MaxRecipesInPage = max_height // recipe_height
@@ -1051,22 +1077,16 @@ class RecipeDetailsScript(object):
 
     def UpdateButtons(self):
         """ 更新按钮状态 """
-        # 判据一律取**全局**数量: 逐个切换能跨页, 页内只剩一个不代表切不动。
-        # 原先用 len(current_items) <= 1, 类型少时两者恰好相等所以没暴露 ——
-        # 9 个类型时第 2 页只有 1 个, 那时按钮会被错误地禁用(recipe_ui_api.md §4.8)
-        top_line1_enable = self.TypeNav.CanStep()
-        top_overlay_enable = self.TypeNav.CanTurnPage()
+        # 竖页签的翻页按钮：页签一页放得下就藏起来（位置照样留着，页签不跟着挪），放不下才显示 —— 两个方向都写（引擎结论 §22）
+        tabs_enable = self.TypeNav.CanTurnPage()
         # 原先这里先设标志再无条件解引用, RecipesPage 为 None 时直接 AttributeError
-        top_line2_enable = bool(self.RecipesPage) and self.RecipesPage.total_page > 1
+        page_enable = bool(self.RecipesPage) and self.RecipesPage.total_page > 1
 
-        utilities.SetButtonEnable(self.TopOverlayPageUpBtn, top_overlay_enable)
-        utilities.SetButtonEnable(self.TopOverlayPageDownBtn, top_overlay_enable)
-        self.TopOverlayPageUpBtn.SetVisible(top_overlay_enable, False)
-        self.TopOverlayPageDownBtn.SetVisible(top_overlay_enable, False)
-        utilities.SetButtonEnable(self.TopLine1PageUpBtn, top_line1_enable)
-        utilities.SetButtonEnable(self.TopLine1PageDownBtn, top_line1_enable)
-        utilities.SetButtonEnable(self.TopLine2PageUpBtn, top_line2_enable)
-        utilities.SetButtonEnable(self.TopLine2PageDownBtn, top_line2_enable)
+        for button in (self.TabsPageUpBtn, self.TabsPageDownBtn):
+            utilities.SetButtonEnable(button, tabs_enable)
+            button.SetVisible(tabs_enable, False)
+        utilities.SetButtonEnable(self.PageUpBtn, page_enable)
+        utilities.SetButtonEnable(self.PageDownBtn, page_enable)
 
 
 # 事件的回调
@@ -1077,20 +1097,34 @@ class RecipeDetailsScript(object):
         self.GameComp.AddTimer(0.1, __update)
 
     def OnMouseWheel(self, args):
+        """ 滚轮：光标在右边的竖页签上翻页签（放不下时），在配方页上翻配方（不止一页时）；往上滚翻到上一页 """
         if WheelTaken():
             return  # 按着修饰键、正好有滚轮类的快捷键：这一下归快捷键（hotkeys/binds.py），不翻页
-        if not self.RecipesPage or self.RecipesPage.total_page <= 1:
-            return  # 只有一页：翻过去还是这一页，不必整页重建
         if self.__Covered():
             return  # 配方页被盖住了（从配方行开了配方树）：滚轮是上面那个界面的
-        mouse_x, _ = utilities.GetMousePosInt()
-        content_x, _ = utilities.GetControlPosInt(self.MainContentControl)
+        mouse_x, mouse_y = utilities.GetMousePosInt()
+        backward = args["direction"] == 1
 
-        if content_x < mouse_x < content_x + self.MainContentWidth:
-            if args["direction"] == 1:
-                self.RecipesPageDown()
+        tabs = control_rect(self.TypeTabsControl)
+        if tabs is not None and contains(tabs, mouse_x, mouse_y):
+            if not self.TypeNav.CanTurnPage():
+                return
+            if backward:
+                self.TypeTabPageDown()
             else:
-                self.RecipesPageUp()
+                self.TypeTabPageUp()
+            return
+
+        if not self.RecipesPage or self.RecipesPage.total_page <= 1:
+            return  # 只有一页：翻过去还是这一页，不必整页重建
+        # 配方页的宽跟着配方行走（换类型就可能变），每次现量
+        content = control_rect(self.MainContentControl)
+        if content is None or not content[0] < mouse_x < content[2]:
+            return
+        if backward:
+            self.RecipesPageDown()
+        else:
+            self.RecipesPageUp()
 
     def __Covered(self):  # type: () -> bool
         """ 配方页所在的界面不是当前界面（被 PushScreen 的界面盖住）；问不出来当没盖住 """
@@ -1237,7 +1271,7 @@ class RecipeDetailsScript(object):
             return
 
         try:
-            item = self.TypeTabsGridControl.GetGridItem(index, 0)
+            item = self.TypeTabsGridControl.GetGridItem(0, index)  # 竖排一列：第 0 列、第 index 行
             if not item:
                 return
             toggle = item.asSwitchToggle().GetChildByPath("/toggle")
@@ -1251,55 +1285,14 @@ class RecipeDetailsScript(object):
     # 类型导航 —— 算术全在 modules/typetab.py, 这里只负责推控件
 # ======================================================================================================================
     def TypeTabPageUp(self, _=None):
-        """ tab 条翻到下一页。**不换选中的类型** —— 玩家只是想看看有什么 """
+        """ 竖页签翻到下一页（下面那个按钮、往下滚）。**不换选中的类型** —— 玩家只是想看看有什么；翻过最后一页回到第一页 """
         if self.TypeNav.PageUp():
             self.RefreshTypeTabs()
 
     def TypeTabPageDown(self, _=None):
+        """ 竖页签翻到上一页（上面那个按钮、往上滚）；翻过第一页到最后一页 """
         if self.TypeNav.PageDown():
             self.RefreshTypeTabs()
-
-    def TypeStepNext(self, _=None):
-        """ 逐个切到下一个类型；到末尾循环回开头，跨页时 tab 条自动跟过去 """
-        self.StepType(1)
-
-    def TypeStepPrev(self, _=None):
-        self.StepType(-1)
-
-    def StepType(self, delta):  # type: (int) -> None
-        """
-        逐个切类型。**选中态立刻改，重建页面推迟到下一帧并合并**
-
-        为什么要合并（不合并的话连按时 tab 与配方明显不同步）：
-        两边走的是**两棵不同的控件树**，帧数天然不等 ——
-
-          · tab 条的 grid 不会被销毁，绑定下一帧就重算 ⇒ 约 1 帧；
-          · 配方列表的 grid **每次换类型都被销毁重建**（每个类型的 control_def 都不同），
-            新控件要先渲染一轮、绑定才触发，再跑 UpdateRecipeUI、再渲染 ⇒ 若干帧。
-
-        连按时每一下都排一次完整的销毁+重建，堆积起来就是"tab 已经跑远了、
-        配方还在追"。合并之后连按 N 次只重建一次，中间那些类型根本不需要建出来。
-
-        **不是把 tab 拖慢去迁就配方** —— 那只会让整个交互都变钝。
-        """
-        type_data, _page_changed = self.TypeNav.Step(delta)
-        if not type_data:
-            return
-        # 先把便宜的即时反馈给出去: 类型名跟着按键走, 手感不打折
-        self.UpdateTopLine1Label(type_data[0])
-        self.ScheduleShowRecipeDetails(type_data[0])
-
-    def ScheduleShowRecipeDetails(self, crafting_type):  # type: (str) -> None
-        """ 把重建推迟到下一帧，并**取消上一个还没跑的** —— 连按只重建最后那次 """
-        self.CancelPendingSwitch()
-
-        def __switch():
-            self.PendingSwitchTimer = None
-            # 期间玩家可能又按了几下, 以 TypeNav 的最终选中项为准而不是排队时那个
-            current = self.TypeNav.Current
-            self.ShowRecipeDetails(current[0] if current else crafting_type)
-
-        self.PendingSwitchTimer = self.GameComp.AddTimer(0.0, __switch)
 
     def RefreshTypeTabs(self):
         """ 只重画 tab 条本身（翻页用），不动配方列表 """

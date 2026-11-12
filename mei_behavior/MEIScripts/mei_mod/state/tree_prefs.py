@@ -24,6 +24,7 @@
 - defaults {物品键: 配方 Id}：做这个物品默认用哪条（解算的 prefs.Default）
 - raw [物品键]：当原料，树里到它就不往下展开（解算的 prefs.IsRaw）
 - stations {类型 Id: 物品键}：这个类型的工作方块格显示哪个工作站
+- side：右侧汇总栏开着没有（下次打开配方树照它；没记过是开着）
 
 物品键是 "id#aux"（keys.key_to_str）。配方 Id 是 Recipe.Id，和置顶、收藏一样：Id 的定义一改首选就找不回，当没设过。
 盘上的东西看不懂就丢掉、不报错（engineering.md §7-9）
@@ -43,6 +44,7 @@ MIGRATIONS = {}
 KEY_DEFAULTS = "defaults"
 KEY_RAW = "raw"
 KEY_STATIONS = "stations"
+KEY_SIDE = "side"
 
 MAX_DEFAULTS = 1024
 MAX_RAW = 1024
@@ -180,6 +182,18 @@ class __TreePrefsManager(object):  # noqa
             self._stations.pop(type_id, None)
         self._get_store().Set(KEY_STATIONS, dict(self._stations))
         return True
+
+    # 右侧汇总栏
+# ======================================================================================================================
+    def SideOpen(self):  # type: () -> bool
+        """ 汇总栏开着没有；没记过、看不懂都当开着 """
+        value = self._get_store().Get(KEY_SIDE)
+        return value if isinstance(value, bool) else True
+
+    def SetSideOpen(self, on):  # type: (bool) -> None
+        """ 只起显示作用，不撞 Revision """
+        if self.SideOpen() != bool(on):
+            self._get_store().Set(KEY_SIDE, bool(on))
 
     def Flush(self, force=False):
         return self._get_store().Flush(force)

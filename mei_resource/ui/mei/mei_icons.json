@@ -16,7 +16,7 @@
             0.4784313725490196
         ],
         "grayscale": true,
-        "texture": "textures/ui/mei/icons/arrow_left.png"
+        "texture": "textures/ui/mei/icons/arrow_left"
     },
     "btn_arrow_right": {
         "type": "image",

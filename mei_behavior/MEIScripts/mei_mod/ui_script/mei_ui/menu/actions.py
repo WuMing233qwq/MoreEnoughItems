@@ -24,9 +24,12 @@
 收藏的那些操作（数量、分组、折叠、展开、排序、删除）写成下面一组 op_* 函数：**快捷键与菜单共用这一份**
 （mei_ui/hotkeys，键只是另一个入口）。op_* 只改收藏、返回改没改，不碰界面；菜单的动作改完再让收藏栏重排，快捷键改完由它自己让收藏栏重排。
 
-每个动作还说自己在哪一段（Section：查询 / 配方 / 数量 / 排序 / 分组 / 显示 / 删除 / 候选）、是不是删除类（Danger，按钮红字）——
-菜单按段排（tooltip.md §6.12）：面板给的顺序里相邻同段的并成一段，一段一行、左边写段名；
-数量、候选这两段是步进器（两头按钮、中间写数字，SECTIONS 里有 Value 的）
+菜单是信息卡 + 图标操作条（tooltip.md §6.14）：常用的动作是操作条上的大按钮（图标在上、短字在下），
+放不下的、不常用的收进「更多」（两列文字按钮）。每个动作说：
+  · Bar：上不上操作条、多要紧（数字小的先上；None 只进「更多」），操作条放不下时按它挑（split_bar）；
+  · Glyph / BarLabel：操作条上的图标、短字；On：选中（收藏着、展开着），按钮换带绿色下划线的底；
+  · Section：在哪一段 —— 数量一段的数字写在顶栏的种类后面，候选一段的数字写在翻页行中间；
+  · Danger：删除类，字用红色
 """
 from mod_log import logger
 
@@ -68,13 +71,16 @@ class MenuAction(object):
     Enabled 是 fn(target) -> 能不能点（缺省都能，不能的灰掉、点了不执行）；Run 是 fn(target)。
     Keep：点了不收起菜单（−1 / +1、上移下移、换候选要连点）；Follow：改完收藏栏会重排、格子换了新的，菜单跟着这一条收藏走；
     Confirm：要二次确认时第一下按钮变成的字（删除整组：没有撤销）；
-    Section：在哪一段（SECTIONS 的键，None 就自成一段、不写段名）；Danger：删除类，按钮上的字用红色；
-    Icon：用哪个图标按钮显示（MenuConst.Icons 的槽名，比如候选的左右箭头），None 就是文字按钮
+    Section：在哪一段（SECTIONS 的键）；Danger：删除类，按钮上的字用红色；
+    Icon：用哪个图标按钮显示（MenuConst.Icons 的槽名，候选的左右箭头，摆在翻页行），None 就是普通按钮；
+    Bar：上操作条的优先级（数字小的先上），None 只进「更多」；BarLabel：操作条上的短字（字或 fn(target)，缺省同 Label）；
+    Glyph：操作条上的图标（MenuConst.GlyphPath 的名字，或 fn(target) -> 名字）；On：fn(target) -> 选中没有（换带下划线的底）
     """
-    __slots__ = ("Key", "Label", "Run", "Enabled", "Keep", "Follow", "Confirm", "Section", "Danger", "Icon")
+    __slots__ = ("Key", "Label", "Run", "Enabled", "Keep", "Follow", "Confirm", "Section", "Danger", "Icon", "Bar",
+                 "BarLabel", "Glyph", "On")
 
     def __init__(self, key, label, run, enabled=None, keep=False, follow=False, confirm=None, section=None, danger=False,
-                 icon=None):
+                 icon=None, bar=None, bar_label=None, glyph=None, on=None):
         self.Key = key
         self.Label = label
         self.Run = run
@@ -85,6 +91,10 @@ class MenuAction(object):
         self.Section = section
         self.Danger = danger
         self.Icon = icon
+        self.Bar = bar
+        self.BarLabel = bar_label
+        self.Glyph = glyph
+        self.On = on
 
     def LabelFor(self, target, armed=False):  # type: (MenuTarget, bool) -> any
         if armed and self.Confirm:
@@ -92,12 +102,39 @@ class MenuAction(object):
         text = self.Label(target) if callable(self.Label) else self.Label
         return DANGER_COLOR + text if self.Danger and text else text
 
+    def BarLabelFor(self, target, armed=False):  # type: (MenuTarget, bool) -> any
+        """ 操作条上的字：有 BarLabel 用它（短字），没有用 Label；二次确认、删除类的红照旧 """
+        if self.BarLabel is None or (armed and self.Confirm):
+            return self.LabelFor(target, armed)
+        text = self.BarLabel(target) if callable(self.BarLabel) else self.BarLabel
+        return DANGER_COLOR + text if self.Danger and text else text
+
+    def GlyphFor(self, target):  # type: (MenuTarget) -> str or None
+        return self.Glyph(target) if callable(self.Glyph) else self.Glyph
+
+    def IsOn(self, target):  # type: (MenuTarget) -> bool
+        """ 选中没有（收藏着、展开着）；判断出错当没选中 —— 只影响底图 """
+        if self.On is None:
+            return False
+        try:
+            return bool(self.On(target))
+        except Exception as e:  # noqa
+            logger.warn("[MEI/menu] 动作 {} 判断选没选中失败: {}".format(self.Key, error_text(e)))
+            return False
+
     def WidthLabels(self, target):  # type: (MenuTarget) -> list
         """
-        排版按哪几种字算这个按钮的宽：现在的字，加上开着菜单时会变成的字（二次确认）。
+        排版按哪几种字算这个按钮（「更多」里的文字按钮）的宽：现在的字，加上开着菜单时会变成的字（二次确认）。
         别的会变的字（收藏 / 取消收藏、折叠 / 展开…）点了就收起菜单，下次打开重新排，不用预留
         """
         labels = [self.LabelFor(target)]
+        if self.Confirm:
+            labels.append(self.Confirm)
+        return labels
+
+    def BarWidthLabels(self, target):  # type: (MenuTarget) -> list
+        """ 同 WidthLabels，按操作条上的字算 """
+        labels = [self.BarLabelFor(target)]
         if self.Confirm:
             labels.append(self.Confirm)
         return labels
@@ -277,6 +314,11 @@ def _bookmark_label(target):
     return MenuText.Unbookmark if BookmarkManager.HasItem(target.Item) else MenuText.Bookmark
 
 
+def _bookmarked(target):
+    """ 操作条上「收藏」选没选中：这个物品收藏着 """
+    return target.Item is not None and BookmarkManager.HasItem(target.Item)
+
+
 def _bookmark_enabled(target):
     """ 页签满了只能取消、不能再收 """
     return target.Item is not None and (BookmarkManager.HasItem(target.Item) or not BookmarkManager.IsTabFull())
@@ -318,6 +360,21 @@ def _expand_label(target):
     if cell.Group != UNGROUPED and BookmarkManager.GroupProps(cell.Group).get(GROUP_FOLD):
         return MenuText.UnfoldGroup
     return MenuText.CollapseRecipe if is_expanded(cell) else MenuText.ExpandRecipe
+
+
+def _expanded(target):
+    """ 配方 / 配方树收藏现在展开着（组折叠着不算：那时按钮做的是展开组）"""
+    cell = target.Cell
+    if cell is None or cell.Entry.get("k") not in (KIND_RECIPE, KIND_TREE):
+        return False
+    if cell.Group != UNGROUPED and BookmarkManager.GroupProps(cell.Group).get(GROUP_FOLD):
+        return False
+    return is_expanded(cell)
+
+
+def _expand_bar_label(target):
+    """ 操作条上的短字：展开着写「收起」，别的（收着、组折叠着）写「展开」"""
+    return MenuText.CollapseRecipe if _expanded(target) else MenuText.ExpandRecipe
 
 
 def _expand(cell):
@@ -362,6 +419,10 @@ def _close(_target):
     """ 收起由菜单自己做 """
 
 
+def _more(_target):
+    """ 「更多」展开 / 收起由菜单自己做（它记着展没展开）"""
+
+
 # 段
 # ======================================================================================================================
 SECTION_QUERY = "query"
@@ -376,8 +437,8 @@ SECTION_CANDIDATE = "candidate"
 
 class MenuSection(object):
     """
-    菜单里的一段：Label 是段名，或 fn(target) -> 段名（数量一段在配方收藏上写「倍数」）；
-    Value 是 fn(target) -> 步进器中间的数字（有它的段，两个按钮时排成步进器：[−] 数字 [+]）
+    动作所在的一段：Label 是段名，或 fn(target) -> 段名（数量一段在配方收藏上写「倍数」）；
+    Value 是 fn(target) -> 这一段的数字：数量「×2」写在顶栏的种类后面，候选「2 / 86」写在翻页行中间
     """
     __slots__ = ("Key", "Label", "Value")
 
@@ -390,7 +451,7 @@ class MenuSection(object):
         return self.Label(target) if callable(self.Label) else self.Label
 
     def ValueFor(self, target):  # type: (MenuTarget) -> any
-        """ 步进器中间的数字；出错只记一行、给空串 —— 这是填按钮时调的，抛出去整个菜单就填不完 """
+        """ 这一段的数字；出错只记一行、给空串 —— 这是填按钮时调的，抛出去整个菜单就填不完 """
         if self.Value is None:
             return None
         try:
@@ -433,68 +494,73 @@ SECTIONS = {
 """ 段名 -> 段 """
 
 
-def group_sections(actions):  # type: (list) -> list
-    """
-    动作按段分组：照给的顺序，相邻同段的并成一段，返回 [(段, [动作, ...]), ...]。
-    没写段（Section 为 None）、或段表里没有的，各自成一段（段名空着）
-    """
-    groups = []
-    for action in actions:
-        key = action.Section
-        if groups and key is not None and groups[-1][0].Key == key:
-            groups[-1][1].append(action)
-            continue
-        section = SECTIONS.get(key) if key is not None else None
-        groups.append((section or MenuSection(key, u""), [action]))
-    return groups
-
-
-def is_stepper(section, actions):  # type: (MenuSection, list) -> bool
-    """ 排成步进器：段有数字、正好两个按钮（[−] 数字 [+]）"""
-    return section.Value is not None and len(actions) == 2
-
-
 ACTIONS = {
     MenuKey.Source: MenuAction(MenuKey.Source, MenuText.Source, _source, enabled=_has_recipes(QueryConst.Output),
-                               section=SECTION_QUERY),
+                               section=SECTION_QUERY, bar=1, glyph="source"),
     MenuKey.Uses: MenuAction(MenuKey.Uses, MenuText.Uses, _uses, enabled=_has_recipes(QueryConst.Input),
-                             section=SECTION_QUERY),
+                             section=SECTION_QUERY, bar=1, glyph="uses"),
     MenuKey.Bookmark: MenuAction(MenuKey.Bookmark, _bookmark_label, _bookmark, enabled=_bookmark_enabled,
-                                 section=SECTION_QUERY),
+                                 section=SECTION_QUERY, bar=2, bar_label=MenuText.Bookmark, glyph="star", on=_bookmarked),
     MenuKey.Remove: MenuAction(MenuKey.Remove, MenuText.Remove, _changes_bookmarks(op_remove), section=SECTION_DELETE,
-                               danger=True),
-    MenuKey.OpenRecipe: MenuAction(MenuKey.OpenRecipe, MenuText.OpenRecipe, _open_recipe, section=SECTION_RECIPE),
+                               danger=True, bar=3, glyph="trash"),
+    MenuKey.OpenRecipe: MenuAction(MenuKey.OpenRecipe, MenuText.OpenRecipe, _open_recipe, section=SECTION_RECIPE,
+                                   bar=1, bar_label=MenuText.BarOpen, glyph="open"),
     MenuKey.RecipeTree: MenuAction(MenuKey.RecipeTree, MenuText.RecipeTree, _recipe_tree,
-                                   enabled=_has_recipes(QueryConst.Output), section=SECTION_QUERY),
-    MenuKey.OpenTree: MenuAction(MenuKey.OpenTree, MenuText.OpenTree, _open_tree, section=SECTION_RECIPE),
+                                   enabled=_has_recipes(QueryConst.Output), section=SECTION_QUERY, bar=4, glyph="tree"),
+    MenuKey.OpenTree: MenuAction(MenuKey.OpenTree, MenuText.OpenTree, _open_tree, section=SECTION_RECIPE,
+                                 bar=1, bar_label=MenuText.BarOpen, glyph="tree"),
     MenuKey.CountDown: MenuAction(MenuKey.CountDown, MenuText.CountDown, _changes_bookmarks(lambda c: op_count(c, -1)),
-                                  enabled=_count_enabled(-1), follow=True, section=SECTION_COUNT),
+                                  enabled=_count_enabled(-1), follow=True, section=SECTION_COUNT, bar=2, glyph="minus"),
     MenuKey.CountUp: MenuAction(MenuKey.CountUp, MenuText.CountUp, _changes_bookmarks(lambda c: op_count(c, 1)),
-                                enabled=_count_enabled(1), follow=True, section=SECTION_COUNT),
+                                enabled=_count_enabled(1), follow=True, section=SECTION_COUNT, bar=2, glyph="plus2"),
     MenuKey.JoinGroup: MenuAction(MenuKey.JoinGroup, MenuText.JoinGroup, _changes_bookmarks(op_join),
-                                  enabled=_join_enabled, section=SECTION_GROUP),
+                                  enabled=_join_enabled, section=SECTION_GROUP, glyph="group"),
     MenuKey.LeaveGroup: MenuAction(MenuKey.LeaveGroup, MenuText.LeaveGroup, _changes_bookmarks(op_leave),
-                                   enabled=_grouped, section=SECTION_GROUP),
+                                   enabled=_grouped, section=SECTION_GROUP, glyph="group"),
     MenuKey.FoldGroup: MenuAction(MenuKey.FoldGroup, _fold_label, _changes_bookmarks(op_fold), enabled=_grouped,
-                                  section=SECTION_VIEW),
-    MenuKey.Expand: MenuAction(MenuKey.Expand, _expand_label, _changes_bookmarks(_expand), section=SECTION_RECIPE),
-    MenuKey.View: MenuAction(MenuKey.View, _view_label, _changes_bookmarks(op_view), section=SECTION_VIEW),
+                                  section=SECTION_VIEW, glyph="caret"),
+    MenuKey.Expand: MenuAction(MenuKey.Expand, _expand_label, _changes_bookmarks(_expand), section=SECTION_RECIPE,
+                               bar=3, bar_label=_expand_bar_label, glyph="expand", on=_expanded),
+    MenuKey.View: MenuAction(MenuKey.View, _view_label, _changes_bookmarks(op_view), section=SECTION_VIEW,
+                             glyph="expand"),
     MenuKey.RemoveGroup: MenuAction(MenuKey.RemoveGroup, MenuText.RemoveGroup, _changes_bookmarks(op_remove_group),
                                     enabled=_grouped, confirm=MenuText.ConfirmRemoveGroup, section=SECTION_DELETE,
-                                    danger=True),
+                                    danger=True, glyph="trash"),
     MenuKey.MoveUp: MenuAction(MenuKey.MoveUp, MenuText.MoveUp, _changes_bookmarks(lambda c: op_move(c, -1)),
-                               enabled=_move_enabled(-1), follow=True, section=SECTION_SORT),
+                               enabled=_move_enabled(-1), follow=True, section=SECTION_SORT, glyph="up"),
     MenuKey.MoveDown: MenuAction(MenuKey.MoveDown, MenuText.MoveDown, _changes_bookmarks(lambda c: op_move(c, 1)),
-                                 enabled=_move_enabled(1), follow=True, section=SECTION_SORT),
+                                 enabled=_move_enabled(1), follow=True, section=SECTION_SORT, glyph="down"),
     MenuKey.MoveHead: MenuAction(MenuKey.MoveHead, MenuText.MoveHead, _changes_bookmarks(op_move_head),
-                                 enabled=_head_enabled, follow=True, section=SECTION_SORT),
+                                 enabled=_head_enabled, follow=True, section=SECTION_SORT, glyph="pin_to_top"),
     MenuKey.PrevCandidate: MenuAction(MenuKey.PrevCandidate, MenuText.PrevCandidate, _step_candidate(-1),
                                       enabled=_candidates, keep=True, section=SECTION_CANDIDATE, icon="prev"),
     MenuKey.NextCandidate: MenuAction(MenuKey.NextCandidate, MenuText.NextCandidate, _step_candidate(1),
                                       enabled=_candidates, keep=True, section=SECTION_CANDIDATE, icon="next"),
+    MenuKey.More: MenuAction(MenuKey.More, MenuText.More, _more, keep=True, glyph="more"),
     MenuKey.Close: MenuAction(MenuKey.Close, MenuText.Close, _close),
 }
 """ 名字 -> 动作 """
+
+
+def split_bar(actions, limit):  # type: (list, int) -> tuple
+    """
+    哪些动作上操作条、哪些收进「更多」，返回 (操作条, 更多)，各自照给的顺序（面板说的顺序）。
+    上操作条的是写了 Bar 的；全都放得下（不超过 limit、也没有只进「更多」的）就都上，不要「更多」；
+    否则操作条留一个位置给「更多」，挑 Bar 数字小的（一样的先给前面的），挑剩下的和只进「更多」的收进去。
+    一个写了 Bar 的都没有：前几个照样上操作条（不能只剩一个「更多」）
+    """
+    eligible = [action for action in actions if action.Bar is not None]
+    if not eligible:
+        eligible = list(actions[:limit if len(actions) <= limit else limit - 1])
+    rest = [action for action in actions if action not in eligible]
+    if not rest and len(eligible) <= limit:
+        return eligible, []
+    room = max(1, limit - 1)
+    if len(eligible) > room:
+        ranked = sorted(range(len(eligible)), key=lambda index: (eligible[index].Bar or 0, index))
+        keep = set(ranked[:room])
+        eligible = [action for index, action in enumerate(eligible) if index in keep]
+    return eligible, [action for action in actions if action not in eligible]
 
 
 def kind_of(panel):  # type: (any) -> any

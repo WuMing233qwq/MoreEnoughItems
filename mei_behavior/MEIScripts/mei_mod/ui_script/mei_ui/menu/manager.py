@@ -18,40 +18,43 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 """
-触屏的二级菜单（docs/architecture/tooltip.md §6）：点一下格子，出「这一格的信息 + 这一格能做的事」。一个界面一份，
+触屏的二级菜单（docs/architecture/tooltip.md §6、§6.14）：点一下格子，出「这一格的信息 + 这一格能做的事」。一个界面一份，
 挂在主节点上（UIMainNode.OnCreate 建、OnDestroy 拆，紧跟在 tooltip 管理器后面）。
 
   · 菜单就是 tooltip 的移动端宿主：内容由 TooltipManager 建（设置开着、格子有 TooltipContent → 配方预览 / 接受物品；
     否则只有标题 —— 设置关着时菜单照出），框里别的东西由这里填；
-  · **一个框**（tooltip.md §6.12）：顶栏（这是哪种格子 + 关闭的小 x）、内容、分隔线、分段的按钮区 ——
-    动作按段排（查询 / 配方 / 数量 / 排序 / 分组 / 显示 / 删除 / 候选，相邻同段的并成一段），一段一行、左边写段名；
-    数量、候选是步进器（[−] 数字 [+]，候选用左右箭头图标）；删除类红字、灰掉的灰字。宽度按字算、按内容收。
-    框里每样东西的位置由 menu.layout.box_layout 算，tooltip 管理器摆框时调 Layout；
+  · **信息卡 + 图标操作条**（扁平风，tooltip.md §6.14）：顶栏（物品图标、种类、关闭的小 x）、内容（和 PC 的 tooltip 一模一样）、
+    分隔线、多候选格的翻页行（‹ 2 / 86 ›）、一排等宽的大按钮（图标在上、短字在下）；操作条放不下的、不常用的收进「更多」，
+    点一下在下面展开两列文字按钮，再点收起。收藏格的数量写在顶栏的种类后面（「收藏 · 物品  ×2」），−1 / +1 在操作条上。
+    框里每样东西的位置由 menu.layout.card_layout 算，tooltip 管理器摆框时调 Layout；「更多」展开 / 收起后让它当场重摆（Relayout）；
   · 落位：不贴着点的那一格，摆在格子所在区域的外侧 —— 物品栏的格子摆在物品栏左边、收藏栏的摆在右边、
     配方页的摆在配方页右边，竖直方向跟着那一格；连续浏览时不挡着区域里的格子。放不下照旧贴屏幕边兜底（TooltipManager）；
-  · 按钮池（mei_common 的 button_0 … button_15）：按这一格的文字动作填前几个，其余藏起来；带 Icon 的动作用同名的图标按钮
-    （icon_prev / icon_next）；「关闭」是顶栏的小 x，不占池子。点击走 button_mappings → 固定名字的 BF_ButtonClickUp 绑定
-    （MenuConst.ButtonName / IconName / CloseName，只能单个绑定，引擎结论 §9）；
+  · 按钮：操作条 bar_0 … bar_5、「更多」里的 button_0 … button_15、翻页行的 icon_prev / icon_next，都是 JSON 里静态的按钮，
+    按这一格的动作填前几个，其余藏起来；「关闭」是顶栏的小 x，不占位置。点击走 button_mappings → 固定名字的 BF_ButtonClickUp 绑定
+    （MenuConst.BarName / ButtonName / IconName / CloseName，只能单个绑定，引擎结论 §9）；
   · 点格子、点按钮都是在绑定回调里来的：只记下，下一帧（界面代理的 OnTick → Update）再开 / 再执行 —— 绑定回调里不建控件（§27-2）；
   · 手指划进一格：tooltip 管理器认出「移进」后调 Hover，同一帧打开，不检测移出；已经是它的菜单不动。
     菜单是这次触摸划进时开的，松手那一下的点击不当成「再点一下同一格」收起（按住多久都一样）；本来就开着它的，照旧收起；
-  · 有的动作点了不收（−1 / +1、上移下移、换候选）：改收藏的那几样一改，收藏栏重排、格子全是新的 —— 先让 tooltip 放掉归属，
-    下一帧找到显示同一条收藏的新格子再挂上（跟着这一条走）；删除整组要点两下（第一下按钮变成「确认删除？」）；
+  · 有的动作点了不收（−1 / +1、上移下移、换候选、「更多」）：改收藏的那几样一改，收藏栏重排、格子全是新的 —— 先让 tooltip 放掉归属，
+    下一帧找到显示同一条收藏的新格子再挂上（跟着这一条走，「更多」展没展开照旧）；删除整组要点两下（第一下按钮变成「确认删除？」）；
   · 多候选格：打开时停下轮播（看着的东西别自己变），收起时接着轮播；点接受物品列表里的一格 = 选中那个候选；
   · 收起：点「关闭」、点了动作、点别的格子（换成那一格）、再点一下同一格；那一格被拆了、换了内容（翻页、切页签、搜索）
     由 TooltipManager 收（它记着显示时的 ContentKey），这里看到它收了就跟着清；点空白处不收；
-  · 复位（界面状态跨开关存活，§22）：开界面时框里每个控件的显隐、文字、遮罩都写一遍，每次打开再按这一格两个方向写一遍
+  · 复位（界面状态跨开关存活，§22）：开界面时框里每个控件的显隐、文字、遮罩、底图都写一遍，每次打开再按这一格两个方向写一遍
 """
 import mod.client.extraClientApi as clientApi
 from mod_log import logger
 
+from MEIScripts.constants.texts import MenuKindText
 from MEIScripts.constants.ui import ItemsBrowserPath, ItemsSidebarPath, MenuConst, MenuKey, RecipeDetailsPath, TooltipPath
 from MEIScripts.mei_mod.state.bookmarks import entry_identity
+from MEIScripts.mei_mod.ui_script.controls.item.panel import render_args
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.actions import (
-    MenuTarget, actions_for, group_sections, is_stepper, kind_of, mute,
+    ACTIONS, SECTION_CANDIDATE, SECTION_COUNT, SECTIONS, MenuTarget, actions_for, kind_of, mute, split_bar,
 )
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.layout import (
-    BUTTON_H, CLOSE_OFFSET, CLOSE_SIZE, ICON_SIZE, TEXT_H, box_layout, button_width, number_width, text_width,
+    BAR_LIMIT, CARD_CLOSE_OFFSET, CLOSE_SIZE, DIVIDER_H, ICON_SIZE, TEXT_H, bar_width, button_width, card_layout,
+    number_width, text_width,
 )
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import DescribeItem
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.layout import SIDE_LEFT, SIDE_RIGHT
@@ -75,11 +78,12 @@ FOLLOW_TICKS = 15
 """ 改完收藏后找显示同一条收藏的新格子，最多找这么多帧（约 0.5 秒）；挪到别的页了、找不到就收起 """
 
 CLOSE = "close"
-""" 点了顶栏的「关闭」（和按钮池的下标分开记）"""
+""" 点了顶栏的「关闭」（和按钮的下标分开记）"""
 
+BAR = "bar"
 POOL = "pool"
 ICON = "icon"
-""" 动作摆在哪：按钮池里的文字按钮，还是图标按钮（MenuAction.Icon 的槽名）"""
+""" 动作摆在哪：操作条（第几个）、「更多」里的文字按钮（第几个）、翻页行的图标按钮（MenuAction.Icon 的槽名）"""
 
 
 def menu_title(panel):  # type: (any) -> any
@@ -95,12 +99,32 @@ def menu_title(panel):  # type: (any) -> any
     return to_unicode(DescribeItem(item)) if item is not None else u""
 
 
+def icon_render(panel):  # type: (any) -> tuple or None
+    """
+    顶栏物品图标给渲染器的四样（render_args）：格子自己的那一叠（带附魔、userData）对得上它现在的物品就用它，
+    不然（多候选格换了候选、原版格子的替身没有 Stack）按物品现造一个；没有物品给 None
+    """
+    item = getattr(panel, "Item", None)
+    if item is None:
+        return None
+    try:
+        stack = getattr(panel, "Stack", None)
+        if getattr(stack, "Item", None) is not item or not callable(getattr(stack, "get_render_data", None)):
+            make = getattr(item, "stack", None)
+            stack = make(1) if callable(make) else None
+        data = getattr(stack, "get_render_data", None)
+        return render_args(data()) if callable(data) else None
+    except Exception as e:  # noqa  取不到就不画图标
+        logger.warn("[MEI/menu] 取不到物品图标: {}".format(error_text(e)))
+        return None
+
+
 def button_path(index):  # type: (int) -> str
     return TooltipPath.MenuButton.format(index)
 
 
-def section_path(index):  # type: (int) -> str
-    return TooltipPath.MenuSection.format(index)
+def bar_path(index):  # type: (int) -> str
+    return TooltipPath.MenuBar.format(index)
 
 
 def number_path(index):  # type: (int) -> str
@@ -111,21 +135,28 @@ def icon_path(name):  # type: (str) -> str
     return TooltipPath.MenuIcon.format(name)
 
 
-def assign_slots(actions):  # type: (list) -> list
+def plan_slots(actions, limit=min(BAR_LIMIT, MenuConst.BarSize)):  # type: (list, int) -> tuple
     """
-    每个动作摆在哪个按钮上：带 Icon、而且有这个图标按钮（MenuConst.Icons）的用图标按钮（一个槽只给第一个认领的），
-    其余按顺序占按钮池；返回 [(POOL, 池里第几个) 或 (ICON, 槽名), ...]，和 actions 一一对应
+    每个动作摆在哪，返回 (动作, 位置) 两张一一对应的表，动作按「操作条、更多、翻页行」排：
+      · 带 Icon、而且有这个图标按钮（MenuConst.Icons）的去翻页行（一个槽只给第一个认领的）；
+      · 其余按 split_bar 分：常用的上操作条，放不下的、不常用的进「更多」—— 有进「更多」的，操作条最后加一个「更多」按钮；
+    位置是 (BAR, 第几个) / (POOL, 第几个) / (ICON, 槽名)
     """
-    slots, used, pool = [], set(), 0
+    icons, rest, used = [], [], set()
     for action in actions:
         icon = getattr(action, "Icon", None)
         if icon in MenuConst.Icons and icon not in used:
             used.add(icon)
-            slots.append((ICON, icon))
-            continue
-        slots.append((POOL, pool))
-        pool += 1
-    return slots
+            icons.append(action)
+        else:
+            rest.append(action)
+    bar, more = split_bar(rest, limit)
+    if more:
+        bar = bar + [ACTIONS[MenuKey.More]]
+    ordered = bar + more + icons
+    slots = [(BAR, index) for index in range(len(bar))] + [(POOL, index) for index in range(len(more))] \
+        + [(ICON, action.Icon) for action in icons]
+    return ordered, slots
 
 
 def follow_key(cell):  # type: (any) -> tuple
@@ -148,21 +179,32 @@ def menu_region(main, panel):  # type: (any, any) -> tuple
             continue
         try:
             if path.startswith(member.GetPath() + "/"):
-                return utilities.GetControlRectSize(main.GetUIControl(rect_path) or member), side
+                region = utilities.GetControlRectSize(main.GetUIControl(rect_path) or member)
+                return narrow_region(region, row_span(main, panel), side), side
         except Exception:  # noqa  区域控件不在了：当它不是
             continue
     return None, None
 
 
-def stepper_flags(groups, budget=MenuConst.NumberCount):  # type: (list, int) -> list
-    """ 每段排不排成步进器：段有数字、正好两个按钮；数字标签只有 budget 个，多出来的照普通按钮排 """
-    flags = []
-    for section, actions in groups:
-        on = budget > 0 and is_stepper(section, actions)
-        if on:
-            budget -= 1
-        flags.append(on)
-    return flags
+def row_span(main, panel):  # type: (any, any) -> tuple or None
+    """ 这一格那一行露出来的那一段（UIScriptMain.RowSpan）；主节点没有这个入口（配方树的壳）给 None """
+    finder = getattr(main, "RowSpan", None)
+    return finder(panel) if finder is not None else None
+
+
+def narrow_region(region, span, side):  # type: (tuple, tuple or None, str) -> tuple
+    """
+    菜单靠着的那条边换成这一行露出来的边（物品栏、收藏栏被原版界面挡住的格子是空着的）：菜单摆在 side 那一侧，
+    就把区域那一侧的边挪到这一行能显示东西的那一段的边上 —— 收藏栏这一行只露出两格，菜单就贴着第二格，
+    不贴整栏的右边；只看这一行，下面的行露得多、会被菜单盖住几格，不管。纯函数（探针测）
+    """
+    if span is None:
+        return region
+    (left, top), (right, bottom) = region
+    (span_left, _), (span_right, _) = span
+    if side == SIDE_RIGHT:
+        return (left, top), (min(right, span_right), bottom)
+    return (max(left, span_left), top), (right, bottom)
 
 
 class TouchMenu(object):
@@ -172,17 +214,16 @@ class TouchMenu(object):
         self.Tooltip = tooltip
         self.Bindings = ScreenBinder(main_node.ScreenNode)  # type: ScreenBinder
         self.Target = None  # type: MenuTarget or None  # 开着的菜单是给哪一格的
-        self.Actions = []  # type: list  # 这一格的动作，按显示顺序（不含「关闭」，它在顶栏）
-        self.Slots = []  # type: list  # 每个动作摆在哪：(POOL, 池里第几个) 或 (ICON, 槽名)，见 assign_slots
-        self.Groups = []  # type: list  # [(段, [动作, ...]), ...]，按显示顺序；动作摊平就是 Actions
-        self.Steppers = []  # type: list  # 每段排不排成步进器
-        self.Labels = False  # type: bool  # 写不写段名（不止一段、段名标签够用时写）
+        self.Actions = []  # type: list  # 这一格的动作：操作条、「更多」、翻页行（不含「关闭」，它在顶栏）
+        self.Slots = []  # type: list  # 每个动作摆在哪：(BAR, 第几个) / (POOL, 第几个) / (ICON, 槽名)，见 plan_slots
+        self.More = False  # type: bool  # 「更多」展开着没有：打开别的格子时收起，跟着这一条收藏走时照旧
         self.__Wrappers = []  # type: list  # 挂上的点击绑定，关界面时解绑
         self.__Pending = None  # type: tuple or None  # (哪一格, 点的还是划进的)：Update 里打开；点的再点一下同一格是收起
         self.__Touch = None  # type: tuple or None  # 最近一次划进：(那一格, 划进时菜单是不是已经开着它)，认松手那一下的点击
-        self.__Click = None  # type: any  # 点了哪个按钮：(POOL, 第几个) / (ICON, 槽名) / CLOSE，下一帧执行
+        self.__Click = None  # type: any  # 点了哪个按钮：(BAR / POOL, 第几个) / (ICON, 槽名) / CLOSE，下一帧执行
         self.__Armed = None  # type: int or None  # 要二次确认的动作点过第一下：它在 Actions 里的位置
         self.__Seek = None  # type: tuple or None  # 改完收藏在找新格子：(跟着的那一条, 找了几帧)
+        self.__Written = {}  # type: dict  # 写过的底图、颜色、图标（(路径, 哪一样) -> 值）：一样的不再碰引擎
 
     def OnCreate(self):
         """ 开界面：复位框里的控件（两个方向都写，§22），挂点击绑定 """
@@ -225,7 +266,7 @@ class TouchMenu(object):
             self.__Pending = (panel, False)
 
     def OnButton(self, key):  # type: (any) -> None
-        """ 点了按钮：(POOL, 池里第几个) / (ICON, 槽名) / 顶栏的关闭（CLOSE）—— 下一帧执行 """
+        """ 点了按钮：(BAR / POOL, 第几个) / (ICON, 槽名) / 顶栏的关闭（CLOSE）—— 下一帧执行 """
         self.__Click = key
 
     # 每帧（界面代理的 OnTick，排在 tooltip 管理器后面）
@@ -269,10 +310,14 @@ class TouchMenu(object):
             return
         if getattr(panel, "Destroyed", False):
             return
-        actions = [action for action in actions_for(panel) if action.Key != MenuKey.Close]
-        if len(actions) > MenuConst.PoolSize:
-            logger.warn("[MEI/menu] 这一格有 {} 个动作，按钮池只有 {} 个，多的不出".format(len(actions), MenuConst.PoolSize))
-            actions = actions[:MenuConst.PoolSize]
+        actions, slots = plan_slots([action for action in actions_for(panel)
+                                     if action.Key not in (MenuKey.Close, MenuKey.More)])
+        pool = [index for index, slot in enumerate(slots) if slot[0] == POOL and slot[1] >= MenuConst.PoolSize]
+        if pool:
+            logger.warn("[MEI/menu] 这一格有 {} 个动作要收进「更多」，只放得下 {} 个，多的不出".format(
+                MenuConst.PoolSize + len(pool), MenuConst.PoolSize))
+            actions = [action for index, action in enumerate(actions) if index not in pool]
+            slots = [slot for index, slot in enumerate(slots) if index not in pool]
         self.__Clear()
         self.__HoldRotation(panel)
         if not self.__ShowContent(panel):
@@ -280,10 +325,7 @@ class TouchMenu(object):
             return
         self.Target = MenuTarget(self.MainNode, panel)
         self.Actions = actions
-        self.Slots = assign_slots(actions)
-        self.Groups = group_sections(actions)
-        self.Steppers = stepper_flags(self.Groups)
-        self.Labels = 1 < len(self.Groups) <= MenuConst.SectionCount
+        self.Slots = slots
         region, side = menu_region(self.MainNode, panel)
         self.Tooltip.SetTouchRegion(region, side)
         self.Tooltip.SetTouchLayout(self.Layout)
@@ -310,7 +352,7 @@ class TouchMenu(object):
     def __PickCandidate(self, panel):
         """
         点的是菜单内容里的格子（接受物品列表、配方预览）：不开新菜单 —— 开新菜单要先收起现在的内容，会连带把这一格拆掉。
-        接受物品列表里的一格 = 在多候选格里选中这个候选（标题、「来源 / 收藏」、候选的数字跟着换）；配方预览里的格子不做事
+        接受物品列表里的一格 = 在多候选格里选中这个候选（标题、图标、「来源 / 收藏」、翻页行的数字跟着换）；配方预览里的格子不做事
         """
         target = self.Target
         index = self.Tooltip.CandidateIndexOf(panel)
@@ -332,6 +374,12 @@ class TouchMenu(object):
         if target is None or self.__Seek is not None or not 0 <= index < len(actions):
             return  # 还在找新格子：这一下按旧格子算会点错条目，不做
         action = actions[index]
+        if action.Key == MenuKey.More:
+            self.__Armed = None  # 收起「更多」时二次确认一起作废
+            self.More = not self.More
+            self.__Fill()
+            self.Tooltip.Relayout()  # 框变高了 / 变矮了：当场重排、重摆（贴边按新尺寸算）
+            return
         if not action.IsEnabled(target):
             return
         if action.Confirm and self.__Armed != index:
@@ -349,7 +397,7 @@ class TouchMenu(object):
         except Exception as e:  # noqa
             logger.error("[MEI/menu] 动作 {} 失败: {}".format(action.Key, error_text(e)))
         if action.Keep and self.__Seek is None and self.Target is target:
-            self.__Fill()  # 点了不收、格子也没换（换候选）：字、遮罩、步进器的数字可能变了
+            self.__Fill()  # 点了不收、格子也没换（换候选）：字、遮罩、图标、翻页行的数字可能变了
 
     def __Follow(self):
         """ 改完收藏后，找显示同一条收藏的新格子挂上去；找了 FOLLOW_TICKS 帧还没有（挪到别的页、没了）就收起 """
@@ -390,28 +438,49 @@ class TouchMenu(object):
         if panel is not None and not getattr(panel, "Destroyed", False) and callable(getattr(panel, "ResumeRotate", None)):
             panel.ResumeRotate()
 
-    # 框：排版（摆在哪）由 tooltip 管理器摆框时调 Layout；字、遮罩、显隐由 __Fill 写
+    # 框：排版（摆在哪）由 tooltip 管理器摆框时调 Layout；字、图标、遮罩、显隐由 __Fill 写
 # ======================================================================================================================
+    def KindText(self):  # type: () -> any
+        """ 顶栏写的种类：面板的 MenuKind()；有数量的收藏格后面跟着「×2」（−1 / +1 在操作条上，数字看这里）"""
+        target = self.Target
+        if target is None:
+            return u""
+        kind = kind_of(target.Panel)
+        if any(action.Section == SECTION_COUNT for action in self.Actions):
+            value = SECTIONS[SECTION_COUNT].ValueFor(target)
+            if value:
+                return MenuKindText.Counted.format(to_unicode(kind), to_unicode(value))
+        return kind
+
+    def PagerValue(self):  # type: () -> any
+        """ 翻页行中间写的：第几个候选「2 / 86」；没有翻页行给 None """
+        if self.Target is None or not any(slot[0] == ICON for slot in self.Slots):
+            return None
+        return SECTIONS[SECTION_CANDIDATE].ValueFor(self.Target)
+
     def Layout(self, content_size):  # type: (tuple) -> tuple
         """
-        tooltip 管理器摆菜单时调（显示那一刻、内容尺寸变了、挂到新格子上）：按内容尺寸排好框里的每样东西，返回框的尺寸。
-        位置、尺寸都由这里写（绝对定位）；池里的按钮按所在的列改宽（SetSize 带上子控件：底图、遮罩跟着变，字居中）
+        tooltip 管理器摆菜单时调（显示那一刻、内容尺寸变了、挂到新格子上、「更多」展开 / 收起）：按内容尺寸排好框里的每样东西，
+        返回框的尺寸。位置、尺寸都由这里写（绝对定位）；按钮改宽带上子控件（SetSize(…, True)：底、遮罩跟着变，图标、字跟着锚点走）
         """
         target = self.Target
-        rows, index = [], 0
-        icon_w, icon_h = self.__IconSize()
-        for (section, actions), stepper in zip(self.Groups, self.Steppers):
-            items = []
-            for action in actions:
-                if self.Slots[index][0] == ICON:
-                    items.append((icon_w, icon_h, True))
-                else:
-                    items.append((button_width(action.WidthLabels(target)), BUTTON_H, False))
-                index += 1
-            rows.append((items, stepper, number_width(section.ValueFor(target)) if stepper else 0))
-        kind = text_width(kind_of(target.Panel)) if target is not None else 0
+        bar, more = [], []
+        for action, (kind, _) in zip(self.Actions, self.Slots):
+            if kind == BAR:
+                bar.append(bar_width(action.BarWidthLabels(target)))
+            elif kind == POOL:
+                more.append(button_width(action.WidthLabels(target)))
+        value = self.PagerValue()
+        pager = None
+        if value is not None:
+            icon_w, icon_h = self.__IconSize()
+            pager = (icon_w, icon_h, number_width(value))
         close_size, close_offset = self.__CloseGeometry()
-        geo = box_layout(content_size, rows, self.Labels, kind, close_size, close_offset)
+        has_icon = target is not None and icon_render(target.Panel) is not None
+        geo = card_layout(content_size, bar, more, self.More, pager, has_icon, text_width(self.KindText()),
+                          close_size, close_offset)
+        if geo["icon"] is not None:
+            self.__Move(TooltipPath.TouchIcon, geo["icon"])
         self.__Move(TooltipPath.TouchKind, geo["kind"])
         x, y, width, height = geo["close"]
         self.__Move(TooltipPath.TouchCloseSlot, (x, y), (width, height))
@@ -419,26 +488,30 @@ class TouchMenu(object):
         divider = geo["divider"]
         if divider is not None:
             x, y, width = divider
-            self.__Move(TooltipPath.TouchDivider, (x, y), (width, 1))
+            self.__Move(TooltipPath.TouchDivider, (x, y), (width, DIVIDER_H))
         x, y, width, height = geo["actions"]
         self.__Move(TooltipPath.TouchActions, (x, y), (width, height))
-        for slot, (x, y, width, height) in zip(self.Slots, geo["buttons"]):
-            kind_of_slot, key = slot
-            if kind_of_slot == ICON:
-                self.__Move(icon_path(key), (x, y))  # 图标按钮的尺寸写在 JSON 里
-            elif key < MenuConst.PoolSize:
-                self.__Move(button_path(key), (x, y), (width, height), True)
-        for index, pos in enumerate(geo["names"][:MenuConst.SectionCount]):
-            if pos is not None:
-                self.__Move(section_path(index), pos)
-        numbers = [number for number in geo["numbers"] if number is not None]
-        for index, (x, y, width) in enumerate(numbers[:MenuConst.NumberCount]):
-            self.__Move(number_path(index), (x, y), (width, TEXT_H))
+        if geo["pager"] is not None:
+            self.__Move(icon_path(MenuConst.Icons[0]), geo["pager"]["prev"])  # 图标按钮的尺寸写在 JSON 里
+            self.__Move(icon_path(MenuConst.Icons[1]), geo["pager"]["next"])
+            x, y, width = geo["pager"]["number"]
+            self.__Move(number_path(0), (x, y), (width, TEXT_H))
+        bars = [slot[1] for slot in self.Slots if slot[0] == BAR]
+        for slot, (x, y, width, height) in zip(bars, geo["bar"]):
+            if slot < MenuConst.BarSize:
+                self.__Move(bar_path(slot), (x, y), (width, height), True)
+        if geo["more_line"] is not None:
+            x, y, width = geo["more_line"]
+            self.__Move(TooltipPath.MenuMoreLine, (x, y), (width, DIVIDER_H))
+        pool = [slot[1] for slot in self.Slots if slot[0] == POOL]
+        for slot, (x, y, width, height) in zip(pool, geo["more"]):
+            if slot < MenuConst.PoolSize:
+                self.__Move(button_path(slot), (x, y), (width, height), True)
         return geo["size"]
 
     def __IconSize(self):  # type: () -> tuple
         """
-        图标按钮（候选的左右箭头）的尺寸：**读 JSON 里 icon_prev 排出来的大小**（$menu_icon_size，缺省在 mei_common.json 的 menu_icon_button）；
+        翻页行的箭头（图标按钮）多大：**读 JSON 里 icon_prev 排出来的大小**（$flat_icon_size，缺省在 mei_common.json 的 flat_icon_button）；
         调箭头大小只改 JSON。读不到（还没排好）用 layout 的缺省
         """
         button = self.__Control(icon_path(MenuConst.Icons[0]))
@@ -453,11 +526,11 @@ class TouchMenu(object):
 
     def __CloseGeometry(self):  # type: () -> tuple
         """
-        顶栏小 x 的尺寸与偏移：**读 JSON 里 close 的 $menu_icon_size 与 offset**（脚本只摆它的插槽、从不挪它，所以 GetPosition 读到的就是
+        顶栏小 x 的尺寸与偏移：**读 JSON 里 close 的 $flat_icon_size 与 offset**（脚本只摆它的插槽、从不挪它，所以 GetPosition 读到的就是
         JSON 里的 offset —— 和 cursor_gap 同一个路子）。调大小、调偏移只改 JSON；读不到用 layout 的缺省
         """
         button = self.__Control(TooltipPath.TouchClose)
-        size, offset = CLOSE_SIZE, CLOSE_OFFSET
+        size, offset = CLOSE_SIZE, CARD_CLOSE_OFFSET
         if button is None:
             return size, offset
         try:
@@ -467,24 +540,35 @@ class TouchMenu(object):
             x, y = button.GetPosition()
             offset = (int(round(x)), int(round(y)))
         except Exception as e:  # noqa
-            logger.warn("[MEI/menu] 读不到小 x 的尺寸 / 偏移，用缺省 {} / {}: {}".format(CLOSE_SIZE, CLOSE_OFFSET, error_text(e)))
+            logger.warn("[MEI/menu] 读不到小 x 的尺寸 / 偏移，用缺省 {} / {}: {}".format(CLOSE_SIZE, CARD_CLOSE_OFFSET,
+                                                                                    error_text(e)))
         return size, offset
 
     def __Fill(self):
-        """ 按这一格写框里的字、遮罩、显隐（两个方向都写）：种类、关闭、分隔线、按钮池、段名、步进器的数字 """
+        """
+        按这一格写框里的东西（两个方向都写）：物品图标、种类、关闭、分隔线、操作条（字、图标、颜色、选中的底、遮罩）、
+        「更多」（展开着才显出来）、翻页行
+        """
         target, actions = self.Target, self.Actions
         if target is None:
             return
-        self.__SetText(TooltipPath.TouchKind, kind_of(target.Panel))
+        self.__FillIcon(target.Panel)
+        self.__SetText(TooltipPath.TouchKind, self.KindText())
         self.__Show(TooltipPath.TouchKind, True)
         self.__Show(TooltipPath.TouchClose, True)
         self.__Show(TooltipPath.TouchDivider, bool(actions))
-        pool, icons = {}, {}
+        bars, pool, icons = {}, {}, {}
         for index, (kind, key) in enumerate(self.Slots):
-            (icons if kind == ICON else pool)[key] = index
+            {BAR: bars, POOL: pool, ICON: icons}[kind][key] = index
+        for slot in range(MenuConst.BarSize):
+            index = bars.get(slot)
+            if index is None:
+                self.__Show(bar_path(slot), False)
+                continue
+            self.__FillBar(slot, actions[index], index == self.__Armed)
         for slot in range(MenuConst.PoolSize):
             index = pool.get(slot)
-            if index is None:
+            if index is None or not self.More:
                 self.__Show(button_path(slot), False)
                 continue
             action = actions[index]
@@ -493,36 +577,75 @@ class TouchMenu(object):
             self.__SetText(button_path(slot) + TooltipPath.MenuButtonLabelSub, text if enabled else mute(text))
             self.__Show(button_path(slot) + TooltipPath.MenuButtonMaskSub, not enabled)
             self.__Show(button_path(slot), True)
+        self.__Show(TooltipPath.MenuMoreLine, self.More and bool(pool))
         for name in MenuConst.Icons:
             self.__Show(icon_path(name), name in icons)
-        for index in range(MenuConst.SectionCount):
-            shown = self.Labels and index < len(self.Groups)
-            self.__SetText(section_path(index), self.Groups[index][0].LabelFor(target) if shown else u"")
-            self.__Show(section_path(index), shown)
-        steppers = [section for (section, _), on in zip(self.Groups, self.Steppers) if on]
-        for index in range(MenuConst.NumberCount):
-            shown = index < len(steppers)
-            self.__SetText(number_path(index), steppers[index].ValueFor(target) if shown else u"")
-            self.__Show(number_path(index), shown)
+        value = self.PagerValue()
+        self.__SetText(number_path(0), value if value is not None else u"")
+        self.__Show(number_path(0), value is not None)
+
+    def __FillBar(self, slot, action, armed):
+        """ 操作条上的一个按钮：字（删除类红、用不了灰）、图标与颜色、选中的底（绿色下划线）、遮罩 """
+        target = self.Target
+        path = bar_path(slot)
+        enabled = action.IsEnabled(target)
+        on = self.More if action.Key == MenuKey.More else action.IsOn(target)
+        text = action.BarLabelFor(target, armed)
+        self.__SetText(path + TooltipPath.MenuButtonLabelSub, text if enabled else mute(text))
+        glyph = action.GlyphFor(target)
+        icon = path + TooltipPath.MenuBarIconSub
+        self.__Show(icon, bool(glyph))
+        if glyph:
+            self.__Sprite(icon, MenuConst.GlyphPath.format(glyph))
+        if not enabled:
+            color = MenuConst.GlyphMutedColor
+        elif action.Danger:
+            color = MenuConst.GlyphDangerColor
+        elif on:
+            color = MenuConst.GlyphOnColor
+        else:
+            color = MenuConst.GlyphColor
+        self.__Color(icon, color)
+        self.__Sprite(path + TooltipPath.MenuButtonFaceSub, MenuConst.FaceOn if on and enabled else MenuConst.FaceNormal)
+        self.__Show(path + TooltipPath.MenuButtonMaskSub, not enabled)
+        self.__Show(path, True)
+
+    def __FillIcon(self, panel):
+        """ 顶栏的物品图标：这一格有物品就画上（多候选格是当前的候选），没有（失效的收藏）就藏起来 """
+        render = icon_render(panel)
+        if render is not None:
+            try:
+                renderer = self.MainNode.GetUIControl(TooltipPath.TouchIconItem, "item_renderer")
+                if renderer is None or not renderer.SetUiItem(*render):
+                    render = None
+            except Exception as e:  # noqa  画不出来就不画
+                logger.warn("[MEI/menu] 画不出物品图标: {}".format(error_text(e)))
+                render = None
+        self.__Show(TooltipPath.TouchIcon, render is not None)
 
     def __ResetPool(self):
-        """ 开界面：框里的东西全藏、字清空（界面状态跨开关存活，§22）；关闭按钮的字写上 """
+        """ 开界面：框里的东西全藏、字清空、底换回平时的（界面状态跨开关存活，§22）"""
+        self.__Written = {}
+        self.__Show(TooltipPath.TouchIcon, False)
         self.__SetText(TooltipPath.TouchKind, u"")
         self.__Show(TooltipPath.TouchKind, False)
         self.__Show(TooltipPath.TouchClose, False)
         self.__Show(TooltipPath.TouchDivider, False)
+        self.__Show(TooltipPath.MenuMoreLine, False)
         area = self.__Control(TooltipPath.TouchActions)
         if area is not None:
             area.SetSize((0, 0))
+        for index in range(MenuConst.BarSize):
+            self.__Show(bar_path(index), False)
+            self.__SetText(bar_path(index) + TooltipPath.MenuButtonLabelSub, u"")
+            self.__Show(bar_path(index) + TooltipPath.MenuButtonMaskSub, False)
+            self.__Sprite(bar_path(index) + TooltipPath.MenuButtonFaceSub, MenuConst.FaceNormal)
         for index in range(MenuConst.PoolSize):
             self.__Show(button_path(index), False)
             self.__SetText(button_path(index) + TooltipPath.MenuButtonLabelSub, u"")
             self.__Show(button_path(index) + TooltipPath.MenuButtonMaskSub, False)
         for name in MenuConst.Icons:
             self.__Show(icon_path(name), False)
-        for index in range(MenuConst.SectionCount):
-            self.__SetText(section_path(index), u"")
-            self.__Show(section_path(index), False)
         for index in range(MenuConst.NumberCount):
             self.__SetText(number_path(index), u"")
             self.__Show(number_path(index), False)
@@ -548,14 +671,34 @@ class TouchMenu(object):
         if label is not None:
             label.SetText(native_str(text))
 
+    def __Changed(self, path, what, value):  # type: (str, str, any) -> bool
+        key = (path, what)
+        if self.__Written.get(key) == value:
+            return False
+        self.__Written[key] = value
+        return True
+
+    def __Sprite(self, path, texture):
+        """ 换图（按钮的底、操作条的图标）：和上次写的一样就不碰引擎 """
+        if not self.__Changed(path, "sprite", texture):
+            return
+        image = self.MainNode.GetUIControl(path, "image")
+        if image is not None:
+            image.SetSprite(texture)
+
+    def __Color(self, path, color):
+        if not self.__Changed(path, "color", tuple(color)):
+            return
+        image = self.MainNode.GetUIControl(path, "image")
+        if image is not None:
+            image.SetSpriteColor(tuple(color))
+
     def __Clear(self):
         target = self.Target
         self.Target = None
         self.Actions = []
         self.Slots = []
-        self.Groups = []
-        self.Steppers = []
-        self.Labels = False
+        self.More = False
         self.__Armed = None
         self.__Seek = None
         if target is not None:
@@ -572,6 +715,10 @@ class TouchMenu(object):
         for name in MenuConst.Icons:
             wrapper = self.Bindings.Bind(self.__ClickHandler((ICON, name)), ViewBinder.BF_ButtonClickUp,
                                          MenuConst.IconName.format(name))
+            self.__Wrappers.append(wrapper)
+        for index in range(MenuConst.BarSize):
+            wrapper = self.Bindings.Bind(self.__ClickHandler((BAR, index)), ViewBinder.BF_ButtonClickUp,
+                                         MenuConst.BarName.format(index))
             self.__Wrappers.append(wrapper)
         wrapper = self.Bindings.Bind(self.__ClickHandler(CLOSE), ViewBinder.BF_ButtonClickUp, MenuConst.CloseName)
         self.__Wrappers.append(wrapper)

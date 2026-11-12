@@ -18,12 +18,12 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 """
-配方树的控件：格子（cell）、画布（canvas：视口、拖动、控件池、分帧画）、节点菜单（menu）、底部汇总（summary）
+配方树的控件：格子（cell）、画布（canvas：视口、拖动、控件池、分帧画）、节点菜单（menu）、右侧汇总清单（summary）
 """
 from .canvas import Scene, TreeCanvas
 from .cell import CellSpec, TreeCell, short_count
 from .menu import TreeMenu, TreeMenuButton, TreeMenuModel, TreeMenuRow, stepper
-from .summary import TreeSummary, tab_rows
+from .summary import TreeSummary, list_rows
 
 __all__ = [
     "CellSpec",
@@ -35,7 +35,7 @@ __all__ = [
     "TreeMenuModel",
     "TreeMenuRow",
     "TreeSummary",
+    "list_rows",
     "short_count",
     "stepper",
-    "tab_rows",
 ]

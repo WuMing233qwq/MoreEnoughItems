@@ -335,7 +335,7 @@ class FilterMenu(object):
             label.SetText(native_str(text))
 
     def __Label(self, button_path, text):
-        """ 按钮上的字（mei_common.menu_button 的 label）"""
+        """ 按钮上的字（mei_common.flat_button 的 label）"""
         path = button_path + FilterConst.LabelSub
         if not self.__Changed(path, "text", text):
             return

@@ -77,7 +77,8 @@ class GroupItemPanel(ItemPanel):
 
         self.HideGroupControls()
 
-        self.LabelVisible = True
+        # 收起 / 展开由右下角的 +/- 角标表示（JSON 的 badge，看 GroupExpanded）；slot_item_marked 那个写死「+」的角字不再亮，免得叠在一起
+        self.LabelVisible = False
         self.BackgroundVisible = True
         self.GroupRendererVisible = True
         self.ItemRendererVisible = False

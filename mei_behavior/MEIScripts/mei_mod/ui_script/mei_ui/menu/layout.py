@@ -18,16 +18,30 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 """
-触屏菜单（一个框）的纯计算：框里每样东西摆在哪、多大。不碰引擎。排版（tooltip.md §6.12）：
+菜单的纯计算：框里每样东西摆在哪、多大。不碰引擎。两种排版：
+
+**信息卡 + 图标操作条**（card_layout，触屏菜单用，tooltip.md §6.14）：
+
+  顶栏    [物品图标] 种类（灰字，收藏格带数量）……………… x
+  内容    标题（悬停文字）/ 配方预览 / 接受物品列表 —— 和 PC 的 tooltip 一模一样
+  ────    分隔线
+  翻页行  ‹        2 / 86        ›          只有多候选格有
+  操作条  [图标/字][图标/字]…               等宽的大按钮，一排最多 BAR_LIMIT 个（含「更多」）
+  ────    「更多」展开时才有：分隔线 + 两列文字按钮
+
+框宽至少 CARD_MIN_INNER（物品菜单、收藏菜单一样宽），内容、操作条、「更多」里的字放不下才变宽；
+「更多」展开、收起时宽度不变（按它的字算过了），只是变高。
+
+**按段排的一个框**（box_layout，配方树的节点菜单在用，tooltip.md §6.12）：
 
   顶栏    种类（灰字）……………………… x（大小、偏移在 JSON 里调，见 CLOSE_SIZE / CLOSE_OFFSET）
   内容    标题（悬停文字）/ 配方预览 / 接受物品列表
   ────    分隔线
   按钮区  一段一行：左边一列段名（灰字），右边按钮；数量、候选做成步进器：[-1]  ×2  [+1]、 ‹  2 / 86  ›
 
-**宽度按内容收**（按固定宽排，菜单偏长，普通物品的尤其长）：按钮的宽按字算（字宽估算 + 两边留白），
-框宽取「内容、顶栏、最宽的那一段」里宽的那个，别的段再拉满到这个宽 —— 不再按固定的三列 40 宽排。
-全部绝对定位、不靠 stack_panel 收拢：藏起来的子控件收不收拢还没实证（tooltip.md §6.4），
+按钮的宽按字算（字宽估算 + 两边留白），框宽取「内容、顶栏、最宽的那一段」里宽的那个，别的段再拉满到这个宽。
+
+两种都全部绝对定位、不靠 stack_panel 收拢：藏起来的子控件收不收拢还没实证（tooltip.md §6.4），
 脚本改过尺寸的控件、外面的 stack_panel 也不一定跟着重排（表现是贴边时按钮区没算进去）
 """
 
@@ -60,9 +74,9 @@ MIN_BUTTON_W = 20
 
 ICON_SIZE = (14, 14)
 """
-按钮区里的图标按钮（候选的左右箭头）多大。**以 JSON 为准**：mei_common.json 里 menu_icon_button 的 $menu_icon_size|default
-（要调只改那一处），菜单排版时读回来（触屏菜单、配方树的菜单、配方树汇总的翻页都是）；
-这里只是读不到时的缺省（探针对账两边一致）
+按钮区里的图标按钮（候选的左右箭头）多大。**以 JSON 为准**：触屏菜单读 mei_common.json 里 flat_icon_button 的
+$flat_icon_size|default，配方树的菜单与汇总的翻页读 menu_icon_button 的 $menu_icon_size|default（要调只改 JSON），
+排版时读回来；这里只是读不到时的缺省（探针对账两边一致）
 """
 
 LABEL_W = 2 * CJK_W
@@ -73,8 +87,8 @@ NUMBER_MIN_W = 16
 
 CLOSE_SIZE = (14, 14)
 """
-顶栏的小 x 多大。**以 JSON 为准**：mei_common.json 里 close 的 $menu_icon_size，菜单开的时候读回来；
-这里只是读不到时的缺省（探针对账两边一致）
+顶栏的小 x 多大。**以 JSON 为准**：触屏菜单是 tooltip_root 里 close 的 $flat_icon_size（配方树的是 $menu_icon_size），
+菜单开的时候读回来；这里只是读不到时的缺省（探针对账两边一致）
 """
 
 CLOSE_OFFSET = (0, -2)
@@ -242,4 +256,170 @@ def box_layout(content_size, rows, labels=True, kind_width=0, close_size=CLOSE_S
         "buttons": buttons,
         "names": names,
         "numbers": numbers,
+    }
+
+
+# 信息卡 + 图标操作条（触屏菜单）
+# ======================================================================================================================
+CARD_MIN_INNER = 142
+""" 卡片里最窄多宽（框 150）：物品菜单、收藏菜单一样宽，正好放下 134 宽的配方预览 """
+
+HEAD_ICON = 18
+""" 顶栏左边物品图标的格子多大（JSON 里 touch/frame/icon 的尺寸，渲染器 16 居中）"""
+
+HEAD_ICON_GAP = 4
+""" 物品图标与种类之间空多少 """
+
+CARD_CLOSE_OFFSET = (0, 0)
+""" 卡片顶栏小 x 的偏移缺省（以 JSON 为准，菜单打开时读回来）；它的插槽在顶栏里竖直居中 """
+
+BAR_H = 26
+""" 操作条按钮的高：图标 15 在上、一行字在下 """
+
+BAR_MIN_W = 22
+""" 操作条按钮最窄多宽（两个汉字 + 两边各 BAR_PAD）"""
+
+BAR_MAX_W = 48
+""" 操作条按钮最宽多宽：按钮少（一两个）时不拉成长条，整排居中 """
+
+BAR_PAD = 2
+""" 操作条按钮里字的两边各留多少 """
+
+BAR_LIMIT = 6
+""" 操作条一排最多几个按钮（含「更多」）：150 宽的卡片里每个 22 宽 """
+
+MORE_COLUMNS = 2
+""" 「更多」里的文字按钮排几列 """
+
+DIVIDER_H = 2
+""" 分隔线控件的高：扁平贴图 flat/divider 是 1×2（上面一行是线、下面一行透明），按原尺寸画才清楚；看得见的只有 1 像素 """
+
+
+def bar_width(labels):  # type: (list) -> int
+    """ 操作条按钮放得下这几种字要多宽（最窄 BAR_MIN_W）"""
+    return max([BAR_MIN_W] + [text_width(label) + 2 * BAR_PAD for label in labels if label])
+
+
+def bar_natural(widths):  # type: (list) -> int
+    """ 一排操作条按钮至少要多宽：等宽，都按最宽的那个算 """
+    return max(widths) * len(widths) + GAP * (len(widths) - 1) if widths else 0
+
+
+def more_natural(widths):  # type: (list) -> int
+    """ 「更多」两列至少要多宽：每列都按最宽的那个按钮算 """
+    return max(widths) * MORE_COLUMNS + GAP * (MORE_COLUMNS - 1) if widths else 0
+
+
+def bar_row(widths, avail):  # type: (list, int) -> list
+    """
+    一排等宽的操作条按钮怎么摆：返回每个按钮的 (x, 宽)。宽 = avail 平分（除不尽的给后面的），不比最宽的那个自然宽窄；
+    平分出来比 BAR_MAX_W 还宽就都取 BAR_MAX_W、整排居中
+    """
+    count = len(widths)
+    if not count:
+        return []
+    gaps = GAP * (count - 1)
+    natural = max(widths)
+    share = (avail - gaps) // count
+    if share >= BAR_MAX_W:
+        each = max(BAR_MAX_W, natural)
+        x = max(0, (avail - each * count - gaps) // 2)
+        return [(x + index * (each + GAP), each) for index in range(count)]
+    if share < natural:
+        return [(index * (natural + GAP), natural) for index in range(count)]
+    extra = avail - gaps - share * count
+    row, x = [], 0
+    for index in range(count):
+        width = share + (1 if index >= count - extra else 0)
+        row.append((x, width))
+        x += width + GAP
+    return row
+
+
+def card_head_height(close_size=CLOSE_SIZE, close_offset=CARD_CLOSE_OFFSET):  # type: (tuple, tuple) -> int
+    """ 顶栏多高：放得下物品图标、一行字、小 x（小 x 往上偏的那几像素伸进框的留白里，不算）"""
+    return max(HEAD_ICON, TEXT_H, int(close_size[1]) + min(0, int(close_offset[1])))
+
+
+def card_layout(content_size, bar, more=(), expanded=False, pager=None, icon=True, kind_width=0,
+                close_size=CLOSE_SIZE, close_offset=CARD_CLOSE_OFFSET):
+    # type: (tuple, list, list, bool, tuple or None, bool, int, tuple, tuple) -> dict
+    """
+    信息卡 + 图标操作条：每样东西摆在哪。
+      content_size  内容控件的尺寸（含它四周自带的 4 像素）
+      bar           操作条每个按钮的自然宽（bar_width），按显示顺序
+      more          「更多」里每个文字按钮的自然宽（button_width）；收起时也给 —— 卡片宽按它算过，展开、收起宽度不变
+      expanded      「更多」展开着没有
+      pager         候选的翻页行：(箭头宽, 箭头高, 数字至少多宽)；没有给 None
+      icon          顶栏有没有物品图标
+      kind_width    顶栏种类那几个字多宽；close_size / close_offset：小 x 的尺寸与偏移（JSON 里读回来的）
+    返回 dict，坐标相对框的左上角（框本身摆到屏幕上归 tooltip 管理器）：
+      size       框的 (宽, 高)
+      icon       物品图标的 (x, y)；没有图标是 None
+      kind       种类的 (x, y)：有图标时在图标右边
+      close      小 x 插槽的 (x, y, 宽, 高)：右上角、在顶栏里竖直居中；小 x 在插槽里再按自己的 offset 偏
+      content    内容控件的 (x, y)：它自带 4 像素，摆在 x = 0，字正好落在 PAD 那条竖线上
+      divider    分隔线的 (x, y, 宽)；下面什么都没有时是 None
+      actions    按钮区的 (x, y, 宽, 高)；下面这些坐标都相对它
+      pager      {"prev": (x, y), "next": (x, y), "number": (x, y, 宽)}：箭头在两头、数字占中间；没有翻页行是 None
+      bar        操作条每个按钮的 (x, y, 宽, 高)
+      more_line  「更多」上面那条分隔线的 (x, y, 宽)；收起时 None
+      more       「更多」里每个按钮的 (x, y, 宽, 高)，两列、从左到右再往下；收起时是空的
+    宽取 CARD_MIN_INNER、内容、顶栏、操作条、「更多」、翻页行里宽的那个
+    """
+    bar, more = list(bar), list(more)
+    content_w, content_h = int(round(content_size[0])), int(round(content_size[1]))
+    close_w, close_h = int(close_size[0]), int(close_size[1])
+    head_h = card_head_height(close_size, close_offset)
+    left = PAD + (HEAD_ICON + HEAD_ICON_GAP if icon else 0)
+    head = left - PAD + kind_width + 2 * GAP + close_w
+    pager_w = 2 * int(pager[0]) + 2 * GAP + int(pager[2]) if pager else 0
+    inner = max(CARD_MIN_INNER, content_w - 2 * PAD, head, bar_natural(bar), more_natural(more), pager_w)
+    width = inner + 2 * PAD
+    content_y = head_h + GAP  # 即 PAD + 顶栏高 + GAP - PAD：内容自带的 4 像素抵掉框的 PAD
+    bottom = content_y + max(0, content_h - PAD)  # 内容最后一行字的底
+    y, pager_geo = 0, None
+    if pager:
+        arrow_w, arrow_h = int(pager[0]), int(pager[1])
+        row_h = max(arrow_h, BUTTON_H)
+        arrow_y = (row_h - arrow_h) // 2
+        pager_geo = {
+            "prev": (0, arrow_y),
+            "next": (inner - arrow_w, arrow_y),
+            "number": (arrow_w + GAP, (row_h - TEXT_H) // 2, inner - 2 * arrow_w - 2 * GAP),
+        }
+        y += row_h + GAP
+    bar_geo = [(x, y, w, BAR_H) for x, w in bar_row(bar, inner)]
+    y += BAR_H if bar_geo else (-GAP if pager else 0)
+    more_line, more_geo = None, []
+    if expanded and more:
+        y += LINE_GAP
+        more_line = (0, y, inner)
+        y += 1 + LINE_GAP
+        column_w = (inner - GAP * (MORE_COLUMNS - 1)) // MORE_COLUMNS
+        for index in range(len(more)):
+            row, column = divmod(index, MORE_COLUMNS)
+            x = column * (column_w + GAP)
+            last = column == MORE_COLUMNS - 1
+            more_geo.append((x, y + row * (BUTTON_H + GAP), inner - x if last else column_w, BUTTON_H))
+        y += -(-len(more) // MORE_COLUMNS) * (BUTTON_H + GAP) - GAP
+    if y > 0:
+        line_y = bottom + LINE_GAP
+        divider = (PAD, line_y, inner)
+        actions_y = line_y + 1 + LINE_GAP
+    else:
+        divider = None
+        actions_y = bottom
+    return {
+        "size": (width, actions_y + max(0, y) + PAD),
+        "icon": (PAD, PAD + (head_h - HEAD_ICON) // 2) if icon else None,
+        "kind": (left, PAD + (head_h - TEXT_H) // 2),
+        "close": (width - PAD - close_w, PAD + max(0, (head_h - close_h) // 2), close_w, close_h),
+        "content": (0, content_y),
+        "divider": divider,
+        "actions": (PAD, actions_y, inner, max(0, y)),
+        "pager": pager_geo,
+        "bar": bar_geo,
+        "more_line": more_line,
+        "more": more_geo,
     }

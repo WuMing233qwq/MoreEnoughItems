@@ -7,122 +7,122 @@
         ],
         "controls": [
             {
-                "chip_0@mei_common.menu_button": {
+                "chip_0@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.0"
                 }
             },
             {
-                "chip_1@mei_common.menu_button": {
+                "chip_1@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.1"
                 }
             },
             {
-                "chip_2@mei_common.menu_button": {
+                "chip_2@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.2"
                 }
             },
             {
-                "chip_3@mei_common.menu_button": {
+                "chip_3@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.3"
                 }
             },
             {
-                "chip_4@mei_common.menu_button": {
+                "chip_4@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.4"
                 }
             },
             {
-                "chip_5@mei_common.menu_button": {
+                "chip_5@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.5"
                 }
             },
             {
-                "chip_6@mei_common.menu_button": {
+                "chip_6@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.6"
                 }
             },
             {
-                "chip_7@mei_common.menu_button": {
+                "chip_7@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.7"
                 }
             },
             {
-                "chip_8@mei_common.menu_button": {
+                "chip_8@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.8"
                 }
             },
             {
-                "chip_9@mei_common.menu_button": {
+                "chip_9@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.9"
                 }
             },
             {
-                "chip_10@mei_common.menu_button": {
+                "chip_10@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.10"
                 }
             },
             {
-                "chip_11@mei_common.menu_button": {
+                "chip_11@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.11"
                 }
             },
             {
-                "chip_12@mei_common.menu_button": {
+                "chip_12@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.12"
                 }
             },
             {
-                "chip_13@mei_common.menu_button": {
+                "chip_13@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.13"
                 }
             },
             {
-                "chip_14@mei_common.menu_button": {
+                "chip_14@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.14"
                 }
             },
             {
-                "chip_15@mei_common.menu_button": {
+                "chip_15@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.15"
                 }
             },
             {
-                "chip_16@mei_common.menu_button": {
+                "chip_16@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.16"
                 }
             },
             {
-                "chip_17@mei_common.menu_button": {
+                "chip_17@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.17"
                 }
             },
             {
-                "chip_18@mei_common.menu_button": {
+                "chip_18@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.18"
                 }
             },
             {
-                "chip_19@mei_common.menu_button": {
+                "chip_19@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.19"
                 }
             },
             {
-                "chip_20@mei_common.menu_button": {
+                "chip_20@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.20"
                 }
             },
             {
-                "chip_21@mei_common.menu_button": {
+                "chip_21@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.21"
                 }
             },
             {
-                "chip_22@mei_common.menu_button": {
+                "chip_22@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.22"
                 }
             },
             {
-                "chip_23@mei_common.menu_button": {
+                "chip_23@mei_common.flat_button": {
                     "$pressed_button_name": "button.mei.filter.chip.23"
                 }
             }
@@ -147,7 +147,7 @@
                     ],
                     "layer": 1,
                     "visible": false,
-                    "texture": "textures/ui/purpleBorder",
+                    "texture": "textures/ui/mei/flat/pop",
                     "controls": [
                         {
                             "title": {
@@ -172,8 +172,8 @@
                             }
                         },
                         {
-                            "close@mei_common.menu_icon_button": {
-                                "$menu_icon_control": "mei_icons.btn_cross",
+                            "close@mei_common.flat_icon_button": {
+                                "$flat_icon_texture": "textures/ui/mei/icons/cross",
                                 "$pressed_button_name": "button.mei.filter.close",
                                 "visible": true
                             }
@@ -189,9 +189,9 @@
                                 ],
                                 "layer": 3,
                                 "color": [
-                                    0.62,
-                                    0.58,
-                                    0.72
+                                    0.64,
+                                    0.64,
+                                    0.67
                                 ],
                                 "enable_profanity_filter": false,
                                 "font_type": "default",
@@ -233,9 +233,9 @@
                                 ],
                                 "layer": 3,
                                 "color": [
-                                    0.62,
-                                    0.58,
-                                    0.72
+                                    0.64,
+                                    0.64,
+                                    0.67
                                 ],
                                 "enable_profanity_filter": false,
                                 "font_type": "default",
@@ -245,8 +245,8 @@
                             }
                         },
                         {
-                            "sort_prev@mei_common.menu_icon_button": {
-                                "$menu_icon_control": "mei_icons.btn_arrow_left",
+                            "sort_prev@mei_common.flat_icon_button": {
+                                "$flat_icon_texture": "textures/ui/mei/icons/arrow_left",
                                 "$pressed_button_name": "button.mei.filter.sort_prev",
                                 "visible": true
                             }
@@ -274,14 +274,14 @@
                             }
                         },
                         {
-                            "sort_next@mei_common.menu_icon_button": {
-                                "$menu_icon_control": "mei_icons.btn_arrow_right",
+                            "sort_next@mei_common.flat_icon_button": {
+                                "$flat_icon_texture": "textures/ui/mei/icons/arrow_right",
                                 "$pressed_button_name": "button.mei.filter.sort_next",
                                 "visible": true
                             }
                         },
                         {
-                            "sort_dir@mei_common.menu_button": {
+                            "sort_dir@mei_common.flat_button": {
                                 "$pressed_button_name": "button.mei.filter.sort_dir",
                                 "visible": true
                             }
@@ -293,27 +293,21 @@
                                 "anchor_to": "top_left",
                                 "size": [
                                     142,
-                                    1
+                                    2
                                 ],
                                 "layer": 2,
-                                "alpha": 0.75,
-                                "color": [
-                                    0.24,
-                                    0.15,
-                                    0.42
-                                ],
                                 "fill": true,
-                                "texture": "textures/ui/mei/white"
+                                "texture": "textures/ui/mei/flat/divider"
                             }
                         },
                         {
-                            "clear@mei_common.menu_button": {
+                            "clear@mei_common.flat_button": {
                                 "$pressed_button_name": "button.mei.filter.clear",
                                 "visible": true
                             }
                         },
                         {
-                            "done@mei_common.menu_button": {
+                            "done@mei_common.flat_button": {
                                 "$pressed_button_name": "button.mei.filter.done",
                                 "visible": true
                             }
@@ -449,7 +443,15 @@
         "$mei_float_side_layer|default": 30,
         "layer": "$mei_float_side_layer"
     },
+    "float_left_wrapper_s18@mei_main.side_left_wrapper_s18": {
+        "$mei_float_side_layer|default": 30,
+        "layer": "$mei_float_side_layer"
+    },
     "float_right_wrapper@MeiItemsBrowser.items_browser_ui": {
+        "$mei_float_side_layer|default": 30,
+        "layer": "$mei_float_side_layer"
+    },
+    "float_right_wrapper_s18@mei_main.side_right_wrapper_s18": {
         "$mei_float_side_layer|default": 30,
         "layer": "$mei_float_side_layer"
     },
@@ -666,16 +668,6 @@
                 "mei_backdrop@mei_main.float_backdrop": {}
             },
             {
-                "mei_right_wrapper@MeiItemsBrowser.items_browser_ui": {
-                    "layer": "$mei_side_layer"
-                }
-            },
-            {
-                "mei_left_wrapper@MeiItemsSidebar.items_sidebar_ui": {
-                    "layer": "$mei_side_layer"
-                }
-            },
-            {
                 "mei_tooltip@mei_common.tooltip_root": {}
             },
             {
@@ -719,6 +711,58 @@
         ]
     },
     "namespace": "mei_main",
+    "side_left_wrapper@MeiItemsSidebar.items_sidebar_ui": {
+        "$mei_side_layer|default": 0,
+        "layer": "$mei_side_layer"
+    },
+    "side_left_wrapper_s18@mei_main.side_left_wrapper": {
+        "$mei_side_area_size": [
+            "100%+0px",
+            "100%+-40px"
+        ],
+        "$mei_side_bar_size": [
+            "100%+0px",
+            "0%+20px"
+        ],
+        "$mei_side_progress_offset": [
+            0.0,
+            8.0
+        ],
+        "$mei_slot_item_size": [
+            16.0,
+            16.0
+        ],
+        "$mei_slot_size": [
+            18.0,
+            18.0
+        ]
+    },
+    "side_right_wrapper@MeiItemsBrowser.items_browser_ui": {
+        "$mei_side_layer|default": 0,
+        "layer": "$mei_side_layer"
+    },
+    "side_right_wrapper_s18@mei_main.side_right_wrapper": {
+        "$mei_side_area_size": [
+            "100%+0px",
+            "100%+-40px"
+        ],
+        "$mei_side_bar_size": [
+            "100%+0px",
+            "0%+20px"
+        ],
+        "$mei_side_progress_offset": [
+            0.0,
+            8.0
+        ],
+        "$mei_slot_item_size": [
+            16.0,
+            16.0
+        ],
+        "$mei_slot_size": [
+            18.0,
+            18.0
+        ]
+    },
     "tool_capture@common.button": {
         "type": "button",
         "$pressed_button_name|default": "button.mei.tool.capture",

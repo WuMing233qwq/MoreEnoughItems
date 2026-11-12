@@ -64,6 +64,20 @@ class TypeTabNav(object):
         # 开页时 tab 条要能看见选中项 —— 否则玩家看到的是"没有一个是亮的"
         self.__SyncPageToSelection()
 
+    def SetPageSize(self, page_size):  # type: (int) -> bool
+        """
+        一页放几个变了（竖页签一列放几个跟着配方页的高走）：类型表与选中都不动，视图挪到能看见选中项的那一页。
+        没装载过、或者没变，什么都不做。返回是否真的变了
+        """
+        size = max(1, int(page_size))
+        if self._page is None or size == self._page.page_size:
+            return False
+        self._page.set_page_size(size)
+        # 视图的起点要落在新的一页的开头：先回到第一页再挪，不然旧的起点（旧页长的倍数）切出来的一页是错位的
+        self._page.index = 0
+        self.__SyncPageToSelection()
+        return True
+
     def IsEmpty(self):  # type: () -> bool
         return self._page is None or self._page.length <= 0
 

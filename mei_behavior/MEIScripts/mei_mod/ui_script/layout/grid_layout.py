@@ -39,17 +39,19 @@ class GridLayout(object):
     消除散落在各处的魔法数字
     """
     PADDING = 10        # 网格区域的左右总内边距
-    HEADER_HEIGHT = 54  # 顶部控件占的高度（翻页栏等）
+    BAR_HEIGHT = 22     # 上下栏（搜索 / 翻页）的高：两侧UI缩放的缺省那一档，小一档是 20（mei_ui/common/scale.py）
 
-    def __init__(self, item_size, max_cols):  # type: (int, int) -> None
+    def __init__(self, item_size, max_cols, bar_height=BAR_HEIGHT):  # type: (int, int, int) -> None
         self.ItemSize = item_size  # type: int
         self.MaxCols = max_cols    # type: int
+        self.BarHeight = bar_height  # type: int
+        self.HeaderHeight = 2 * bar_height + self.PADDING  # type: int  # 网格以外占的高：上下两条栏 + 上下内边距
         self._cols = max_cols      # type: int
         self._rows = 0            # type: int
 
     def Recalculate(self, available_height):  # type: (int) -> None
         """ 根据可用区域高度重新计算行数 """
-        self._rows = max(1, int((available_height - self.HEADER_HEIGHT) // self.ItemSize))
+        self._rows = max(1, int((available_height - self.HeaderHeight) // self.ItemSize))
 
     def ApplyCols(self, cols):  # type: (int) -> None
         """ 应用指定的列数 """

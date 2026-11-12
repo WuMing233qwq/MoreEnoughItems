@@ -30,7 +30,7 @@
 
 全部绝对定位（同触屏菜单，menu/layout.py）；按钮宽按字算，字宽估算也用触屏菜单那一份
 """
-from MEIScripts.mei_mod.ui_script.mei_ui.menu.layout import BUTTON_PAD, MIN_BUTTON_W, text_width
+from MEIScripts.mei_mod.ui_script.mei_ui.menu.layout import BUTTON_PAD, DIVIDER_H, MIN_BUTTON_W, text_width
 
 WIDTH = 150
 """ 框宽 """
@@ -147,7 +147,7 @@ def menu_layout(chip_texts, value_text, dir_texts, foot_texts, max_rows=SCROLL_R
     out["dir"] = ((x, y), (min(dir_w, WIDTH - PAD - x), BUTTON_H))
     y += BUTTON_H + ROW_GAP
 
-    out["line"] = ((PAD, y), (INNER_W, 1))
+    out["line"] = ((PAD, y), (INNER_W, DIVIDER_H))  # 扁平分隔线的贴图 1×2（下面一行透明），照原尺寸画；看得见的只有 1 像素
     y += 1 + ROW_GAP
 
     right = WIDTH - PAD

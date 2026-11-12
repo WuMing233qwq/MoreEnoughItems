@@ -197,8 +197,8 @@
         "$star_button_ignored|default": false, 
         "$top_button_ignored|default": false, 
         "$tree_button_ignored|default": true, 
-        "anchor_from": "bottom_right", 
-        "anchor_to": "bottom_left", 
+        "anchor_from": "top_right", 
+        "anchor_to": "top_left", 
         "controls": [
             {
                 "0@mei_recipe_common.action_button": {
@@ -376,7 +376,7 @@
         "maximum_grid_items": 2, 
         "offset": [
             0.0, 
-            40.0
+            21.0
         ], 
         "type": "grid"
     }

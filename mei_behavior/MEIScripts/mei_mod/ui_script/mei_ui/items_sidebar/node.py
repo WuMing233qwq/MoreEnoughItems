@@ -21,7 +21,7 @@
 import mod.client.extraClientApi as clientApi
 
 from MEIScripts.mei_mod.state.settings import GetRowItems
-from MEIScripts.mei_mod.ui_script.layout.grid_layout import GridLayout
+from MEIScripts.mei_mod.ui_script.mei_ui.common.scale import NORMAL
 from script import ItemsSidebarScript
 
 ViewBinder = clientApi.GetViewBinderCls()
@@ -33,10 +33,9 @@ class ItemsSidebarNode(ItemsSidebarScript):
     def __init__(self):
         ItemsSidebarScript.__init__(self)
 
-        self.ItemSize = 20
         self.RowItems = GetRowItems()  # 与物品栏共用同一个设置项
-
-        self.Layout = GridLayout(self.ItemSize, self.RowItems)
+        # 格子与栏的大小按两侧UI缩放的那一档：主节点建好控件后按建的那一档再给一次（UIMainNode.EnsureScripts）
+        self.ApplyScale(NORMAL)
 
     def OnCreate(self):
         self.InitScript()

@@ -32,15 +32,23 @@ class UiPathConst(object):
     MeiRoot = "/mei_ui"
     LeftWrapper = MeiRoot + "/mei_left_wrapper"
     RightWrapper = MeiRoot + "/mei_right_wrapper"
-    # 覆盖层的定义（mei_main 命名空间下）：支持的界面两栏写在 JSON 里（下面头两个定义，平时那一档的层级）；
-    # 注入的界面（HUD、强制兼容）与 MEI 自己的界面用不带两栏的那个，要展开时按后两个定义把两栏建出来（UIMainNode.EnsureScripts）——
-    # 后两个生下来就是悬浮窗管事时那一档的层级（这几种界面两栏一露面就是悬浮窗管事），不用再 SetLayer
+    # 覆盖层的定义（mei_main 命名空间下）：支持的界面用 mei_proxy_ui，注入的界面（HUD、强制兼容）与 MEI 自己的界面用 mei_float_ui。
+    # 两栏不写在覆盖层里，一律由主节点动态建（UIMainNode.EnsureScripts，名字取 LeftWrapper / RightWrapper 的最后一段）：
+    # 按设置「两侧UI缩放」选 20 或 18 那一档（mei_ui/common/scale.py），支持的界面用平时那一档层级的定义，
+    # 别的界面用悬浮窗那一档的（这几种界面两栏一露面就是悬浮窗管事），生下来就是要的层级，不用再 SetLayer
     ProxyRootDef = "mei_proxy_ui"
     FloatRootDef = "mei_float_ui"
-    RightWrapperDef = "MeiItemsBrowser.items_browser_ui"
+    RightWrapperDef = "MeiItemsBrowser.items_browser_ui"  # 两栏本来的定义（格子 20 那一档的尺寸写在它们的变量缺省值上）
     LeftWrapperDef = "MeiItemsSidebar.items_sidebar_ui"
-    FloatRightWrapperDef = "mei_main.float_right_wrapper"
+    SideRightWrapperDef = "mei_main.side_right_wrapper"  # 平时那一档层级（$mei_side_layer）
+    SideLeftWrapperDef = "mei_main.side_left_wrapper"
+    FloatRightWrapperDef = "mei_main.float_right_wrapper"  # 悬浮窗那一档层级（$mei_float_side_layer）
     FloatLeftWrapperDef = "mei_main.float_left_wrapper"
+    SideRightWrapperSmallDef = "mei_main.side_right_wrapper_s18"  # 18 那一档：只换格子与上下栏的五个尺寸变量
+    SideLeftWrapperSmallDef = "mei_main.side_left_wrapper_s18"
+    FloatRightWrapperSmallDef = "mei_main.float_right_wrapper_s18"
+    FloatLeftWrapperSmallDef = "mei_main.float_left_wrapper_s18"
+    CellMark = "/cell_mark"  # 两栏根上的记号（接在两栏的路径后面）：大小就是建这一栏的那一档的格子（$mei_slot_size），主节点读它认出是哪一档
     # 悬浮窗（docs/architecture/floating.md）
     Backdrop = MeiRoot + "/mei_backdrop"  # 从悬浮窗点开 MEI 时盖住原版界面的黑底（30% 透明度，吞点击；点它收起）
     FindCapture = MeiRoot + "/mei_find"  # 查找状态：整屏透明的捕获层，下一次点哪就查哪（layer 95，在悬浮窗下面）
@@ -114,28 +122,31 @@ class RecipeDetailsPath(object):
     Root = UiPathConst.MeiRoot + "/recipe_details"
     Screen = Root + "/RecipeDetails"
 
+    # 配方页本体（content）加上右边伸出去的竖页签（crafting_stations）：content_panel 宽 = content + 竖页签伸出的那一截
     ContentPanel = Screen + "/content_panel"
     Content = ContentPanel + "/content"
     Recipes = Content + "/recipes"
     FirstRecipe = Recipes + "/recipe1"
 
-    DisplayNameLabel = Content + "/top/line1/bg/display_name"
-    Line1PageUpBtn = Content + "/top/line1/bg/page_up/button"
-    Line1PageDownBtn = Content + "/top/line1/bg/page_down/button"
-    Line2PageIndexLabel = Content + "/top/line2/page_index"
-    Line2PageUpBtn = Content + "/top/line2/bg/page_up/button"
-    Line2PageDownBtn = Content + "/top/line2/bg/page_down/button"
+    # 顶栏只有一行：返回 · 类型名 · ◀ 页码 ▶ · 关闭
+    HeaderLine = Content + "/top/bg/line"
+    BackBtn = HeaderLine + "/back/button"
+    DisplayNameLabel = HeaderLine + "/title/display_name"
+    PageDownBtn = HeaderLine + "/page_down/button"
+    PageIndexLabel = HeaderLine + "/page_index/label"
+    PageUpBtn = HeaderLine + "/page_up/button"
+    CloseBtn = HeaderLine + "/close/button"
 
+    # 左边的工作站一列（伸出面板左边）
     CraftingItems = ContentPanel + "/crafting_items"
     CraftingItemsGrid = CraftingItems + "/grid"
 
-    BackBtn = ContentPanel + "/right/back/button"
-    CloseBtn = ContentPanel + "/right/close/button"
-
+    # 右边的竖页签（配方类型）：上下两头是页签的翻页按钮（page_down 在上、翻到上一页；page_up 在下、翻到下一页），中间是页签
     CraftingStations = Screen + "/crafting_stations"
     StationsPageUpBtn = CraftingStations + "/overlay/page_up/button"
     StationsPageDownBtn = CraftingStations + "/overlay/page_down/button"
-    TypeTabGrid = CraftingStations + "/type_tab/grid"
+    TypeTabArea = CraftingStations + "/type_tab"
+    TypeTabGrid = TypeTabArea + "/grid"
 
     # 配方行子控件名. 造控件(script.py)与解析按钮路径(binding.py)必须用同一个值 ——
     # 点击绑定拿不到 collection_index, 行号只能从路径里解出来.
@@ -149,11 +160,10 @@ class RecipeDetailsPath(object):
     # (ToggleInnerPath 当时就已经零调用, 一并清掉.)
 
     # 配方页开着时，物品栏、收藏栏避让的是配方页自己的这几块。**第一块就是这时的主内容**，顺序别动；
-    # JSON 里是 recipe_details_ui/RecipeDetails/…，建出来的控件叫 recipe_details（Root），所以这里是运行时的路径
+    # JSON 里是 recipe_details_ui/RecipeDetails/…，建出来的控件叫 recipe_details（Root），所以这里是运行时的路径。
+    # Screen 的宽跟着 content_panel，已经含右边的竖页签；左边的工作站一列伸在外面，单独一块
     AdaptivePaths = (
         Screen,
-        CraftingStations + "/overlay",
-        ContentPanel + "/right",
         CraftingItems,
     )
 
@@ -221,10 +231,10 @@ class FilterConst(object):
         "/scroll_touch/scroll_view/stack_panel/background_and_viewport/scrolling_view_port/scrolling_content",
     )
     ChipSub = "/chip_{}"  # 标签块相对内容那一层的路径
-    LabelSub = "/label"  # 按钮上的字（mei_common.menu_button）
-    FaceSub = "/default"  # 按钮平时的底图：按下的标签块换成按下的样子
-    FaceNormal = "textures/ui/mei/button/tooltip_button/button"
-    FaceOn = "textures/ui/mei/button/tooltip_button/button_pressed"
+    LabelSub = "/label"  # 按钮上的字（mei_common.flat_button）
+    FaceSub = "/default"  # 按钮平时的底图：按下的标签块换成选中的样子
+    FaceNormal = "textures/ui/mei/flat/btn"  # 与 MenuConst.FaceNormal 同一张
+    FaceOn = "textures/ui/mei/flat/btn_on"  # 扁平风的选中：绿色下划线（与 MenuConst.FaceOn 同一张）
 
 
 class FocusConst(object):
@@ -240,22 +250,28 @@ class TooltipPath(object):
     DesktopFrame = Desktop + "/frame"  # 偏移与贴边翻转改这一层（直接改跟随控件的偏移会被 follows_cursor 盖掉）；藏 tooltip 就藏它
     DesktopGap = Desktop + "/cursor_gap"  # 只是个记号：它的 offset 就是 tooltip 离光标的距离（横, 竖），改 JSON 就行，脚本只读不改
     Touch = Root + "/touch"  # 移动端（触屏菜单）：脚本摆在点开的格子所在区域外侧（或格子旁），不动；本身是吞点击的 input_panel（点菜单空白处不落到下面的格子上）
-    # 菜单是一个框（tooltip.md §6.12）：顶栏（种类 + 关闭）、内容、分隔线、分段的按钮区，
-    # 子控件全部绝对定位，位置与尺寸由菜单按排版写（menu.layout.box_layout），不靠 stack_panel 收拢
-    TouchFrame = Touch + "/frame"  # 框：purpleBorder 的底，也是透明着建的那一层（alpha 0 + propagate_alpha，建齐了一起拉回）
-    TouchKind = TouchFrame + "/kind"  # 顶栏左边：这是哪种格子（灰字）
+    # 菜单是一张信息卡 + 图标操作条（tooltip.md §6.14）：顶栏（物品图标、种类、关闭）、内容、分隔线、按钮区
+    # （候选的翻页行、一排图标按钮、「更多」展开的两列文字按钮），子控件全部绝对定位，位置与尺寸由菜单按排版写
+    # （menu.layout.card_layout），不靠 stack_panel 收拢
+    TouchFrame = Touch + "/frame"  # 框：扁平弹出层的底（flat/pop），也是透明着建的那一层（alpha 0 + propagate_alpha，建齐了一起拉回）
+    TouchIcon = TouchFrame + "/icon"  # 顶栏左边：这一格的物品图标（扁平格子底 + 物品渲染器），没有物品时藏着
+    TouchIconItem = TouchIcon + "/item"  # 图标里的物品渲染器（SetUiItem）
+    TouchKind = TouchFrame + "/kind"  # 顶栏：这是哪种格子（灰字），收藏格后面跟着数量「×2」
     TouchCloseSlot = TouchFrame + "/close_slot"  # 顶栏右边小 x 的插槽：脚本只摆它（右上角），小 x 自己的大小、偏移写在 JSON 里
-    TouchClose = TouchCloseSlot + "/close"  # 小 x（照搜索框的清空按钮，只有图标；点击名 MenuConst.CloseName）：$menu_icon_size 与 offset 在 JSON 里调
+    TouchClose = TouchCloseSlot + "/close"  # 小 x（扁平图标按钮；点击名 MenuConst.CloseName）：$flat_icon_size 与 offset 在 JSON 里调
     TouchContent = TouchFrame + "/content"  # 内容控件建在这里（尺寸跟内容）；触屏上内容不画自己的底，框画（BlankSprite）
     TouchDivider = TouchFrame + "/divider"  # 内容与按钮区之间的分隔线
-    TouchActions = TouchFrame + "/actions"  # 按钮区（panel）：段名、步进器的数字、按钮池
-    MenuButton = TouchActions + "/button_{}"  # 按钮池里第 i 个（format）；位置、尺寸、文字、显隐都由脚本写
+    TouchActions = TouchFrame + "/actions"  # 按钮区（panel）：候选的翻页行、图标操作条、「更多」的分隔线与文字按钮
+    MenuBar = TouchActions + "/bar_{}"  # 图标操作条里第 i 个按钮（format）：图标在上、字在下，位置、尺寸、图标、文字、显隐都由脚本写
+    MenuBarIconSub = "/icon"  # 操作条按钮里的图标（image：SetSprite 换图、SetSpriteColor 染色）
+    MenuButtonFaceSub = "/default"  # 按钮平时的底：选中（收藏着、展开着、「更多」开着）换成带绿色下划线的那张
+    MenuButton = TouchActions + "/button_{}"  # 「更多」里第 i 个文字按钮（format）；位置、尺寸、文字、显隐都由脚本写
+    MenuMoreLine = TouchActions + "/more_line"  # 「更多」展开时操作条下面的分隔线
     MenuIcon = TouchActions + "/icon_{}"  # 图标按钮（format 槽名，MenuConst.Icons）：候选的左右箭头，尺寸写在 JSON 里，位置由脚本写
-    MenuSection = TouchActions + "/sec_{}"  # 第 i 段的段名（format），灰字
-    MenuNumber = TouchActions + "/num_{}"  # 第 i 个步进器中间的数字（format）：数量「×2」、候选「2 / 86」
+    MenuNumber = TouchActions + "/num_{}"  # 翻页行中间的数字（format）：候选「2 / 86」
     MenuButtonLabelSub = "/label"
-    MenuButtonMaskSub = "/mask"  # 灰色遮罩：动作暂时用不了时盖上（点了不执行）
-    BlankSprite = "textures/ui/mei/blank"  # 1×1 的透明图：触屏上内容控件换成它，不画自己的 purpleBorder（框已经画了）
+    MenuButtonMaskSub = "/mask"  # 暗色遮罩：动作暂时用不了时盖上（点了不执行）
+    BlankSprite = "textures/ui/mei/blank"  # 1×1 的透明图：触屏上内容控件换成它，不画自己的底（框已经画了）
 
     # 内容控件（接受物品 / 某个类型的配方预览）显示时建进宿主；收起时藏着不删，下次同一种直接复用、换一种才先删再建 ——
     # 同一时刻只有一个。名字 = ContentName + 定义名（换一种时新旧不同名，删和建在同一帧也撞不上）
@@ -284,15 +300,23 @@ class TooltipKind(object):
 
 
 class MenuConst(object):
-    # 触屏二级菜单（docs/architecture/tooltip.md §6）
-    PoolSize = 16  # 按钮池几个按钮，必须与 mei_common.json 的 button_0 … button_15 一致（收藏格最多 13 个动作，关闭在顶栏）
-    SectionCount = 6  # 段名标签几个，与 sec_0 … sec_5 一致；段比它多就不写段名
-    NumberCount = 2  # 步进器的数字标签几个，与 num_0 … num_1 一致；多出来的步进器照普通按钮排
-    ButtonName = "button.mei.menu.{}"  # 第 i 个按钮的 $pressed_button_name，也是 BF_ButtonClickUp 绑定名（只能单个绑定，§9）
+    # 触屏二级菜单（docs/architecture/tooltip.md §6、§6.14）
+    BarSize = 6  # 图标操作条几个按钮，必须与 mei_common.json 的 bar_0 … bar_5 一致（含「更多」）
+    PoolSize = 16  # 「更多」里的文字按钮几个，必须与 button_0 … button_15 一致（收藏格最多 13 个动作，关闭在顶栏）
+    NumberCount = 1  # 翻页行的数字标签几个，与 num_0 一致
+    BarName = "button.mei.menu.bar.{}"  # 操作条第 i 个按钮的 $pressed_button_name，也是 BF_ButtonClickUp 绑定名（只能单个绑定，§9）
+    ButtonName = "button.mei.menu.{}"  # 「更多」里第 i 个按钮的 $pressed_button_name 与绑定名
     CloseName = "button.mei.menu.close"  # 顶栏关闭按钮的 $pressed_button_name 与绑定名
     Icons = ("prev", "next")  # 图标按钮的槽名，与 mei_common.json 的 icon_prev / icon_next 一致；动作用 MenuAction(icon=槽名) 认领
     IconName = "button.mei.menu.icon.{}"  # 图标按钮的 $pressed_button_name 与绑定名（format 槽名）
     BackdropName = "button.mei.menu.backdrop"  # 宿主底板吞点击用的名字，不挂绑定
+    GlyphPath = "textures/ui/mei/icons/{}"  # 操作条按钮的图标（format MenuAction.Glyph）：白图，脚本按状态染色
+    FaceNormal = "textures/ui/mei/flat/btn"  # 按钮平时的底
+    FaceOn = "textures/ui/mei/flat/btn_on"  # 选中的底（绿色下划线）
+    GlyphColor = (0.85, 0.86, 0.89)  # 图标平时的颜色（深色底上的浅灰）
+    GlyphOnColor = (0.49, 0.77, 0.5)  # 选中：扁平风的强调绿，和 btn_on 的下划线一个颜色
+    GlyphDangerColor = (0.91, 0.45, 0.37)  # 删除类：红
+    GlyphMutedColor = (0.48, 0.48, 0.51)  # 用不了：灰
 
 
 class MenuKey(object):
@@ -317,6 +341,7 @@ class MenuKey(object):
     NextCandidate = "next_candidate"  # 多候选格：下一个候选
     RecipeTree = "recipe_tree"  # 以这个物品为根开配方树（docs/architecture/recipe_tree.md）
     OpenTree = "open_tree"  # 配方树收藏：打开这棵树
+    More = "more"  # 「更多」：操作条放不下的动作收在它下面，点一下展开 / 收起（菜单自己加，面板不用写）
     Close = "close"  # 关闭：菜单自己加在最后，面板不用写
 
 
@@ -362,7 +387,8 @@ class TreeConst(object):
     LineDef = UiNameSpace + ".line"
     # 静态按钮的点击名（$pressed_button_name，也是 BF_ButtonClickUp 绑定名 —— 只能单个绑定，引擎结论 §9）
     ButtonName = "button.mei.tree.{}"  # 顶栏、汇总的按钮（format 名字，与 JSON 里的控件名相同）
-    TopButtons = ("minus", "plus", "x64", "center", "unfold", "fold2", "back", "save")
+    TopButtons = ("minus", "plus", "x64", "center", "unfold", "fold2", "back", "save", "side")
+    TopTextButtons = ("minus", "plus", "x64")  # 顶栏里写字的那几个（按字改宽）；其余是 14×14 的图标按钮，悬停出字
     TopClose = "button.mei.tree.close_button"  # 顶栏右上角的 x
     TabButtons = ("tab_raw", "tab_byproduct", "tab_tool", "tab_lack")
     SummaryButtons = ("refresh", "page_prev", "page_next")
@@ -374,7 +400,15 @@ class TreeConst(object):
     MenuNumbers = 2  # num_0 … num_1
     MenuIcons = (("prev_0", "next_0"), ("prev_1", "next_1"))  # 两个步进器的左右箭头
     StripCells = 14  # 菜单里那一条配方最多几格（c0 … c13）
-    SummaryCells = 24  # 汇总一页最多几格（s0 … s23），实际按宽度摆得下几格
+    SummaryRows = 16  # 右侧汇总清单一页最多几行（r0 … r15），实际按高度摆得下几行
+    SummaryRowH = 22  # 一行的高（格子 20 + 间隔 2，与 JSON 里 r{i} 的 offset 一致）
+    SummaryTop = 18  # 清单从汇总栏的哪儿开始（页签 14 + 上下各 2，与 JSON 里 rows 的 offset 一致）
+    SummaryBottom = 20  # 汇总栏底下翻页 / 刷新背包那一行占的高（14 + 上下留白）
+    SideMinWidth = 128  # 右侧汇总栏最窄多宽（页签按字算宽，比它宽就跟着页签）
+    SideGap = 4  # 汇总栏与视口之间的空
+    SideFrames = 6  # 展开 / 收起的过渡帧数（每秒 30 帧，约 0.2 秒）
+    IconColor = (0.86, 0.87, 0.9)  # 顶栏图标平时的颜色（JSON 里 flat_icon_button 的 icon 也是它）
+    IconOnColor = (0.49, 0.77, 0.5)  # 图标按钮「开着」：汇总栏展开着、这棵树收藏过
     # 格子上的上标：2×2 的白色小方块（离格子边 2 像素），按下面的颜色染（不用圆点贴图或「·」字符：都不好看）；
     # 颜色压暗一点，配这套灰色界面
     BadgeColors = {  # 右上角：这一格为什么停在这儿、当原料算（solver 的 STATE_*）；正常展开的、真没配方的不画
@@ -388,8 +422,8 @@ class TreeConst(object):
     HaveColor = (0.4, 0.9, 0.4)  # 汇总：背包里够
     LackColor = (1.0, 0.4, 0.4)  # 汇总：还缺
     ChanceColor = (0.75, 0.2, 0.6)  # 汇总「副产物」页右上的小方块：里面有概率产出（按每次都出算，点开看平均）
-    TabOnColor = (1.0, 0.88, 0.4)  # 汇总：选中的页签
-    TabOffColor = (1.0, 1.0, 1.0)
+    TabOnColor = (1.0, 1.0, 1.0)  # 汇总：选中的页签（另有一条绿色下划线，按钮的 on）
+    TabOffColor = (0.62, 0.63, 0.67)
 
 
 class TreePath(object):
@@ -402,6 +436,7 @@ class TreePath(object):
     Bar = Top + "/bar"
     Qty = Bar + "/qty/label"
     TopClose = Bar + "/close"
+    TopBack = Top + "/back"  # 「返回」在顶栏最左边，不在按钮条里
     Cut = Window + "/cut"  # 视口（clips_children）
     DragPanel = Cut + "/dragpanel"  # 大小 = 画布 ×2 − 视口（成就界面的做法），居中在视口里
     Canvas = DragPanel + "/canvas"  # 可拖的 input_panel（contained）：拖拽偏移就是视野
@@ -411,17 +446,20 @@ class TreePath(object):
     Cells = Content + "/cells"
     Status = Cut + "/status"
     Busy = Cut + "/busy"
-    Summary = Window + "/summary"
-    Tabs = Summary + "/tabs"
-    Note = Summary + "/note"  # 右边那句说明：和页签同一行（锚右上）
-    NoteLow = Summary + "/note_low"  # 同一句放不下时用这个：底下一行（锚右下），和左边的统计同一行
-    Slots = Summary + "/slots"
-    SummaryCell = Slots + "/s{}"
-    PagePrev = Summary + "/prev"
-    PageNext = Summary + "/next"
-    Page = Summary + "/page"
-    Empty = Summary + "/empty"
-    Foot = Summary + "/foot"
+    Summary = Window + "/summary"  # 右侧汇总栏（锚右上、clips_children）：宽由脚本改，展开 / 收起有过渡
+    SummaryBody = Summary + "/body"  # 定宽的内容：汇总栏变窄时从右边裁掉，像抽屉
+    Tabs = SummaryBody + "/tabs"
+    Rows = SummaryBody + "/rows"
+    SummaryRow = Rows + "/r{}"  # 清单的一行：格子 + 名字 + 一行「需 · 有 · 缺」
+    SummaryCell = SummaryRow + "/cell"
+    RowName = "/name"
+    RowInfo = "/info"
+    PagePrev = SummaryBody + "/prev"
+    PageNext = SummaryBody + "/next"
+    Page = SummaryBody + "/page"
+    Refresh = SummaryBody + "/refresh"
+    Empty = SummaryBody + "/empty"
+    Foot = SummaryBody + "/foot"  # 统计（锚左下、宽是汇总栏的宽，放不下自己换行；部分结果的说明写在它前面一行）
     Menu = Root + "/menu"  # 节点菜单：吞点击的 input_panel，尺寸跟着框
     MenuFrame = Menu + "/frame"
     MenuKind = MenuFrame + "/kind"
