@@ -30,6 +30,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui.core.adaptive import AdaptiveControlReg
 from MEIScripts.mei_mod.ui_script.mei_ui.core.focus import FocusTarget, item_from_hit
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import NotifyNoRecipes
 from MEIScripts.mei_mod.ui_script.proxy.focus.manager import FocusManager, GetCursorPos
+from MEIScripts.utils import utilities
 from MEIScripts.utils.text import native_str
 
 
@@ -234,6 +235,16 @@ class UIScriptMain(object):
     def GetMEIRootControl(self):
         """ 获取MEI根控件 """
         return self.GetRootBaseUIControl(UiPathConst.MeiRoot)
+
+    def GetScreenRect(self):  # type: () -> tuple or None
+        """
+        整个屏幕的全局矩形 ((左, 上), (右, 下))：量界面最外层的控件（utilities.GetScreenRect），不是 MEI 挂载的根面板 ——
+        那只是去掉安全区边距后的可用区域。两栏、配方页这些布局照挂载的根排；物品提示、触屏菜单这类浮在最上面的框贴真正的屏幕边。
+        取不到给 None
+        """
+        if self.ScreenNode is None:
+            return None
+        return utilities.GetScreenRect(self.ScreenNode, self.RootPath)
 
     def GetRootBaseUIControl(self, path):
         """ 从根路径获取BaseUIControl实例 """

@@ -191,7 +191,10 @@ class TooltipManager(object):
         self.BuildTicks = 0  # type: int
         self.LastTipSize = None  # type: tuple or None  # 构建中上一帧量到的内容尺寸：两帧一样才算排好
         self.Offset = None  # type: tuple or None  # frame 相对宿主的偏移（上次推下去的）
-        self.Bounds = None  # type: tuple or None  # tooltip 根（整块 MEI 覆盖层）的全局矩形，每次显示量一次
+        # 贴边的范围：整个屏幕的全局矩形（MainNode.GetScreenRect，界面最外层的控件），每次显示量一次。
+        # 不用 tooltip 根（MEI 覆盖层挂在原版界面的根面板下，那只是去掉安全区边距的可用区域，贴它的边 tooltip 会被无故挤开）；取不到才退回它
+        self.Bounds = None  # type: tuple or None
+        self.Origin = None  # type: tuple or None  # tooltip 根的全局左上角：触屏宿主是它的子控件，摆位置时拿它把全局坐标换成相对坐标
         self.Gap = (GAP, GAP)  # type: tuple  # 离光标多远、默认在哪边：JSON 里 cursor_gap 的 offset，每次显示读一次
         self.__Hovered = {}  # type: dict  # id(面板) -> 面板：这一帧悬停探针报上来的
         self.__TouchHovered = {}  # type: dict  # 触屏：上一帧报上来的（认「移进」用：这一帧有、上一帧没有的那一格）
@@ -453,6 +456,7 @@ class TooltipManager(object):
         self.LastTipSize = None
         self.Offset = None
         self.Bounds = None
+        self.Origin = None
 
     # 每帧（界面代理的 OnTick）
 # ======================================================================================================================
@@ -720,6 +724,7 @@ class TooltipManager(object):
         self.LastTipSize = None
         self.Offset = None
         self.Bounds = None
+        self.Origin = None
         self.Placed = None
 
     def __PollBuild(self, mouse):
@@ -758,7 +763,9 @@ class TooltipManager(object):
         self.Phase = PHASE_SHOWN
         root = self.MainNode.GetUIControl(TooltipPath.Root)
         if root is not None:
-            self.Bounds = utilities.GetControlRectSize(root)
+            root_rect = utilities.GetControlRectSize(root)
+            self.Origin = root_rect[0]
+            self.Bounds = self.__ScreenRect() or root_rect
             if self.Host == HOST_TOUCH:
                 self.__PlaceTouch(size)
             else:
@@ -769,6 +776,17 @@ class TooltipManager(object):
         if tip is not None:
             tip.SetAlpha(1.0)
         self.__SetTouchAlpha(1.0)
+
+    def __ScreenRect(self):  # type: () -> tuple or None
+        """ 整个屏幕的全局矩形（主节点给）；主节点没有这个接口、量不到时给 None，调用方退回 tooltip 根 """
+        get = getattr(self.MainNode, "GetScreenRect", None)
+        if get is None:
+            return None
+        try:
+            return get()
+        except Exception as e:  # noqa
+            logger.warn("[MEI/tooltip] 量不到屏幕的大小，按 MEI 覆盖层贴边: {}".format(error_text(e)))
+            return None
 
     # 摆位置
 # ======================================================================================================================
@@ -836,7 +854,7 @@ class TooltipManager(object):
         竖直方向跟着那一格），没给就摆在格子旁（place_beside）；都会贴屏幕边兜底
         """
         host = self.MainNode.GetUIControl(TooltipPath.Touch)
-        if host is None or self.Bounds is None:
+        if host is None or self.Bounds is None or self.Origin is None:
             return
         size = (int(round(size[0])), int(round(size[1])))
         self.Placed = size
@@ -856,7 +874,7 @@ class TooltipManager(object):
         frame = self.MainNode.GetUIControl(TooltipPath.TouchFrame)
         if frame is not None:
             frame.SetSize(total)
-        (root_x, root_y), _ = self.Bounds
+        root_x, root_y = self.Origin
         rect = self.AnchorRect or ((0, 0), (0, 0))
         if self.OppositeSide:
             x, y = place_opposite(rect, total, self.Bounds)

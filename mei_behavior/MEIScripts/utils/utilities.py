@@ -117,6 +117,33 @@ def GetControlRectSize(control):  # type: (any) -> tuple
     size_x, size_y = GetControlSizeInt(control)
     return (int(pos_x), int(pos_y)), (size_x + int(pos_x), size_y + int(pos_y))
 
+def ScreenTopPath(root_path):  # type: (str) -> str
+    """
+    挂载路径所在界面最外层的控件：路径的第一段。common.base_screen 派生的界面（原版容器、HUD、MEI 自己的界面、配方树）
+    是 /variables_button_mappings_and_controls —— 它铺满整个屏幕；它下面的 safezone_screen_matrix … root_screen_panel
+    （MEI 挂载的根）只是去掉安全区边距后的可用区域
+    """
+    head = (root_path or "").strip("/").split("/")[0]
+    return "/" + head if head else ""
+
+def GetScreenRect(screen_node, root_path):  # type: (any, str) -> tuple or None
+    """
+    整个屏幕的全局矩形 ((左, 上), (右, 下))：量界面最外层的控件（ScreenTopPath），不是挂载的根。
+    布局按挂载的根排就对了；物品提示、菜单这类浮在最上面的框要贴的是真正的屏幕边。取不到给 None，调用方退回挂载的根
+    """
+    path = ScreenTopPath(root_path)
+    if not path:
+        return None
+    try:
+        control = screen_node.GetBaseUIControl(path)
+        if not control:
+            return None
+        rect = GetControlRectSize(control)
+    except Exception:  # noqa  界面刚拆、控件已经不在
+        return None
+    (left, top), (right, bottom) = rect
+    return rect if right > left and bottom > top else None
+
 def SetButtonEnable(control, enable):
     """ 设置按钮是否可用 """
     control.SetTouchEnable(enable)

@@ -34,6 +34,7 @@ from mod_log import logger
 from MEIScripts.constants.ui import TreeConst, TreePath
 from MEIScripts.mei_mod.state.settings import IsTreePreviewEnabled
 from MEIScripts.mei_mod.ui_script.mei_ui.menu import layout
+from MEIScripts.utils import utilities
 from MEIScripts.utils.text import error_text, native_str
 
 from .cell import TreeCell
@@ -523,15 +524,28 @@ class TreeMenu(object):
                 self.Numbers[index].SetVisible(False)
 
     def __Place(self, size, anchor):
-        root = self.Screen.GetBaseUIControl(TreePath.Root)
-        try:
-            root_w, root_h = root.GetSize()
-        except Exception:  # noqa
-            root_w, root_h = 427, 240
+        left, top, right, bottom = self.__Bounds()
         x0, y0, w0, _h0 = anchor
         x = x0 + w0 + 4
-        if x + size[0] > root_w - 4:
+        if x + size[0] > right - 4:
             x = x0 - 4 - size[0]
-        x = max(4, min(int(root_w) - 4 - size[0], x))
-        y = max(4, min(int(root_h) - 4 - size[1], y0 - 8))
+        x = max(left + 4, min(right - 4 - size[0], x))
+        y = max(top + 4, min(bottom - 4 - size[1], y0 - 8))
         self.Host.SetPosition((int(x), int(y)))
+
+    def __Bounds(self):  # type: () -> tuple
+        """
+        菜单能摆的范围 (左, 上, 右, 下)，相对界面根面板（菜单宿主是它的子控件，anchor 也是相对它的）：整个屏幕（界面最外层的控件），
+        不是根面板 —— 根面板只是去掉安全区边距的可用区域，菜单贴它的边会被无故挤开。量不到屏幕时退回根面板
+        """
+        root = self.Screen.GetBaseUIControl(TreePath.Root)
+        try:
+            root_x, root_y = root.GetGlobalPosition()
+            root_w, root_h = root.GetSize()
+        except Exception:  # noqa
+            root_x, root_y, root_w, root_h = 0, 0, 427, 240
+        screen = utilities.GetScreenRect(self.Screen, TreePath.Root)
+        if screen is None:
+            return 0, 0, int(root_w), int(root_h)
+        (s_left, s_top), (s_right, s_bottom) = screen
+        return (int(s_left - root_x), int(s_top - root_y), int(s_right - root_x), int(s_bottom - root_y))
