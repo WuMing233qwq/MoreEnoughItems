@@ -1418,14 +1418,14 @@
         "layer": 1,
         "alpha": 0.0,
         "propagate_alpha": true,
-        "texture": "textures/ui/mei/flat/pop"
+        "texture": "textures/ui/purpleBorder"
     },
     "tooltip_item_panel@mei_common.slot_base": {
         "$more_text_binding_name": "('#' + $binding_name_prefix + '.more.text')",
         "$more_visible_binding_name": "('#' + $binding_name_prefix + '.more.visible')",
         "controls": [
             {
-                "background@mei_common.flat_slot_background": {}
+                "background@mei_common.slot_background": {}
             },
             {
                 "item@mei_common.slot_item": {}

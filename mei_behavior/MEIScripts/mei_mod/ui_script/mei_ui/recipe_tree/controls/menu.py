@@ -34,6 +34,7 @@ from mod_log import logger
 from MEIScripts.constants.ui import TreeConst, TreePath
 from MEIScripts.mei_mod.state.settings import IsTreePreviewEnabled
 from MEIScripts.mei_mod.ui_script.mei_ui.menu import layout
+from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.layout import place_beside
 from MEIScripts.utils import utilities
 from MEIScripts.utils.text import error_text, native_str
 
@@ -48,6 +49,8 @@ LINE_H = 10
 CELL = 20
 ARROW_W = 14
 """ 一条配方里「->」那一格多宽 """
+MENU_GAP = 4
+""" 菜单离点开它的那一格多远 """
 
 STRIP_PREVIEW = "preview"
 """ 点了配方预览里的一格：on_strip((STRIP_PREVIEW, Item, 数量)) —— 预览的格子给的是 Item，不是物品键 """
@@ -524,13 +527,13 @@ class TreeMenu(object):
                 self.Numbers[index].SetVisible(False)
 
     def __Place(self, size, anchor):
+        """
+        摆在点开它的那一格右边、放不下放左边，两边都放不下贴屏幕右边，上下夹在屏幕里 —— 和 MEI 的触屏菜单同一个摆法（tooltip.layout.place_beside），
+        贴到屏幕边为止、不另留空：窗口离根面板正好 4，原来再留 4 像素，菜单停的地方就和窗口的框一样，看着像被窗口框住了
+        """
         left, top, right, bottom = self.__Bounds()
-        x0, y0, w0, _h0 = anchor
-        x = x0 + w0 + 4
-        if x + size[0] > right - 4:
-            x = x0 - 4 - size[0]
-        x = max(left + 4, min(right - 4 - size[0], x))
-        y = max(top + 4, min(bottom - 4 - size[1], y0 - 8))
+        x0, y0, w0, h0 = anchor
+        x, y = place_beside(((x0, y0 - 8), (x0 + w0, y0 + h0)), size, ((left, top), (right, bottom)), MENU_GAP)
         self.Host.SetPosition((int(x), int(y)))
 
     def __Bounds(self):  # type: () -> tuple
