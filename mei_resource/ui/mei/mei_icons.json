@@ -177,5 +177,21 @@
         ],
         "texture": "textures/ui/mei/icons/tree"
     },
+    "group_badge_minus": {
+        "type": "image",
+        "size": [
+            7,
+            7
+        ],
+        "texture": "textures/ui/mei/icons/group_minus"
+    },
+    "group_badge_plus": {
+        "type": "image",
+        "size": [
+            7,
+            7
+        ],
+        "texture": "textures/ui/mei/icons/group_plus"
+    },
     "namespace": "mei_icons"
 }

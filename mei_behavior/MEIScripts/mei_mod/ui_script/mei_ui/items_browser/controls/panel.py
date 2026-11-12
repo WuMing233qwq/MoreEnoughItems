@@ -44,6 +44,7 @@ class GroupItemPanel(ItemPanel):
         self.BorderTopVisible = False
         self.BorderBottomVisible = False
         self.GroupRendererVisible = False
+        self.GroupExpanded = 0  # type: int  # 分组头的角标：0 收起（+）、1 展开（-）
 
         self.Renderer1Control = None
         self.Renderer2Control = None
@@ -83,6 +84,7 @@ class GroupItemPanel(ItemPanel):
         self.IsGroupHead = True
 
         self.Group, name, items, length, edges = data_dict["GroupHead"]["Group"], data_dict["GroupHead"]["Name"], data_dict["GroupHead"]["Items"], data_dict["GroupHead"]["Length"], data_dict["GroupHead"]["Edges"]
+        self.GroupExpanded = 1 if data_dict["GroupHead"].get("Expanded") else 0
         item_1 = items[0]
         item_2 = items[1] if len(items) > 1 else item_1
 
@@ -166,6 +168,7 @@ class GroupItemPanel(ItemPanel):
         self.HideBorders()
         self.LabelVisible = False
         self.GroupRendererVisible = False
+        self.GroupExpanded = 0
         self.BackgroundVisible = False
         self.ItemRendererVisible = True
         # self.LabelControl.SetText("")

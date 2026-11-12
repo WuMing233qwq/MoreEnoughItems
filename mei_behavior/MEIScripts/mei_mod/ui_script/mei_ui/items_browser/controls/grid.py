@@ -65,6 +65,14 @@ class GroupItemsGrid(ItemsGrid):
                 "attr": "GroupRendererVisible",
                 "default": False,
                 "can_pause": True,
+            },
+            {
+                # 分组头右下角的 +/- 角标：只给 0（收起）/ 1（展开），显示哪一张由 JSON 的表达式定（items_browser.json 的 badge）
+                "suffix": ".item.group.expanded",
+                "flag": ViewBinder.BF_BindInt,
+                "attr": "GroupExpanded",
+                "default": 0,
+                "can_pause": True,
             }
         ])
         self.BindConfigs(self.BuildConfigs(configs))

@@ -126,6 +126,7 @@ class PageWithGroup(Page):
                     "Name": ItemOrganizer.GetGroupName(group),
                     "Items": items,
                     "Length": length,
+                    "Expanded": bool(is_expanded),
                 },
             })
 
