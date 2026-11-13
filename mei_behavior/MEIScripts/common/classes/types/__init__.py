@@ -20,6 +20,7 @@ from . import keys
 from .category import RecipeCategory
 from .ingredient import IngredientLike
 from .item import Stack, ItemStack, Item, ItemInfo, ItemAttr, set_item_factory
+from .page_host import RecipePageHost
 from .spec import ItemSpec
 from .transfer import (
     TransferContext, TransferEntry, TransferError, TransferHandler, TransferPlan,
@@ -32,6 +33,7 @@ from .recipe import (
 __all__ = [
     "keys",
     "RecipeCategory",
+    "RecipePageHost",
     "IngredientLike",
     "Stack",
     "ItemStack",

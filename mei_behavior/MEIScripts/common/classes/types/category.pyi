@@ -15,12 +15,18 @@
 #  License along with this program.
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 from .item import ItemStack
 
 PREVIEW_AUTO: str
 PREVIEW_DEF_NAME: str
+
+
+def icon_texture(icon: Any) -> Optional[str]: ...
+
+
+def icon_item(icon: Any) -> Optional[Tuple[str, int]]: ...
 
 
 def derive_preview_def(control_def: str) -> str: ...
@@ -29,17 +35,25 @@ def derive_preview_def(control_def: str) -> str: ...
 class RecipeCategory(object):
     Id: str
     NameKey: str
-    Icon: Optional[Tuple[str, int]]
+    Icon: Optional[Union[Tuple[str, int], str]]
     ControlDef: str
     PreviewDef: str
     SortIndex: int
     Transfer: Optional[Any]
+    PageHost: Optional[Any]
     _stations: List[Tuple[str, ItemStack]]
 
     def __init__(self, category_id: str, name_key: str = "",
-                 icon: Optional[Tuple[str, int]] = None, control_def: str = "",
+                 icon: Optional[Union[Tuple[str, int], str]] = None, control_def: str = "",
                  stations: Optional[List[ItemStack]] = None,
-                 sort_index: int = 0, preview_def: Optional[str] = ...) -> None: ...
+                 sort_index: int = 0, preview_def: Optional[str] = ...,
+                 page_host: Optional[Any] = None) -> None: ...
+
+    @property
+    def IconItem(self) -> Optional[Tuple[str, int]]: ...
+
+    @property
+    def IconTexture(self) -> Optional[str]: ...
 
     @property
     def Stations(self) -> List[ItemStack]: ...

@@ -28,13 +28,13 @@ from MEIScripts.common.classes.sources import StaticRecipeSource
 from MEIScripts.common.classes.types import (
     Ingredient, Item, ItemAttr, ItemInfo, ItemSpec, ItemStack,
     Recipe,
-    RecipeCategory, Stack, get_recipe_class, keys, register_recipe_class,
+    RecipeCategory, RecipePageHost, Stack, get_recipe_class, keys, register_recipe_class,
 )
 from MEIScripts.common.classes.types.ingredient import IngredientLike
 
 __all__ = [
     "Ingredient", "IngredientLike", "Item", "ItemAttr", "ItemInfo", "ItemStack",
-    "ItemSpec", "Recipe", "RecipeCategory",
+    "ItemSpec", "Recipe", "RecipeCategory", "RecipePageHost",
     "RecipeSource", "Stack", "TransferError", "TransferHandler", "TransferRequest", "TransferSlot",
     "StaticRecipeSource", "get_recipe_class", "keys", "register_recipe_class",
 ]

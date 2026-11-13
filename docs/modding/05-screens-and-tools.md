@@ -162,6 +162,33 @@ if actions is not None:
 
 作用在当前挂着 MEI 的界面上，没有就给 False / None；**别在绑定回调里调**（会重排格子），挪到下一帧。收藏：`IsBookmarked(item)` / `SetBookmarked(item, on)`。
 
+**你自己画的物品格想和 MEI 的一样**（2026-11-13 起，探测）：
+
+```python
+def on_slot_clicked(args):                         # 你的按钮回调：只记下，下一帧再交给 MEI
+    pending.append((item, renderer_path, args.get("secondary", False)))
+
+# 下一帧
+actions.ClickItem(item, renderer_path, secondary)  # 工具 / 作弊模式先接；触屏开 MEI 的二级菜单；PC 左键来源、右键用途
+hover = actions.HoverText(item, [u"需要 扳手"])      # 和 MEI 的格子一样的悬停文字（带设置里的 ID / 命名空间行）
+```
+
+还有：`ShowRecipes(item, open_screen=True)`（没挂着 MEI 的界面时开 MEI 自己的界面）、`OpenItemMenu(item, path)`、
+`RefreshRecipes(category)`（改了类型的 `ControlDef` 后按新控件重建正在看的那一页、停在原来那一页）、`GetSearchText()` / `SetSearchText(text)`。
+
+<a id="focus"></a>
+### 4.1 快捷键认得你的格子：`ctx.UI.Focus`（[api §6.8](api.md#ui-focus)）
+
+你的格子画在 **MEI 覆盖层里**（比如塞进配方页的自己的控件）时，MEI 的焦点探针跳过它们，光标停在上面按快捷键没反应。登记一个提供器：
+
+```python
+focus = getattr(ctx.UI, "Focus", None)              # 探测
+if focus is not None:
+    focus.Register(lambda x, y: my_page_paths())   # 给控件路径（几个都行）：MEI 在它下面按自己的规则找物品渲染器
+```
+
+不归你管的点给 None；自己认得出的给 `(物品, 渲染器路径)`。你自己的界面（不在 MEI 覆盖层里）不用登记。
+
 <a id="modes"></a>
 ## 5. 三种模式与作弊
 

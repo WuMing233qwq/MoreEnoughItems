@@ -245,6 +245,22 @@
         ], 
         "type": "stack_panel"
     }, 
+    "hosted_page": {
+        "anchor_from": "top_middle", 
+        "anchor_to": "top_middle", 
+        "controls": [], 
+        "layer": 1, 
+        "offset": [
+            0.0, 
+            21.0
+        ], 
+        "orientation": "vertical", 
+        "size": [
+            "100%cm", 
+            "100%c"
+        ], 
+        "type": "stack_panel"
+    }, 
     "namespace": "mei_recipe_common", 
     "preview@mei_common.tooltip_background": {
         "$recipe_content_template|default": "mei_recipe_common.preview_empty", 

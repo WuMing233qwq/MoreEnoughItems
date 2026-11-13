@@ -22,7 +22,7 @@
 再把物品键换回物品（渲染、名字、查看配方页）。一棵树开着的期间缓存：换配方、换类型重算时不再向引擎查，关掉界面就丢。
 
 - Recipes(key)：做这个物品的配方（RecipeManager.QueryRecipe 按产出查）。同样的原料合并成一格、空格跳过；单次产出取这条配方产出里
-  这个物品的数量；工具取 GetShownCatalysts（熔炉的燃料不算，和收藏展开同一个规矩）
+  这个物品的数量；工具取 GetShownCatalysts（熔炉的燃料不算，和收藏展开同一个规矩）；托管配方页的类型（IsHosted）不用
 - IsItem(key)：物品表里认不认得这个键（ItemOf 取得到 Item）。认得的就查配方，和配方页点格子同一个口径 —— 流体这类条目
   种类（Stack.KIND）不是 "item"，可它的 Item 照样在物品表里（蔚蓝的流体是隐藏方块），配方页点它查得到来源，这里也要展得开；
   认不得的（没有 Item 的条目）当原料
@@ -103,6 +103,8 @@ class TreeProvider(object):
                 found = {}
             order = self.__Order()
             for type_id, recipes in found.items():
+                if self.IsHosted(type_id):
+                    continue
                 rank = order.get(type_id, len(order))
                 for index, recipe in enumerate(recipes or ()):
                     converted = self.__Convert(recipe, key, type_id, (rank, index))
@@ -110,6 +112,12 @@ class TreeProvider(object):
                         result.append(converted)
         self.__Recipes[key] = result
         return result
+
+    @staticmethod
+    def IsHosted(type_id):  # type: (str) -> bool
+        """ 托管配方页的类型（配方页由别的模组自己画，RecipeCategory.PageHost）：MEI 不知道它的原料，配方树不用它的配方 """
+        category = RecipeManager.GetCategory(type_id)
+        return getattr(category, "PageHost", None) is not None
 
     def IsItem(self, key):  # type: (str) -> bool
         # 看它是什么（物品表里有没有），不看它在配方里以什么格子出现过：按格子的种类记的话，同一个流体从自己打开时
@@ -264,7 +272,7 @@ class TreeProvider(object):
         return native_str(RecipeManager.GetDisplayText(type_id))
 
     def Stations(self, type_id):  # type: (str) -> list
-        """ 这个类型的工作站（物品键，按登记顺序）；没登记工作站的用类型图标 """
+        """ 这个类型的工作站（物品键，按登记顺序）；没登记工作站的用类型图标（是物品的话；是贴图的见 TypeTexture）"""
         category = RecipeManager.GetCategory(type_id)
         found = []
         for stack in (category.Stations if category is not None else ()) or ():
@@ -272,12 +280,18 @@ class TreeProvider(object):
             if key is not None and key not in found:
                 found.append(key)
                 self.__Stacks.setdefault(key, stack)
-        if not found and category is not None and category.Icon:
+        icon = getattr(category, "IconItem", None) if category is not None else None
+        if not found and icon:
             try:
-                found.append(key_of(category.Icon[0], category.Icon[1] if len(category.Icon) > 1 else 0))
+                found.append(key_of(icon[0], icon[1]))
             except (TypeError, ValueError, IndexError):
                 pass
         return found
+
+    @staticmethod
+    def TypeTexture(type_id):  # type: (str) -> str or None
+        """ 类型图标声明成一张贴图时给它的路径（工作方块格没有工作站可画时画它）"""
+        return RecipeManager.GetDisplayTexture(type_id) if type_id else None
 
     # 背包
 # ======================================================================================================================

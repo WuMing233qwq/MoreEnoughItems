@@ -43,6 +43,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.screen_transfers
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import NotifyNoRecipes
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.host import (
     attach_script, build_script, detach_script, is_live)
+from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.hosted import HostedPage
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.ordering import SortResult
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.typetab import TypeTabNav
 from MEIScripts.mei_mod.ui_script.proxy.focus.search import contains, control_rect
@@ -164,7 +165,15 @@ class RecipeDetailsScript(object):
         self.ControlDef = ""  # type: str
         self.RecipeHeight = 0 # type: int
 
+        self.HostedHost = None  # type: any
+        """ 正在看的类型是托管配方页（RecipeCategory.PageHost）时它的托管者；MEI 自己画的类型是 None """
+        self.HostedPage = None  # type: HostedPage or None  # 正显示着的那一页
+        self.HostedPending = False  # type: bool
+        """ 容器刚建好：等下一帧（排好了、量得到配方页的高）再分页、画第一页（PollHostedPage，主节点每帧调）"""
+        self.HostedSerial = 0  # type: int  # 容器的代号，每建一次加一（HostedPage.Serial）
+
         self.GetTypeTabIdAuxWrapper = None
+        self.GetTypeTabTextureWrapper = None
 
         self.AnimTimer = None   # type: any  # 本页唯一的节拍 timer
         self.AnimTicks = 0          # type: int  # 从 1 起, 每 ANIM_TICK_INTERVAL 秒 +1
@@ -350,6 +359,7 @@ class RecipeDetailsScript(object):
         # 面板侧的节拍(多候选轮播)。转发由绑定器做 —— 面板归它持有
         if self.RecipesGridBind:
             self.RecipesGridBind.TickPanels(self.AnimTicks)
+        self.HostedAnimTick()
 
         try:
             self.PollScan()
@@ -367,6 +377,8 @@ class RecipeDetailsScript(object):
         self.StopAnimTimer()
         self.Bindings.UnbindAll()
         self.ClearUICache()
+        self.HostedHost = None
+        self.HostedPending = False
 
         self.StationItemsGridIns.UnbindAll()
         self.RecipesGridBind.Destroy()
@@ -459,11 +471,28 @@ class RecipeDetailsScript(object):
         self.SetRecipesResult(result, prefer_type=self.CurrentType, focus_id=focus)
         return True
 
+    def RefreshPage(self, crafting_type=None):  # type: (str) -> bool
+        """
+        按这个类型现在的配方页控件重建正在看的这一页（类型的 ControlDef 改了），停在原来那一页 —— 按这一页第一条配方定位，PollScan 的做法。
+        配方页没开着、正看的不是这个类型给 False（ctx.UI.Actions.RefreshRecipes）
+        """
+        current = self.CurrentType
+        if not self.Created or not self.RecipesResult or current not in self.RecipesResult:
+            return False
+        if crafting_type is not None and crafting_type != current:
+            return False
+        shown = self.RecipesPage.current_items if self.RecipesPage else []
+        self.PendingFocusId = native_str(recipe_id(shown[0])) if shown and recipe_id(shown[0]) else None
+        self.ShowRecipeDetails(current)
+        return True
+
     def FocusRecipe(self, crafting_type, focus_id):  # type: (str, str) -> bool
         """ 结果已经在页面上：切到某个类型、翻到某条配方，从收藏点开正在看的物品时走这里 """
         if crafting_type not in self.RecipesResult:
             crafting_type = self.CurrentType
         self.PendingFocusId = focus_id
+        if crafting_type == self.CurrentType and self.HostedPending:
+            return True  # 托管配方页还没画第一页：画的时候按 PendingFocusId 翻过去
         if crafting_type != self.CurrentType:
             self.TypeNav.SelectByKey(crafting_type)
             self.ShowRecipeDetails(crafting_type)
@@ -688,8 +717,10 @@ class RecipeDetailsScript(object):
     def RecipeAt(self, x, y):  # type: (float, float) -> any
         """
         这一点落在哪一行配方上（快捷键「收藏这条配方」「这条配方开配方树」用），没有返回 None。
-        按行控件（接上脚本的才有）的真实矩形量，行里的空白处也算
+        按行控件（接上脚本的才有）的真实矩形量，行里的空白处也算；托管配方页问托管者
         """
+        if self.HostedHost is not None:
+            return self.HostedRecipeAt(x, y)
         for index, script_ins in enumerate(self.RecipeUIScriptList):
             rect = control_rect(getattr(script_ins, "RecipeControl", None))
             if rect is not None and contains(rect, x, y):
@@ -759,6 +790,13 @@ class RecipeDetailsScript(object):
         return True
 
     def ShowRecipeDetails(self, crafting_type):
+        category = SourceRegistry.GetCategory(crafting_type)
+        host = getattr(category, "PageHost", None) if category is not None else None
+        if host is not None:
+            self.ShowHostedType(crafting_type, category, host)
+            return
+        self.HostedHost = None
+        self.HostedPending = False
         script_data = RecipeUIManager.GetScriptData(crafting_type)
         if not script_data:
             return
@@ -788,8 +826,8 @@ class RecipeDetailsScript(object):
     """ 竖页签一页最多放几个，与 JSON 里页签 grid 的 maximum_grid_items 一致 """
 
     def BuildTypeNav(self, types):
-        """ 构建合成方式数据的页面 """
-        # 这里**只存 (类型, 物品 id, aux)**，不在这一刻去问 id_aux。
+        """ 构建合成方式数据的页面：每个类型一项 (类型, 物品 id, aux, 贴图)，图标声明成贴图的画贴图（物品那几项只是兜底）"""
+        # 这里**只存 (类型, 物品 id, aux, 贴图)**，不在这一刻去问 id_aux。
         # 要是在此处 GetItemBasicInfo 并把取不到时的兜底值 131072 **固化**进表里，
         # 「开页那一刻引擎还答不上来」就等于这个 tab 一整次会话都是草方块，
         # 关掉重开才好(第三方机器方块首开必中)。
@@ -800,7 +838,7 @@ class RecipeDetailsScript(object):
             if not display_item_data:
                 continue
             item_id, aux_value = display_item_data
-            data.append((crafting_type, item_id, aux_value))
+            data.append((crafting_type, item_id, aux_value, RecipeManager.GetDisplayTexture(crafting_type)))
         self.TypeTabIdAux = {}
 
         # 带上当前类型: 重排/刷新之后视图要停在原处, 而不是跳回第一页
@@ -946,6 +984,7 @@ class RecipeDetailsScript(object):
             self.ClearUICache()
         if update_page:
             self.RecipesPage = None
+            self.HostedPending = False  # 整页重画过了，托管配方页不用再等
         self.UpdateRecipesGrid()
         if update_page:
             if self.BuildRecipesPage():
@@ -975,12 +1014,17 @@ class RecipeDetailsScript(object):
         self.UnbindTypeTabIdAux()
         self.GetTypeTabIdAuxWrapper = self.Bindings.Bind(
             self.GetTypeTabIdAux, ViewBinder.BF_BindInt, self.TYPE_TAB_ID_AUX_BINDING, self.TYPE_TAB_COLLECTION)
+        self.GetTypeTabTextureWrapper = self.Bindings.Bind(
+            self.GetTypeTabTexture, ViewBinder.BF_BindString, BindingConst.TypeTabTexture, self.TYPE_TAB_COLLECTION)
 
     def UnbindTypeTabIdAux(self):
-        """ 解绑并**清空句柄** —— 不清空的话重复调用会拿着废句柄反复解 """
+        """ 解绑并**清空句柄** —— 不清空的话重复调用会拿着废句柄反复解（物品、贴图两条一起）"""
         if self.GetTypeTabIdAuxWrapper:
             self.Bindings.Unbind(self.GetTypeTabIdAuxWrapper)
             self.GetTypeTabIdAuxWrapper = None
+        if self.GetTypeTabTextureWrapper:
+            self.Bindings.Unbind(self.GetTypeTabTextureWrapper)
+            self.GetTypeTabTextureWrapper = None
 
     def ClearUICache(self):
         """ 清理UI的一些缓存 准备 Update """
@@ -988,6 +1032,7 @@ class RecipeDetailsScript(object):
         self.RecipesGridReady = False
         self.StationItemsGridReady = False
         self.ClearRecipeUIScripts()
+        self.HideHostedPage()
 
         self.RecipesGridBind.ClearCache()
         self.RecipeUIScriptList = []
@@ -1021,8 +1066,11 @@ class RecipeDetailsScript(object):
         # 开界面、切配方类型、翻页三种情况. 只在转移成功后失效的话, 表现是
         # "关掉整个界面再开才刷新".
         # 代价可控: 一次页面重建算一次, 而不是每帧 —— 每帧那条路仍然走缓存
-        self.Craftable.Invalidate()
         self.RecipeUIScriptList = []
+        if self.HostedHost is not None:
+            self.ShowHostedPage()
+            return
+        self.Craftable.Invalidate()
         recipes = self.RecipesPage.current_items
         cls = self.RecipeUIScriptCls
         if not cls:
@@ -1048,7 +1096,10 @@ class RecipeDetailsScript(object):
     """
 
     def UpdateRecipesGrid(self):
-        """ 更新 RecipesGrid 控件的属性 """
+        """ 更新 RecipesGrid 控件的属性；托管配方页没有 grid，一页放几条问托管者 """
+        if self.HostedHost is not None:
+            self.UpdateHostedPageSize()
+            return
         self.UpdateRecipeHeight()
         self.RecipesGridControl = self.MainNode.GetUIControl(
             RecipeDetailsPath.Recipes, "grid")
@@ -1067,6 +1118,110 @@ class RecipeDetailsScript(object):
 
         self.RecipesGridControl.SetGridDimension((1, recipes_in_page))
         self.RecipesGridReady = True
+
+    # 托管配方页 —— 类型的 PageHost（common/classes/types/page_host.py）：内容区建它的容器，一页放几条、怎么画问它
+# ======================================================================================================================
+    def ShowHostedType(self, crafting_type, category, host):
+        """
+        换到一个托管配方页的类型：收回上一页、换一个新容器（旧的连同里面的控件一起删），等下一帧排好了再分页、画第一页（PollHostedPage）——
+        刚建的容器量不到配方页的高
+        """
+        self.ClearUICache()
+        self.CurrentType = crafting_type
+        self.HostedHost = host
+        self.RecipeUIScriptCls = None
+        self.CurrentRecipes = self.RecipesResult[crafting_type]
+        self.CreateHostedContainer(getattr(host, "CONTAINER", "") or "mei_recipe_common.hosted_page")
+        self.StationItemsGridIns.InitBindings()
+        self.HostedPending = True
+        self.RecipeUIReady = True
+
+    def CreateHostedContainer(self, container_def):
+        """ 在内容区建托管者的容器（名字和配方 grid 一样叫 recipes，占它的位置）；每次都换新的 """
+        if self.RecipesGridControl:
+            try:
+                self.MainNode.RemoveChildControl(self.RecipesGridControl)
+            except Exception:  # noqa  已经不在了
+                pass
+        self.RecipesGridControl = self.MainNode.CreateChildControl(container_def, "recipes", self.MainContentControl, True)
+        self.ControlDef = container_def
+        self.HostedSerial += 1
+        self.TypeTabsGridReady = False
+
+    def PollHostedPage(self):  # type: () -> bool
+        """ 主节点每帧调：容器建好以后的那一帧（配方页量得到高了）分页、画第一页 """
+        if not self.HostedPending or not self.Created or self.HostedHost is None:
+            return False
+        if utilities.GetControlSizeInt(self.MainContentControl)[1] <= 0:
+            return False  # 还没排好，下一帧再来
+        self.HostedPending = False
+        try:
+            self.UpdateRecipeUI(clear_ui_cache=False, update_page=True)
+        except Exception as e:  # noqa  每帧路径：出错只记一行，不能带走主节点别的每帧处理
+            logger.error("[MEI/ui] 托管配方页 {} 画第一页出错: {}".format(self.CurrentType, error_text(e)))
+        return True
+
+    def UpdateHostedPageSize(self):
+        """ 一页放几条：托管者按内容区能用的高说（顶栏下面到配方页底边，和配方行一样从 RECIPES_TOP 开始）；说不出来按 1 """
+        self.MainContentHeight = utilities.GetControlSizeInt(self.MainContentControl)[1]
+        height = max(0, self.MainContentHeight - self.RECIPES_TOP + 1)
+        category = SourceRegistry.GetCategory(self.CurrentType)
+        try:
+            size = int(self.HostedHost.PageSize(category, self.CurrentRecipes, height) or 1)
+        except Exception as e:  # noqa
+            logger.error("[MEI/ui] 托管配方页 {} 说不出一页放几条: {}".format(self.CurrentType, error_text(e)))
+            size = 1
+        self.MaxRecipesInPage = max(1, size)
+        self.RecipesGridReady = True
+
+    def ShowHostedPage(self):
+        """ 这一页交给托管者画（上一页已经在 ClearUICache 里收回了）"""
+        host, page_data = self.HostedHost, self.RecipesPage
+        if host is None or page_data is None:
+            return
+        self.HideHostedPage()  # 没经过 ClearUICache 就重画的（第一页）：先收回还显示着的
+        page = HostedPage(
+            self, host, SourceRegistry.GetCategory(self.CurrentType), page_data.current_items, page_data.index,
+            len(self.CurrentRecipes), max(0, self.MainContentHeight - self.RECIPES_TOP + 1), self.RecipesGridControl,
+            self.HostedSerial)
+        page.Born = self.AnimTicks
+        self.HostedPage = page
+        try:
+            host.Show(page)
+        except Exception as e:  # noqa  托管者画不出来只是这一页空着，不能拦住翻页、换类型
+            logger.error("[MEI/ui] 托管配方页 {} 画不出来: {}".format(self.CurrentType, error_text(e)))
+
+    def HideHostedPage(self):
+        """ 收回正显示着的那一页（翻页、换类型、刷新、关页之前）"""
+        page, self.HostedPage = self.HostedPage, None
+        if page is None:
+            return
+        page.Live = False
+        try:
+            page.Host.Hide(page)
+        except Exception as e:  # noqa
+            logger.error("[MEI/ui] 托管配方页 {} 收不回来: {}".format(self.CurrentType, error_text(e)))
+
+    def HostedAnimTick(self):
+        """ 配方页的节拍派给托管者（显示那一刻之后的第几拍）"""
+        page = self.HostedPage
+        tick = getattr(page.Host, "Tick", None) if page is not None else None
+        if not callable(tick):
+            return
+        try:
+            tick(page, self.AnimTicks - page.Born)
+        except Exception as e:  # noqa  一个托管者炸了不能停掉整页的节拍
+            logger.error("[MEI/ui] 托管配方页 {} 的节拍出错: {}".format(self.CurrentType, error_text(e)))
+
+    def HostedRecipeAt(self, x, y):  # type: (float, float) -> any
+        page = self.HostedPage
+        finder = getattr(page.Host, "RecipeAt", None) if page is not None else None
+        if not callable(finder):
+            return None
+        try:
+            return finder(page, x, y)
+        except Exception:  # noqa  快捷键问不到当没有
+            return None
 
     def UpdateRecipeHeight(self):
         """ 获取 recipe 控件的高度 用于后续计算显示数量 """
@@ -1211,10 +1366,22 @@ class RecipeDetailsScript(object):
         if index < 0 or index >= len(types_data):
             return 0
 
-        id_aux = self.ResolveTypeTabIdAux(types_data[index])
+        type_data = types_data[index]
+        # 图标是贴图的：物品渲染器不画（0 是空气），贴图那一张画（GetTypeTabTexture）
+        id_aux = 0 if len(type_data) > 3 and type_data[3] else self.ResolveTypeTabIdAux(type_data)
         # 顺带把选中态推下去。**放在算完 id_aux 之后**，且自身不抛
         self.SyncTypeTabToggle(index)
         return id_aux
+
+    TYPE_TAB_BLANK_TEXTURE = "textures/ui/mei/blank"
+    """ 图标是物品的页签，贴图那一张画这张透明图 """
+
+    def GetTypeTabTexture(self, index):  # type: (int) -> str
+        """ 页签图标是贴图时给它的路径，别的给透明图。**每帧路径**，绑定回调，不抛 """
+        types_data = self.TypeNav.PageItems if self.TypeTabsGridReady else ()
+        if 0 <= index < len(types_data) and len(types_data[index]) > 3 and types_data[index][3]:
+            return types_data[index][3]
+        return self.TYPE_TAB_BLANK_TEXTURE
 
     def ResolveTypeTabIdAux(self, type_data):  # type: (tuple) -> int
         """
@@ -1308,8 +1475,8 @@ class RecipeDetailsScript(object):
         接的时候出错只丢这一行（modules/host.attach_script 接住异常、记一行），所以这条 #visible 不会被引擎扔掉（引擎结论 §15）；
         绑定器只在第一次见到某个绑定前缀时才向引擎注册绑定（RecipesGridBind.AddGroup），翻页、换类型只改 Python 这边的表
         """
-        if not self.RecipeUIReady:
-            return True
+        if not self.RecipeUIReady or self.HostedHost is not None:
+            return True  # 托管配方页没有配方行（这条绑定不该被拉到；拉到了也不画，等 PollHostedPage）
 
         if not self.RecipesGridReady:
             self.UpdateRecipeUI(clear_ui_cache=False, update_page=True)

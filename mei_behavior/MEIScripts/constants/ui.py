@@ -361,6 +361,7 @@ class BindingConst(object):
     RecipeVisible = "#mei_ui.recipe_details.recipe.visible"
     CraftingStationTypeTab = "#mei_ui.recipe_details.crafting_station_type_tab"
     TypeTabItemIdAux = "#mei_ui.recipe_details.type_tab.item_id_aux"
+    TypeTabTexture = "#mei_ui.recipe_details.type_tab.texture"
 
 class ControlDefConst(object):
     # CreateChildControl 的 <namespace>.<control> 串.
@@ -385,6 +386,7 @@ class TreeConst(object):
     WsFrameDef = UiNameSpace + ".ws_frame"
     IngFrameDef = UiNameSpace + ".ing_frame"
     LineDef = UiNameSpace + ".line"
+    BucketDef = UiNameSpace + ".bucket"  # 分桶用的空 panel（左上对齐、0×0、层级 0）：一个父控件下挂太多子控件引擎会断言（引擎结论 §54）
     # 静态按钮的点击名（$pressed_button_name，也是 BF_ButtonClickUp 绑定名 —— 只能单个绑定，引擎结论 §9）
     ButtonName = "button.mei.tree.{}"  # 顶栏、汇总的按钮（format 名字，与 JSON 里的控件名相同）
     TopButtons = ("minus", "plus", "x64", "center", "unfold", "fold2", "back", "save", "side")
@@ -481,6 +483,7 @@ class TreePath(object):
     Toast = Root + "/toast"
     # 一格里的子控件（cell 模板）
     CellRenderer = "/renderer"
+    CellIcon = "/icon"  # 类型图标是贴图时画它（工作方块格没有工作站可画的时候）
     CellCount = "/count"
     CellCrafts = "/crafts"
     CellHave = "/have"

@@ -216,7 +216,10 @@ class TreeText(object):
     # 画布
     Status = u"{} 格 · {} 层"
     Solving = u"计算中… {} 格"
+    Summing = u"汇总中… {} 格"
+    Laying = u"排版中… {}/{}"
     Drawing = u"绘制中… {}/{}"
+    Broken = u"§c配方树出错了（日志里有原因）"
     # 菜单：顶栏的种类
     KindRoot = u"配方树 · 合成目标"
     KindNode = u"配方树 · 原料"

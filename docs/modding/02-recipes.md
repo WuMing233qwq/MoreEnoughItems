@@ -39,14 +39,18 @@ def OnUnload(self, ctx):
 <a id="category"></a>
 ## 2. 配方类型 `RecipeCategory`（[api §4.1](api.md#source-registry)）
 
-`RecipeCategory(category_id, name_key="", icon=None, control_def="", stations=None, sort_index=0, preview_def=自动)`
+`RecipeCategory(category_id, name_key="", icon=None, control_def="", stations=None, sort_index=0, preview_def=自动, page_host=None)`
 
 - `category_id`：带命名空间。**不能覆盖已注册的的**：同一个 Id 重复注册返回 False、记警告（包括内置类型）。
-- `icon`：`(物品 id, aux)`，类型页签的显示物品图标。
+- `icon`：`(物品 id, aux)`，类型页签的显示物品图标；**也可以是一张贴图的路径**（字符串，`"textures/ui/xxx"`，不带扩展名，2026-11-13 起）——
+  页签上画这张图，配方树里这个类型没有工作站可画时工作方块格也画它。贴图不是物品，**不会被当成工作站**，要工作站就自己给 `stations`。
+  探测：`hasattr(ctx.Types.RecipeCategory, "IconTexture")`；旧版 MEI 会把字符串当物品 id，页签是空的。
 - `sort_index`：类型页签的先后。
 - `control_def`：配方页的控件定义（`"命名空间.RECIPES_GRID"`）；tooltip 里的配方预览缺省按它推出 
 - `"命名空间.PREVIEW"`，不要预览写 `preview_def=None`（[03 §1](03-recipe-page.md#json)）。
 - `stations`：工作站，**只可传入 `ItemStack`**；它们画在配方页顶上，玩家**查工作站的用途**时这个类型排在最前、带上它的全部配方。
+- `page_host`：**托管配方页**（2026-11-13 起，探测 `hasattr(ctx.Types, "RecipePageHost")`）—— 配方页的内容区整块交给你画，
+  不用 `control_def`、不登记配方页脚本；适合配方页本来就是你自己的控件和脚本、MEI 不认识里面格子的情况。见 [03 §9](03-recipe-page.md#hosted)。
 
 <a id="source"></a>
 ## 3. 配方来源（[api §5](api.md#types)）

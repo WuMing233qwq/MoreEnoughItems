@@ -23,6 +23,7 @@ from mod_log import logger
 
 from MEIScripts.common.classes.base import BaseRecipeUIScript, RecipeSource
 from MEIScripts.common.classes.types import Item
+from MEIScripts.common.classes.types.category import icon_item, icon_texture
 from MEIScripts.constants.codes import QueryConst
 from MEIScripts.utils.lang import localize
 from MEIScripts.utils.sequence import dedupe, recipe_id
@@ -80,19 +81,27 @@ class __RecipeManager(object):  # noqa
     @staticmethod
     def GetDisplayItemData(crafting_type):  # type: (str) -> tuple or None
         """
-        类别 tab 图标 (ItemId, AuxValue)：类型自己声明的；没声明（RecipeCategory 的 icon 缺省是 None）用第一个工作站，
-        再没有用一本书 —— 给 None 的话这个类型进不了 TypeTab：内容是它、亮着的却是别的类型，也点不回它
+        类别 tab 图标 (ItemId, AuxValue)：类型自己声明的物品；没声明（RecipeCategory 的 icon 缺省是 None）或者声明的是贴图，
+        用第一个工作站，再没有用一本书 —— 给 None 的话这个类型进不了 TypeTab：内容是它、亮着的却是别的类型，也点不回它。
+        声明了贴图的，tab 上画贴图（GetDisplayTexture），这里的物品只是兜底
         """
         category = SourceRegistry.GetCategory(crafting_type)
         if category is None:
             return None
-        if category.Icon:
-            return category.Icon
+        icon = icon_item(category.Icon)
+        if icon:
+            return icon
         for stack in getattr(category, "Stations", None) or ():
             item = getattr(stack, "Item", None)
             if item is not None:
                 return item.ItemId, item.AuxValue
         return FALLBACK_ICON
+
+    @staticmethod
+    def GetDisplayTexture(crafting_type):  # type: (str) -> str or None
+        """ 类别图标声明的是一张贴图时给它的路径（TypeTab、配方树的工作方块格画它）；声明的是物品、没声明给 None """
+        category = SourceRegistry.GetCategory(crafting_type)
+        return icon_texture(category.Icon) if category is not None else None
 
     @staticmethod
     def GetControlDef(crafting_type):  # type: (str) -> str or None

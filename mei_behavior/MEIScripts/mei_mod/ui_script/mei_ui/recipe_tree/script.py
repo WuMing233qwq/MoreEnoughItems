@@ -21,13 +21,17 @@
 配方树的控制器：把解算（分帧）、画（分帧）、节点菜单、底部汇总、顶栏、收藏串在一起。界面类（screen.py）每帧调 OnTick。
 
 一次改动的路子：菜单 / 顶栏的动作改这一棵树的选择（TreeState）或全局表（TreePrefsManager）→ Resolve 重新解算（配方查过的
-不再查，provider 按物品缓存）→ 解算完汇总、顶栏照新的写 → 画布分帧重画，画完把刚才点的那一格摆回原处、菜单跟着它重开。
-只是看的东西（折叠、全部展开、折到 2 层）不重新解算，只重画。
+不再查，provider 按物品缓存）→ 解算完的几步（汇总、背包扣减、顶栏与汇总栏）一帧一步（上万格时每一步都要几十毫秒）→
+排版（modules.Layout，分帧）→ 画布换上新的一版（只给视口附近分控件），画完把刚才点的那一格摆回原处、菜单跟着它重开。
+每一步在状态栏写着做到哪了；哪一步出错记一行日志、提示一句，不会停在一片空白上。
+只是看的东西（折叠、全部展开、折到 2 层）不重新解算，只重画。解算的那几帧画布顺手先建一批控件（Canvas.Warm）。
 
 交互（docs/architecture/recipe_tree.md）：点原料格出菜单 —— 在当前类型里翻配方、用这条 / 设为首选、换候选、
 不再展开 / 当原料（全局）、折叠、以它为根、收藏、查看配方页（关掉树、回到下面的界面开它的配方页）；点工作方块出菜单 ——
 换类型、换显示的工作站（只起显示作用，按类型全局记）；PC 和触屏一样用菜单，不做快捷键
 """
+import collections
+
 import mod.client.extraClientApi as clientApi
 from mod_log import logger
 
@@ -42,11 +46,11 @@ from MEIScripts.utils.events import EventListener
 from MEIScripts.utils.text import error_text, native_str, to_unicode
 
 from .controls.canvas import Scene, TreeCanvas
-from .controls.cell import CellSpec, TreeCell, short_count
+from .controls.cell import CellSpec, LazyCell, TreeCell, short_count
 from .controls.menu import (STRIP_PREVIEW, TreeMenuButton, TreeMenuModel, TreeMenuRow, TreeMenu, control_width, fit_text,
                             fit_width, stepper)
 from .controls.summary import TAB_BYPRODUCT, TAB_LACK, TAB_RAW, TAB_TOOL, TreeSummary, list_rows, set_tip
-from .modules import (DEFAULT, STATE_LEAF, STATE_OK, Solver, TreeState, choice_sig, clamp_qty, key_of, place, shortfall,
+from .modules import (DEFAULT, STATE_LEAF, STATE_OK, Layout, Solver, TreeState, choice_sig, clamp_qty, key_of, shortfall,
                       summarize)
 from .provider import TreeProvider
 
@@ -57,6 +61,7 @@ TARGET_WS = "ws"  # (TARGET_WS, 路径签名)：那一格下面那组的工作�
 TARGET_SUM = "sum"  # 汇总里的一格：物品键
 STRIP_ITEM = "item"  # 菜单配方条里的一格：(STRIP_ITEM, 物品键, 数量)
 STRIP_STATION = "station"  # 工作方块菜单里的一个工作站：(STRIP_STATION, 物品键)
+STRIP_TYPE = "type"  # 没有工作站、画着类型图标（贴图）的那一格：(STRIP_TYPE, 类型 Id)
 ROOT_SIG = "r"
 
 
@@ -72,8 +77,12 @@ def subtree_sizes(nodes):  # type: (list) -> list
 class RecipeTreeScript(object):
     """ param：{"item", "recipe", "saved", "qty"}（recipe_tree.OpenRecipeTree）；provider / prefs 给探针换成假的 """
 
-    SolveBudgetMs = 4.0  # 每帧解算多久（node.py 里调）
-    DrawBudgetMs = 6.0  # 每帧画多久
+    SolveBudgetMs = 6.0  # 每帧解算多久（node.py 里调；画布上有树、能拖的时候）
+    SolveIdleBudgetMs = 14.0  # 画布上还没有树的时候（刚打开、以它为根、返回）：没东西可看，算快一点
+    DrawBudgetMs = 6.0  # 每帧画多久（画布整块藏着画的时候自己用 16 毫秒）
+    LayoutBudgetMs = 12.0  # 每帧排版多久
+    Stages = ("summary", "lack", "panels", "draw")
+    """ 解算完的几步，一帧一步（__OnSolved 排上，OnTick 推）"""
     ToastTicks = 60  # 提示留多少帧（每秒 30 帧）
     TitleX = 40  # 顶栏根物品名从哪儿开始（返回 14 + 间隔 2 + 根格 20 + 间隔 4，与 JSON 里 title 的 offset 一致）
     RootPos = (16, 0)  # 顶栏根格的位置（「返回」14 + 间隔 2，与 JSON 里 root 的 offset 一致）：TreeCell.Apply 会 SetPosition，写 (0, 0) 就叠到「返回」上
@@ -118,6 +127,9 @@ class RecipeTreeScript(object):
         self.SideShown = 0.0  # type: float  # 汇总栏现在占掉多宽（连同它和视口之间的空），过渡里每帧变
         self.SideFrom = 0.0  # type: float
         self.SideFrame = 0  # type: int  # 过渡还剩几帧（0 是没在动）
+        self.Pipeline = collections.deque()  # type: collections.deque  # 解算完还没做的几步
+        self.Placing = None  # type: list or None  # [Layout, 锚点, 是否回到根]：正在排的那一版
+        self.Broken = False  # type: bool  # 这一次解算 / 排版出错了：不再往下推，重新解算时清掉
         self.Ready = False  # type: bool
 
     # 生命周期
@@ -177,11 +189,22 @@ class RecipeTreeScript(object):
             if self.ToastLeft == 0:
                 self.__SetLabel("toast", "", False)
         solver = self.Solver
-        if solver is not None and not solver.Done:
-            if solver.Step(self.SolveBudgetMs):
-                self.__OnSolved()
-            else:
-                self.__SetLabel("status", TreeText.Solving.format(len(solver.Nodes)))
+        try:
+            if self.Broken:
+                pass
+            elif solver is not None and not solver.Done:
+                budget = self.SolveBudgetMs if self.Canvas.Scene is not None else self.SolveIdleBudgetMs
+                if solver.Step(budget):
+                    self.__OnSolved()
+                else:
+                    self.__SetLabel("status", TreeText.Solving.format(len(solver.Nodes)))
+                    self.Canvas.Warm()
+            elif self.Pipeline:
+                self.__StepPipeline()
+            elif self.Placing is not None:
+                self.__StepPlacing()
+        except Exception as e:  # noqa  哪一步坏了都不能让整棵树停在一片空白上：记下来、提示一句，这一版不画了
+            self.__Fail(e)
         self.__StepSide()
         if self.Canvas.Tick(self.DrawBudgetMs):
             self.__OnDrawn()
@@ -206,8 +229,15 @@ class RecipeTreeScript(object):
 
     # 解算、画
 # ======================================================================================================================
+    def Settled(self):  # type: () -> bool
+        """ 解算完了、解算完的几步也做完了（汇总、格子的「+N」都是这一版的）：这时才能开菜单、收藏、重画 """
+        return self.Solver is not None and self.Solver.Done and not self.Pipeline and not self.Broken
+
     def Resolve(self, anchor=None, reset=False):
         """ 重新解算（分帧，OnTick 推进）；解算完重画，anchor 那一格摆回原处，reset 时根回到上方正中 """
+        self.Pipeline.clear()
+        self.Placing = None
+        self.Broken = False
         self.Solver = Solver(self.Provider, self.State, self.Prefs)
         self.SolveAnchor = anchor
         self.SolveReset = reset
@@ -217,21 +247,52 @@ class RecipeTreeScript(object):
         self.__SetLabel("status", TreeText.Solving.format(1))
 
     def __OnSolved(self):
+        """ 解算完：汇总、背包扣减、顶栏与汇总栏、布局一帧一步（上万格时每一步几十毫秒，挤在一帧里会顿一下）"""
+        self.Pipeline.clear()
+        self.Pipeline.extend(self.Stages)
+
+    def __StepPipeline(self):
+        stage = self.Pipeline.popleft()
         nodes = self.Solver.Nodes
-        self.Subtree = subtree_sizes(nodes)
-        self.Summary = summarize(nodes, self.State.Qty)
-        self.Lack = shortfall(nodes, self.State.Qty, self.Have)
-        self.__RefreshTop()
-        self.__RefreshSummary()
-        self.Draw(self.SolveAnchor, self.SolveReset)
+        self.__SetLabel("status", TreeText.Summing.format(len(nodes)))
+        if stage == "summary":
+            self.Subtree = subtree_sizes(nodes)
+            self.Summary = summarize(nodes, self.State.Qty)
+        elif stage == "lack":
+            self.Lack = shortfall(nodes, self.State.Qty, self.Have)
+        elif stage == "panels":
+            self.__RefreshTop()
+            self.__RefreshSummary()
+        elif stage == "draw":
+            self.Draw(self.SolveAnchor, self.SolveReset)
 
     def Draw(self, anchor=None, reset=False):
-        if self.Solver is None or not self.Solver.Done:
+        """ 重排、重画（分帧：先排版，排完交给画布）；anchor 那一格画完摆回原处，reset 时根回到上方正中 """
+        if not self.Settled():
             return
-        placement = place(self.Solver.Nodes, self.State.Fold, self.Metrics)
+        if self.Placing is not None:
+            reset = reset or self.Placing[2]  # 前一版还没排完又要重画：要回到根的那一次不能丢
+        self.Placing = [Layout(self.Solver.Nodes, self.State.Fold, self.Metrics), anchor, reset]
+
+    def __StepPlacing(self):
+        layout, anchor, reset = self.Placing
+        if not layout.Step(self.LayoutBudgetMs):
+            self.__SetLabel("status", TreeText.Laying.format(*layout.Progress()))
+            return
+        self.Placing = None
         if reset:
             self.Canvas.Scene = None
-        self.Canvas.Draw(self.__Scene(placement), anchor)
+        self.Canvas.Draw(self.__Scene(layout.Result), anchor)
+
+    def __Fail(self, error):
+        """ 解算、汇总、排版哪一步抛了：这一次不再往下做，日志里记原因，状态栏、提示都写出错 """
+        self.Pipeline.clear()
+        self.Placing = None
+        logger.error("[MEI/tree] 配方树出错（{} 格）: {}".format(len(self.Solver.Nodes) if self.Solver else 0,
+                                                            error_text(error)))
+        self.Broken = True
+        self.__SetLabel("status", TreeText.Broken)
+        self.ShowToast(TreeText.Broken)
 
     def __OnDrawn(self):
         solver = self.Solver
@@ -241,17 +302,24 @@ class RecipeTreeScript(object):
             self.RenderMenu()
 
     def __Scene(self, placement):  # type: (any) -> Scene
+        """
+        一版画面。格子是 LazyCell：位置先给，要画的时候（进了视口附近）才算它写什么 —— 上万格的树大多数格子一直不在视口里
+        """
         nodes = self.Solver.Nodes
         m = self.Metrics
-        scene = Scene((placement.Width, placement.Height))
+        scene = Scene((placement.Width, placement.Height), m.Cell, m.Cell + 2 * m.Frame)
+        node_spec, ws_spec = self.__NodeSpec, self.__WsSpec
         # 根排第一个：画布按第一格认根（回到根、找不到锚点时摆回它）
         for node_id in [0] + [i for i in placement.Cells if i != 0]:
             pos = placement.Cells.get(node_id)
             if pos is not None:
-                scene.Cells.append(self.__NodeSpec(nodes[node_id], pos))
+                node = nodes[node_id]
+                scene.Cells.append(LazyCell((TARGET_NODE, node.Sig), pos,
+                                            lambda node=node, pos=pos: node_spec(node, pos)))
         for node_id, (x, y) in placement.Groups.items():
             node = nodes[node_id]
-            scene.Cells.append(self.__WsSpec(node, (x, y)))
+            scene.Cells.append(LazyCell((TARGET_WS, node.Sig), (x, y),
+                                        lambda node=node, pos=(x, y): ws_spec(node, pos)))
             scene.WsFrames.append((x - m.Frame, y - m.Frame))
             if node.Children:
                 scene.IngFrames.append(((x + m.Cell + m.WsGap - m.Frame, y - m.Frame),
@@ -269,9 +337,11 @@ class RecipeTreeScript(object):
                         multi=node.State == STATE_OK and len(usable) > 1)
 
     def __WsSpec(self, node, pos):  # type: (any, tuple) -> CellSpec
+        """ 工作方块格：画显示着的那个工作站；这个类型没有工作站、图标声明成贴图的画贴图 """
         station = self.__Station(node.Type)
+        icon = None if station else self.Provider.TypeTexture(node.Type)
         return CellSpec((TARGET_WS, node.Sig), pos, self.Provider.RenderData(station) if station else None,
-                        crafts=short_count(node.Crafts), multi=len(node.Types()) > 1)
+                        crafts=short_count(node.Crafts), multi=len(node.Types()) > 1, icon=icon)
 
     def __Station(self, type_id):  # type: (str) -> str or None
         """ 工作方块格显示哪个工作站：全局表里这个类型记的（还在工作站里的话）→ 第一个 """
@@ -351,7 +421,7 @@ class RecipeTreeScript(object):
             self.State.Fold = set()
             self.Draw(self.__CanvasTarget())
         elif name == "fold2":
-            if self.Solver is None or not self.Solver.Done:
+            if not self.Settled():
                 return  # 解算中 Nodes 只有一部分：折出来的不全，解算完画的就是这一份
             self.State.Fold = set(node.Sig for node in self.Solver.Nodes if node.State == STATE_OK and node.Depth == 2)
             self.Draw(self.__CanvasTarget())
@@ -452,7 +522,7 @@ class RecipeTreeScript(object):
 
     def Save(self):
         # 解算中 Summary 还是上一版的（数量、选择已经改了）：存进去的展开对不上这棵树
-        if self.Summary is None or self.State is None or self.Solver is None or not self.Solver.Done:
+        if self.Summary is None or self.State is None or not self.Settled():
             return
         entry = self.State.ToEntry(self.Summary.Raw)
         result = BookmarkManager.SaveTree(entry)
@@ -483,7 +553,7 @@ class RecipeTreeScript(object):
 
     def OnRefresh(self):
         self.Have = self.Provider.Supply()
-        if self.Solver is not None and self.Solver.Done and self.State is not None:
+        if self.Settled() and self.State is not None:
             self.Lack = shortfall(self.Solver.Nodes, self.State.Qty, self.Have)
         self.__RefreshSummary()
         if self.MenuTarget is not None and self.MenuTarget[0] == TARGET_SUM:
@@ -501,7 +571,7 @@ class RecipeTreeScript(object):
         self.OpenMenu((TARGET_SUM, key), cell)
 
     def OpenMenu(self, target, cell=None):  # type: (tuple, any) -> None
-        if self.Solver is None or not self.Solver.Done:
+        if not self.Settled():
             return
         # 作弊模式：点哪一格就给那一样（一组），不开菜单。工具模式在配方树里没有拿起的宿主，照平时（docs/architecture/modes.md）
         if ModeManager.Current() == ModeConst.Cheat and ModeManager.Give(self.TargetItem(target), True):
@@ -527,7 +597,7 @@ class RecipeTreeScript(object):
     def RenderMenu(self):
         """ 按 MenuTarget 重排菜单（改完东西、重画完都会再来一次，菜单跟着那一格走）；那一格没了就收起 """
         target = self.MenuTarget
-        if target is None or self.Solver is None or not self.Solver.Done:
+        if target is None or not self.Settled():
             return
         kind, ident = target
         model = None
@@ -551,30 +621,34 @@ class RecipeTreeScript(object):
 
     def __TargetShown(self, target):  # type: (tuple) -> bool
         """
-        菜单跟着的那一格还画着吗：画布画完了却找不到它（顶栏「折两层」把它折了进去），汇总里那一格不在这一页了（刷新后它不缺了）——
-        这时退回点开时的那个格子控件，摆的是池里别的格子的位置。画布正画着的时候池里还是上一版，等画完（__OnDrawn 再排一次）再判
+        菜单跟着的那一格还画着吗：画布这一版里没有它（顶栏「折两层」把它折了进去），汇总里那一格不在这一页了（刷新后它不缺了）。
+        画布只给视口附近分控件，所以按这一版画面认（拖到视口外也算还在）。画布正换着一版的时候等换完（__OnDrawn 再排一次）再判
         """
         kind, ident = target
         if kind == TARGET_SUM:
             return any(c.Target == ident for c in self.SummaryPanel.Cells)
         if target == (TARGET_NODE, ROOT_SIG) or self.Canvas.IsDrawing():
             return True
-        return self.Canvas.CellOf(target) is not None
+        return self.Canvas.HasTarget(target)
 
     def __AnchorRect(self, target):  # type: (tuple) -> tuple
-        """ 点开菜单的那一格在界面根面板里的矩形：重画后按 target 找新格子，找不到用点的那一格 """
+        """
+        点开菜单的那一格在界面根面板里的矩形：画布上的按这一版画面里它的位置（分到了控件读控件的，在视口外的按视口算），
+        汇总里的按格子控件；都找不到用点的那一格
+        """
         kind, ident = target
+        pos, cell = None, None
         if kind == TARGET_SUM:
             cell = next((c for c in self.SummaryPanel.Cells if c.Target == ident), None)
         else:
-            cell = self.Canvas.CellOf(target)
-            if cell is None and target == (TARGET_NODE, ROOT_SIG):
+            pos = self.Canvas.GlobalPos(target)
+            if pos is None and target == (TARGET_NODE, ROOT_SIG):
                 cell = self.RootCell
-        cell = cell or self.MenuCell
         try:
-            x, y = cell.Control.GetGlobalPosition()
+            if pos is None:
+                pos = (cell or self.MenuCell).Control.GetGlobalPosition()
             rx, ry = self.Screen.GetBaseUIControl(TreePath.Root).GetGlobalPosition()
-            return x - rx, y - ry, self.Metrics.Cell, self.Metrics.Cell
+            return pos[0] - rx, pos[1] - ry, self.Metrics.Cell, self.Metrics.Cell
         except Exception:  # noqa
             return 4, 4, 0, 0
 
@@ -585,7 +659,7 @@ class RecipeTreeScript(object):
 
     def OnStripClick(self, target):
         if target[0] == STRIP_STATION:
-            if self.Solver is None or not self.Solver.Done:
+            if not self.Settled():
                 return
             node = self.Solver.Find(self.MenuTarget[1]) if self.MenuTarget is not None else None
             if node is not None and node.Type:
@@ -594,6 +668,9 @@ class RecipeTreeScript(object):
         if target[0] == STRIP_ITEM:
             self.Menu.SetInfo(TreeText.StripItem.format(self.Provider.NameOf(target[1]).decode("utf-8", "replace"),
                                                         target[2]))
+            return
+        if target[0] == STRIP_TYPE:
+            self.Menu.SetInfo(self.Provider.TypeName(target[1]).decode("utf-8", "replace"))
             return
         if target[0] == STRIP_PREVIEW:
             # 配方预览里的一格：格子给的是 Item，换成物品键再取名字（和配方条一样写灰字）
@@ -698,8 +775,11 @@ class RecipeTreeScript(object):
         render = self.Provider.RenderData
         specs = []
         station = self.__Station(recipe.Type)
+        texture = None if station else self.Provider.TypeTexture(recipe.Type)
         if station:
             specs.append(CellSpec((STRIP_ITEM, station, 1), render=render(station)))
+        elif texture:
+            specs.append(CellSpec((STRIP_TYPE, recipe.Type), icon=texture))
         room = TreeConst.StripCells - len(specs) - 1
         for choices, count in recipe.Inputs[:room]:
             picked = self.State.Picks.get(choice_sig(choices))
@@ -741,6 +821,9 @@ class RecipeTreeScript(object):
         shown = self.__Station(current)
         strip = [CellSpec((STRIP_STATION, key), render=provider.RenderData(key), selected=key == shown)
                  for key in stations[:TreeConst.StripCells]]
+        texture = provider.TypeTexture(current) if current and not strip else None
+        if texture:
+            strip = [CellSpec((STRIP_TYPE, current), icon=texture)]
         name = provider.TypeName(current).decode("utf-8", "replace") if current else u""
         rows = []
         if types:
@@ -830,7 +913,7 @@ class RecipeTreeScript(object):
 
     def __Parent(self, node):  # type: (any) -> any
         """ 父格子：按签名找（签名是「父格子的签名/格位:物品键」），不按 node.Parent 的下标 —— 下标只在算出它的那一版里对 """
-        if self.Solver is None or not self.Solver.Done or node.Parent is None or "/" not in node.Sig:
+        if not self.Settled() or node.Parent is None or "/" not in node.Sig:
             return None
         return self.Solver.Find(node.Sig.rsplit("/", 1)[0])
 

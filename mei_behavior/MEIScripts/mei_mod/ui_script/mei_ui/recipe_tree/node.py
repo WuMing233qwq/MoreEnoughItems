@@ -27,8 +27,9 @@ from .script import RecipeTreeScript
 class RecipeTreeNode(RecipeTreeScript):
     def __init__(self, screen, param=None):
         RecipeTreeScript.__init__(self, screen, param)
-        self.SolveBudgetMs = 4.0  # 每帧解算多久：一个物品第一次查配方是同步直查（引擎结论 §3），查一次可能就超
-        self.DrawBudgetMs = 6.0  # 每帧建控件、写格子多久：做不完先藏起画布、写「绘制中」，画完一起显示
+        self.SolveBudgetMs = 6.0  # 每帧解算多久（画布上有树、能拖的时候）：一个物品第一次查配方是同步直查（引擎结论 §3），查一次可能就超
+        self.SolveIdleBudgetMs = 14.0  # 画布上还没有树的时候（刚打开、以它为根）：没东西可看，算快一点
+        self.DrawBudgetMs = 6.0  # 每帧给视口附近分控件、写格子多久；视口里的没写完先藏起画布、写「绘制中」，那时每帧 16 毫秒（canvas.FIRST_BUDGET_MS）
 
     def OnCreate(self):
         self.InitScript()

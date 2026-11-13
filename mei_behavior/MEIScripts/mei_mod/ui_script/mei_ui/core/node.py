@@ -337,6 +337,10 @@ class UIMainNode(UIScriptMain):
 		floating = self.Float
 		if floating is not None:
 			floating.Update()
+		# 托管配方页（类型的 PageHost）：容器建好后的那一帧分页、画第一页
+		details = getattr(self, "RecipeDetailsIns", None)
+		if details is not None and getattr(details, "Created", False):
+			details.PollHostedPage()
 		# 按着修饰键悬停（PC）：Ctrl / Shift 高亮同一条配方收藏
 		hover.Tick(self)
 

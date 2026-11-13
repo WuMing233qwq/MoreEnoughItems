@@ -30,9 +30,12 @@
    （只比两边都有的层，浅的子树能贴着深的子树放）；
 3. 放完把这一群子树整体平移，让「落点 − 锚点」的中位数为 0（父组落到子树群中间，折线总长最短；兄弟之间相对位置不变，不会重叠）；
 4. 自上而下按相对位置摆，最左出了界整体右移。坐标都是半格的倍数。
+不递归（树最深 256 层），按时间预算分帧推进（Layout.Step，上万格时一帧排不完）；place 是一口气排完。
 连线：原料格下边 → 子组工作方块上边；正对着是一根竖线，否则「竖 — 横 — 竖」，横段在两层之间的空里（不穿过任何一组），
 同一层间隙里的横段按区间分层（区间不相交的共用一层），横段不会叠在一起
 """
+import time
+
 from .solver import STATE_OK
 
 
@@ -86,22 +89,69 @@ def anchor_of(slot, metrics=DEFAULT):  # type: (int, Metrics) -> int
     return metrics.Cell + metrics.WsGap + slot * metrics.Cell + metrics.Cell // 2
 
 
-def place(nodes, fold=(), metrics=DEFAULT):  # type: (list, any, Metrics) -> Placement
-    """ nodes 是 solver 的 Nodes（[0] 是根），fold 是折叠了的格子的路径签名 """
-    m = metrics
-    folded = set(fold)
-    result = Placement()
+class Layout(object):
+    """
+    一次排版：Step(预算毫秒) 往下排一段，Done 了 Result 就是 Placement。三步 ——
+    量（子树从下往上：BFS 的顺序里子格的 Id 总比父格大，倒着走就是先子后父）→ 摆（从上往下）→ 连线；Progress() 给（排到第几格, 一共几格）
+    """
 
-    def has_group(node):
-        return node.State == STATE_OK and node.Sig not in folded
+    def __init__(self, nodes, fold=(), metrics=DEFAULT, clock=None):
+        self.Nodes = nodes
+        self.Folded = set(fold)
+        self.Metrics = metrics
+        self.Clock = clock or time.time
+        self.Result = None  # type: Placement or None
+        self.__Active = self.__Expanded()  # 要画下面那组的格子（Id 从小到大）
+        self.__Index = len(self.__Active)  # 量到第几个（倒着走）
+        self.__Subs = {}  # type: dict  # 节点 Id -> (各层最左, 各层最右, 子树们 [[Id, 格位, 量的结果, x]])
+        self.__Placed = False
 
-    def measure(node):
+    @property
+    def Done(self):  # type: () -> bool
+        return self.Result is not None
+
+    def Progress(self):  # type: () -> tuple
+        total = len(self.__Active)
+        return total - self.__Index, total
+
+    def __HasGroup(self, node):  # type: (any) -> bool
+        return node.State == STATE_OK and node.Sig not in self.Folded
+
+    def __Expanded(self):  # type: () -> list
+        """ 画得出下面那组的格子：自己展开了、上面一路都展开了（折叠了的那一格下面不量）"""
+        nodes = self.Nodes
+        if not nodes or not self.__HasGroup(nodes[0]):
+            return []
+        active, mark = [], set([0])
+        for node in nodes:
+            if node.Id in mark:
+                active.append(node.Id)
+                for child_id in node.Children:
+                    if self.__HasGroup(nodes[child_id]):
+                        mark.add(child_id)
+        return active
+
+    def Step(self, budget_ms=None):  # type: (float or None) -> bool
+        """ 往下排一段：budget_ms 毫秒用完就停（None 是一口气排完）；排完了返回 True """
+        deadline = None if budget_ms is None else self.Clock() + budget_ms / 1000.0
+        while self.__Index > 0:
+            self.__Index -= 1
+            node_id = self.__Active[self.__Index]
+            self.__Subs[node_id] = self.__Measure(self.Nodes[node_id])
+            if deadline is not None and self.__Index & 31 == 0 and self.Clock() >= deadline:
+                return False
+        if self.Result is None:
+            self.Result = self.__Place()
+        return True
+
+    def __Measure(self, node):  # type: (any) -> tuple
+        m = self.Metrics
+        nodes = self.Nodes
         parts, rows_l, rows_r = [], [], []
         for slot, child_id in enumerate(node.Children):
-            child = nodes[child_id]
-            if not has_group(child):
+            sub = self.__Subs.get(child_id)
+            if sub is None:
                 continue
-            sub = measure(child)
             x = anchor_of(slot, m) - m.Cell // 2
             for t in range(min(len(sub[0]), len(rows_r))):
                 x = max(x, rows_r[t] + m.HGap - sub[0][t])
@@ -123,35 +173,49 @@ def place(nodes, fold=(), metrics=DEFAULT):  # type: (list, any, Metrics) -> Pla
             rows_r = [value - shift for value in rows_r]
         return [0] + rows_l, [group_width(node, m)] + rows_r, parts
 
-    root = nodes[0]
-    edges = []
-    if has_group(root):
-        lefts, rights, parts = measure(root)
-        min_l, max_r = min(lefts), max(rights)
-        root_x = m.Pad - min_l
+    def __Place(self):  # type: () -> Placement
+        m = self.Metrics
+        nodes = self.Nodes
+        result = Placement()
+        edges = []
+        root_sub = self.__Subs.get(0)
+        if root_sub is not None:
+            lefts, rights = root_sub[0], root_sub[1]
+            min_l, max_r = min(lefts), max(rights)
+            root_x = m.Pad - min_l
+            # 从上往下摆（先序：一组摆完先把它第一棵子树整个摆完，再摆下一棵 —— 连线的先后和递归时一样）
+            stack = [(0, root_sub, root_x, m.Pad + m.Row, None)]
+            while stack:
+                node_id, sub, origin_x, top, edge = stack.pop()
+                if edge is not None:
+                    edges.append(edge)
+                node = nodes[node_id]
+                result.Groups[node_id] = (origin_x, top)
+                for slot, child_id in enumerate(node.Children):
+                    result.Cells[child_id] = (origin_x + m.Cell + m.WsGap + slot * m.Cell, top)
+                for child_id, _, child_sub, x in reversed(sub[2]):
+                    stack.append((child_id, child_sub, origin_x + x, top + m.Row, (child_id, child_id)))
+            edges.append((0, 0))
+            width = max_r - min_l
+        else:
+            root_x = m.Pad
+            width = m.Cell
+        result.Cells[0] = (root_x, m.Pad)
+        bottom = m.Pad + m.Cell
+        for _, top in result.Groups.values():
+            bottom = max(bottom, top + m.Cell)
+        result.Width = width + m.Pad * 2
+        result.Height = bottom + m.Pad
+        result.Lines = route(edges, result, m)
+        self.__Subs = {}
+        return result
 
-        def put(node, sub, origin_x, top):
-            result.Groups[node.Id] = (origin_x, top)
-            for slot, child_id in enumerate(node.Children):
-                result.Cells[child_id] = (origin_x + m.Cell + m.WsGap + slot * m.Cell, top)
-            for child_id, _, child_sub, x in sub[2]:
-                edges.append((child_id, child_id))
-                put(nodes[child_id], child_sub, origin_x + x, top + m.Row)
 
-        put(root, (lefts, rights, parts), root_x, m.Pad + m.Row)
-        edges.append((0, 0))
-        width = max_r - min_l
-    else:
-        root_x = m.Pad
-        width = m.Cell
-    result.Cells[0] = (root_x, m.Pad)
-    bottom = m.Pad + m.Cell
-    for _, top in result.Groups.values():
-        bottom = max(bottom, top + m.Cell)
-    result.Width = width + m.Pad * 2
-    result.Height = bottom + m.Pad
-    result.Lines = route(edges, result, m)
-    return result
+def place(nodes, fold=(), metrics=DEFAULT):  # type: (list, any, Metrics) -> Placement
+    """ nodes 是 solver 的 Nodes（[0] 是根），fold 是折叠了的格子的路径签名；一口气排完 """
+    layout = Layout(nodes, fold, metrics)
+    layout.Step(None)
+    return layout.Result
 
 
 def route(edges, placement, metrics=DEFAULT):  # type: (list, Placement, Metrics) -> list

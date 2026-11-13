@@ -42,6 +42,9 @@ class __RecipeManager(object):
     @staticmethod
     def GetDisplayItemData(crafting_type: str) -> Optional[Tuple[str, int]]:...
 
+    @staticmethod
+    def GetDisplayTexture(crafting_type: str) -> Optional[str]:...
+
     # JSON UI 的 namespace.control_name, 交给 CreateChildControl 实例化
     @staticmethod
     def GetControlDef(crafting_type: str) -> Optional[str]:...

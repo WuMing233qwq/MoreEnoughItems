@@ -219,6 +219,9 @@ def CalEdge(width, idx1, idx2):
 
 def GetVerticalRightLeftItem(index, rows, cols, items, default=None):
     # type: (int, int, int, list, any) -> any
+    """ 竖排、从右往左数的第 index 格是 items 的哪一个；没有格子（行或列是 0：这个类型没有工作站）给 default """
+    if not items or rows <= 0 or cols <= 0:
+        return default
     r = index // cols
     c = index % cols
     new_idx = (cols - 1 - c) * rows + r

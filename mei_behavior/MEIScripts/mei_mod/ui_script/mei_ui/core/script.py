@@ -30,6 +30,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui.core.adaptive import AdaptiveControlReg
 from MEIScripts.mei_mod.ui_script.mei_ui.core.focus import FocusTarget, item_from_hit
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import NotifyNoRecipes
 from MEIScripts.mei_mod.ui_script.proxy.focus.manager import FocusManager, GetCursorPos
+from MEIScripts.mei_mod.ui_script.proxy.focus.providers import FocusProviders
 from MEIScripts.utils import utilities
 from MEIScripts.utils.text import native_str
 
@@ -163,13 +164,18 @@ class UIScriptMain(object):
     def FocusAt(self, x, y):  # type: (float, float) -> FocusTarget
         """
         这一点上的物品格，任何界面都认（查找状态点一下、调试键）。MEI 自己的格子先认 —— 不走控件树，直接问它的 grid 与配方页
-        （PanelAt，物品优先取面板上的，收藏格带 Cell）；不是再到原版 / 别的模组的界面里递归找渲染器
+        （PanelAt，物品优先取面板上的，收藏格带 Cell）；再问别的模组登记的焦点提供器（ctx.UI.Focus：画在 MEI 覆盖层里的它们的格子）；
+        都不是再到原版 / 别的模组的界面里递归找渲染器
         （焦点探针 FocusManager.Query：从 FocusRoots 往下、跳过 MEI 的覆盖层，查询时才找，docs/architecture/focus.md）
         """
         pos = (float(x), float(y))
         panel = self.PanelAt(pos[0], pos[1])
         if panel is not None:
             return FocusTarget(pos, None, panel, getattr(panel, "Item", None))
+        if FocusProviders.Count():
+            hit = FocusProviders.Ask(self.ScreenNode, pos[0], pos[1])
+            if hit is not None:
+                return FocusTarget(pos, hit, None, item_from_hit(hit))
         hit = FocusManager.Query(self.ScreenNode, pos[0], pos[1], self.FocusRoots(), self.FocusExclude())
         if hit is None:
             return FocusTarget(pos)

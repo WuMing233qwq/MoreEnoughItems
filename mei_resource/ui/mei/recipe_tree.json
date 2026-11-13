@@ -38,6 +38,17 @@
                 }
             },
             {
+                "icon": {
+                    "type": "image",
+                    "texture": "textures/ui/mei/blank",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [16, 16],
+                    "layer": 3,
+                    "visible": false
+                }
+            },
+            {
                 "count": {
                     "type": "label",
                     "anchor_from": "bottom_right",
@@ -275,6 +286,16 @@
         ],
         "layer": 1,
         "texture": "textures/ui/mei/flat/frame_line"
+    },
+    "bucket": {
+        "type": "panel",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            0,
+            0
+        ],
+        "layer": 0
     },
     "line": {
         "type": "image",

@@ -99,6 +99,7 @@ class MeiExtension(object):
 | `QueryAll(category_id)` | `(配方表, 是否完整)` | **一个类型的全部配方**（各来源 `GetAll()` 的合并）；原版的引擎来源第一次要时才分帧扫，扫完之前给「不完整」。探测 |
 | `IsCategoryBuilding(category_id)` | `bool` | 这个类型的全表还在凑没有。探测 |
 | `GetDisplayText(category_id)` | `unicode` | 类型的显示名（本地化后的），MEI 自己的界面都用它 |
+| `GetDisplayItemData(category_id)` / `GetDisplayTexture(category_id)` | `(id, aux)` / `str or None` | 类型页签画的东西：图标声明成物品的给物品；声明成贴图的 `GetDisplayTexture` 给路径（`GetDisplayItemData` 这时给第一个工作站或一本书，只是兜底）。`GetDisplayTexture` 2026-11-13 起，探测 |
 | `GetAllCraftingTypes()` | `list` | 全部类型 Id（按 sort_index）|
 | `GetCategory(category_id)` / `GetCraftingStations(category_id)` | | 类型对象 / 它的工作站 |
 | `GetControlDef(category_id)` / `GetPreviewDef(category_id)` | `str or None` | 配方页 / tooltip 预览用的控件定义 |
@@ -193,7 +194,8 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 | `Item` / `ItemStack` / `Stack` / `ItemAttr` / `ItemInfo` / `ItemSpec` | 物品（`Item` 只读；`IsPlain` 是不是原件，探测）、一堆物品、条目基类、附加属性、基本信息、加物品的描述 | [04](04-items.md) |
 | `Ingredient` / `IngredientLike` | 配方的一格：几个候选（tag 折叠）、数量、概率 | [02 §4](02-recipes.md#recipe) |
 | `Recipe` | 配方（`Type` / `Inputs` / `Outputs` / `Catalysts` / `Data` / `Id`）| [02 §4](02-recipes.md#recipe) |
-| `RecipeCategory` | 配方类型 | [02 §2](02-recipes.md#category) |
+| `RecipeCategory` | 配方类型（`page_host=` 托管配方页，2026-11-13 起）| [02 §2](02-recipes.md#category) |
+| `RecipePageHost` | 托管配方页的约定：`CONTAINER`、`PageSize` / `Show` / `Hide` / `Tick` / `RecipeAt`（2026-11-13 起，探测 `hasattr(ctx.Types, "RecipePageHost")`）| [03 §9](03-recipe-page.md#hosted) |
 | `RecipeSource` / `StaticRecipeSource` | 来源：按需查 / 一次给全 | [02 §3](02-recipes.md#source) |
 | `register_recipe_class` / `get_recipe_class` / `keys` | 配方子类的序列化登记、物品键工具 | [02 §4](02-recipes.md#recipe) |
 | `TransferHandler` / `TransferRequest` / `TransferSlot` / `TransferError` | 按界面登记的转移处理器：处理器基类、清单、清单的一格、「做不了 / 有话要说」（2026-10-30 起，探测；清单的 `Fits` 第三十八轮加）| [05 §3](05-screens-and-tools.md#transfers) |
@@ -233,7 +235,8 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 <a id="ui-screens"></a>
 ### 6.4 `ctx.UI.Screens` —— 让一个界面挂上 MEI（[05 §1](05-screens-and-tools.md#screens)）
 
-探测。`Register(screen_def, params=None)` → `bool` / `Unregister(screen_def)` → `bool` / `IsRegistered(screen_def)` → `bool`。
+探测。`Register(screen_def, params=None)` → `bool` / `Unregister(screen_def)` → `bool` / `IsRegistered(screen_def)` → `bool` /
+`GetParams(screen_def)` → `dict or None`（登记时给的参数的拷贝，没登记给 None；先撤掉别人登记的界面、之后原样登记回去时用，2026-11-13 起，探测）。
 挂的是 SDK 的界面代理：原版界面、`netease:block_container` 方块的界面、你用 `RegisterUI` + `PushScreen` 开的界面都一样登记（SDK 压栈时按全名取界面节点）。
 
 | 参数（都可以不写）| 不写时 | 意思 |
@@ -275,6 +278,24 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 | `Mode()` → `str` | 现在的模式：`ctx.Const.ModeConst.Normal / Tool / Cheat` |
 | `CheatAllowed()` → `bool or None` | 服务端最近一次答的：有没有作弊模式的权限（操作员）|
 | `IsBookmarked(item)` / `SetBookmarked(item, on=True)` → `bool` | 收藏（当前页签）；收了收藏栏当场重排 |
+| `ShowRecipes / ShowUses(item, category=None, open_screen=False)` | 2026-11-13 起多一个 `open_screen`：没挂着 MEI 的界面时为真就开 MEI 自己的界面、在那里开（探测）|
+| `ClickItem(item, path=None, secondary=False)` → `bool` | 你画的一格物品被点了（**点击回调之后、下一帧调**），照 MEI 自己的物品格处理：工具 / 作弊模式先接走；触屏开 MEI 的二级菜单（来源 / 用途 / 收藏 / 配方树，摆在这一格旁边）；PC 上 `secondary` 为假查来源、为真查用途。`path` 是这一格物品渲染器的控件路径（从界面最根上算），不给就只能查配方；没挂着 MEI 的界面时开 MEI 自己的界面查。2026-11-13 起，探测 |
+| `OpenItemMenu(item, path)` → `bool` | 只开那个二级菜单（`path` 同上）。2026-11-13 起，探测 |
+| `RefreshRecipes(category=None)` → `bool` | 配方页正开着、看的是这个类型（不给就是正看的那个）：按它现在的配方页控件重建，停在原来那一页 —— 改了类型的 `ControlDef` 之后用；没开着、看的不是它给 False。2026-11-13 起，探测 |
+| `GetSearchText()` → `str or None` / `SetSearchText(text)` → `bool` | 物品栏搜索框的字；改了当场搜。物品栏没开着给 None / False。2026-11-13 起，探测 |
+| `HoverText(item, lore=None)` → `str` | MEI 给这样物品写的悬停文字：物品自己的几行 + `lore`（说明行，空一行接在后面）+ 设置「信息显示」里的 ID / 命名空间那两行 —— 你的格子用它就和 MEI 自己的一致。2026-11-13 起，探测 |
+
+<a id="ui-focus"></a>
+### 6.8 `ctx.UI.Focus` —— 焦点提供器（[05 §4.1](05-screens-and-tools.md#focus)）
+
+探测（2026-11-13 起）。你画在 **MEI 覆盖层里**的物品格（比如塞进配方页的自己的控件），MEI 的焦点探针是跳过的：登记一个提供器告诉 MEI 到哪儿找，
+快捷键（来源 / 用途 / 收藏 / 配方树）、查找状态、`Actions.ItemAt / ItemUnderCursor` 就都认它们。你自己的界面（不在 MEI 覆盖层里）不用登记，MEI 本来就认。
+
+| 方法 | 说明 |
+|---|---|
+| `Register(provider)` → 记号 or None | `provider(x, y)`（全局坐标）返回：None 是不归你管；一个控件路径或几个（从界面最根上算）是让 MEI 在它下面找物品渲染器（看得见、矩形含这一点、名字像渲染器的，同一套焦点探针）；`(物品, 渲染器路径)` 是你自己认出来了（物品是 MEI 的 Item 或 `(id, aux)`）。MEI 自己的格子先认，再按登记的先后问提供器，都没有才去别的界面里找；抛异常当没有 |
+| `Unregister(token)` → `bool` | 撤一个 |
+| `UnregisterAll()` → `int` | 撤掉记在你名下的全部（扩展卸载时 MEI 也会兜底撤）|
 
 <a id="ui-transfers"></a>
 ### 6.7 `ctx.UI.Transfers` —— 按界面登记的配方转移（[05 §3](05-screens-and-tools.md#transfers)）

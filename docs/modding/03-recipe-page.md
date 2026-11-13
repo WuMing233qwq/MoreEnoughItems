@@ -146,4 +146,34 @@ class FluidStack(ctx.Types.ItemStack):
 转移按钮要两件事都做（[02 §8](02-recipes.md#transfer)）。**你自己加的按钮没做完就两层都关**：Python 不注册、JSON 里也 `"ignored": true` ——
 只关 Python 那层，控件照样建出来、绑定每帧照拉，`stack_panel` 里还空出一格。
 
+<a id="hosted"></a>
+## 9. 托管配方页：内容区整块交给你画（[api §5](api.md#types)）
+
+配方页本来就是你自己的 JSON 控件、自己的脚本（比如转接别的配方浏览器的接口），MEI 不认识里面的格子，又不想照 §1 ~ §8 改写的，
+在类型上登记一个托管者：`RecipeCategory(…, page_host=host)`，`host` 继承 `ctx.Types.RecipePageHost`（或者写一个有同样方法的类）。
+MEI 照旧管配方页的框 —— 顶栏（返回、类型名、页码与翻页、关闭）、类型页签、左边的工作站一列、滚轮翻页、导航；内容区里建一个容器交给你：
+
+| 方法 / 属性 | 什么时候调 | 你做什么 |
+|---|---|---|
+| `CONTAINER` | 换到这个类型时 | 容器的 JSON 定义，缺省 `"mei_recipe_common.hosted_page"`：竖排的 `stack_panel`，宽取里面最宽的控件、高是它们加起来，摆在顶栏下面、水平居中 |
+| `PageSize(category, recipes, height)` | 每次分页（开页、换类型、改界面尺寸）| 一页放几条；`height` 是内容区能用的高。少于 1 按 1 |
+| `Show(page)` | 画这一页 | 在 `page.Container` 里建你的控件、画这一页的配方 |
+| `Hide(page)` | 翻页、换类型、刷新、关配方页之前 | 收回这一页（拆你的脚本）。同一个类型翻页时容器不换（`page.Serial` 一样），控件可以留着给下一页接着用；换了类型、刷新、关页时容器连同里面的控件一起删 |
+| `Tick(page, ticks)` | 配方页的节拍（0.2 秒一拍），`ticks` 从这一页显示起算 | 轮播、动画；不要就不写 |
+| `RecipeAt(page, x, y)` | 快捷键「收藏这条配方」问屏幕上这一点是哪条配方 | 给那条 `Recipe`；不知道给 None（缺省）|
+
+`page`（HostedPage）：`Container` / `ContainerPath`（MEI 建的容器）、`Recipes`（这一页的配方）、`Start`（第一条是第几条）、`Total`、`Height`、
+`Serial`（容器的代号）、`ScreenNode`、`ScreenName`（配方页挂在哪个界面上，比如 `"crafting.crafting_screen"`）、`Live`（收回以后为假）；
+`CreateControl(定义, 名字, parent=None)` / `RemoveControl(control)` 在容器里建、删控件（经 MEI 的主节点，控件缓存跟着作废，**不要自己 `CreateChildControl`**），
+`Notice(text)` 在顶栏挂一句话几秒，`Close()` 关掉配方页（排到下一拍）。收回以后这几个方法什么都不做。
+
+几条约束：
+
+- 容器里的控件**宽不要写父控件的百分比**：容器和配方页的宽都跟着它们，写了就绕成圈，引擎排不出来、断言后崩溃（MEI 引擎结论 §56）。高同理。
+- 刚建的容器量不到配方页的高：MEI 等下一帧（排好了）才分页、调 `Show`，你不用自己等。
+- 托管类型**没有 MEI 的配方行**：行上的收藏、置顶、+、配方树按钮都没有（要转移就在你自己的控件里放按钮、自己接）；
+  tooltip 不出配方预览（`preview_def` 缺省就是空）；**配方树不用这个类型的配方**（MEI 不知道它的原料）。
+  格子要照 MEI 的交互（工具 / 作弊模式、触屏菜单、左右键查来源 / 用途），点了交给 `ctx.UI.Actions.ClickItem`；光标下的格子要让快捷键认得，登记焦点提供器（`ctx.UI.Focus`，[05 §4.1](05-screens-and-tools.md#focus)）。
+- `Show` / `Hide` / `Tick` 抛了 MEI 只记一行（`[MEI/ui] 托管配方页 … 画不出来`），配方页照常，那一页是空的。
+
 下一篇：[04 · 物品](04-items.md)。

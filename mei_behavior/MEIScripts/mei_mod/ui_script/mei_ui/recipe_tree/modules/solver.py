@@ -56,8 +56,8 @@ STATE_NONITEM = "nonitem"
 
 MAX_DEPTH = 256
 """ 深度上限（16、64 都嫌低，256 的开销也没那么大） """
-MAX_NODES = 2000
-""" 节点上限（400 不够用） """
+MAX_NODES = 20000
+""" 节点上限（400、2000 都不够用：毕业级的配方整棵展开上万格。画布只给视口附近的格子建控件，格子再多也不多建）"""
 
 
 class TreeRecipe(object):
@@ -68,7 +68,7 @@ class TreeRecipe(object):
     排序键 Order（类型顺序、注册顺序）、
     其他产出 Byproducts = ((物品键, 单次几个, 概率), ...)：这条配方除了这一格的物品还出的东西（不画在树上，汇总的「副产物」算它）
     """
-    __slots__ = ("Id", "Type", "Inputs", "Output", "Tools", "Source", "Order", "Byproducts")
+    __slots__ = ("Id", "Type", "Inputs", "Output", "Tools", "Source", "Order", "Byproducts", "Keys")
 
     def __init__(self, recipe_id, type_id, inputs, output, tools=(), source=None, order=(0, 0), byproducts=()):
         self.Id = recipe_id
@@ -80,9 +80,10 @@ class TreeRecipe(object):
                                 for key, count, chance in byproducts or () if key and chance > 0)
         self.Source = source
         self.Order = tuple(order)
+        self.Keys = frozenset(key for choices, _ in self.Inputs for key in choices)  # 原料的全部候选：判绕回的快路
 
     def Uses(self, key):  # type: (str) -> bool
-        return any(key in choices for choices, _ in self.Inputs)
+        return key in self.Keys
 
     def __repr__(self):
         return "TreeRecipe({!r})".format(self.Id)
@@ -163,9 +164,9 @@ class Solver(object):
         self.__Queue = collections.deque()
         self.__Recipes = {}  # type: dict  # 物品键 -> [TreeRecipe]
         self.__Reverse = {}  # type: dict  # (配方 Id, 物品键) -> 是不是还原
-        root = TreeNode(0, state.Root, state.Qty)
-        self.Nodes.append(root)
-        self.__Queue.append(root)
+        self.__BySig = {}  # type: dict  # 路径签名 -> 节点（菜单、折叠按签名找，上万格时不能一格格比）
+        self.__Depth = 0  # type: int  # 到过的最深一层
+        self.__Add(TreeNode(0, state.Root, state.Qty))
 
     @property
     def Done(self):  # type: () -> bool
@@ -181,13 +182,17 @@ class Solver(object):
         return not self.__Queue
 
     def Find(self, sig):  # type: (str) -> TreeNode or None
-        for node in self.Nodes:
-            if node.Sig == sig:
-                return node
-        return None
+        return self.__BySig.get(sig)
 
     def MaxDepthReached(self):  # type: () -> int
-        return max(node.Depth for node in self.Nodes)
+        return self.__Depth
+
+    def __Add(self, node):  # type: (TreeNode) -> None
+        self.Nodes.append(node)
+        self.__BySig[node.Sig] = node
+        if node.Depth > self.__Depth:
+            self.__Depth = node.Depth
+        self.__Queue.append(node)
 
     def RecipesOf(self, key):  # type: (str) -> list
         """ 做这个物品的配方（同一棵树里只向 provider 要一次）"""
@@ -235,13 +240,14 @@ class Solver(object):
             child_key = self.__Pick(choices, node.Path)
             child = TreeNode(len(self.Nodes), child_key, node.Crafts * count, node.Depth + 1, node.Id, slot, choices,
                              "{}/{}:{}".format(node.Sig, slot, child_key), node.Path)
-            self.Nodes.append(child)
             node.Children.append(child.Id)
-            self.__Queue.append(child)
+            self.__Add(child)
 
     @staticmethod
     def __Stuck(recipe, path):  # type: (TreeRecipe, frozenset) -> list
-        """ 这条配方里会绕回的原料：候选全在路上（多候选的还有一个不在路上就不算）"""
+        """ 这条配方里会绕回的原料：候选全在路上（多候选的还有一个不在路上就不算）。原料一样都不在路上的（绝大多数）直接给空 """
+        if path.isdisjoint(recipe.Keys):
+            return []
         return [choices[0] for choices, _ in recipe.Inputs if all(key in path for key in choices)]
 
     def __IsReverse(self, recipe, target):  # type: (TreeRecipe, str) -> bool

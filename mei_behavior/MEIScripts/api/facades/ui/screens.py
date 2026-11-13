@@ -23,7 +23,7 @@
 """
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
 
-__all__ = ["Register", "Unregister", "IsRegistered"]
+__all__ = ["Register", "Unregister", "IsRegistered", "GetParams"]
 
 
 def Register(screen_def, params=None):
@@ -46,6 +46,14 @@ def Unregister(screen_def):
 def IsRegistered(screen_def):
     # type: (str) -> bool
     return ProxyManager.IsCustomUIScreen(screen_def)
+
+
+def GetParams(screen_def):
+    # type: (str) -> dict or None
+    """ 这个界面登记时给的参数（一份拷贝）；没登记给 None。先撤掉别人登记的界面、之后原样登记回去时用 """
+    if not ProxyManager.IsCustomUIScreen(screen_def):
+        return None
+    return dict(ProxyManager.GetCustomUIParams(screen_def) or {})
 
 
 class ScreensFacade(object):
