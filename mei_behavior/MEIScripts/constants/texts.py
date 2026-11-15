@@ -58,6 +58,7 @@ class TransferText(object):
     Partial = u"§c只放进去了一部分"
     WrongScreen = u"§7当前界面不能转移这一类配方"
     TooBig = u"§7这条配方放不进当前的合成格"
+    Unsupported = u"§7这一类配方不能转移"
 
 class ItemText(object):
     # 物品分组面板的悬浮文本. {} 依次为分组名、物品数量.

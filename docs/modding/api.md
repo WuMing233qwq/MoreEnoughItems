@@ -322,7 +322,8 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 
 - 同一个界面、同一个类型登记了几个，后登记的优先；比类型上的转移策略（`RecipeCategory.SetTransferPolicy`）优先。
 - 检查的结论每帧被回读（+ 灰不灰、悬停文字），MEI 按 `Recipe.Id` 缓存、翻页 / 换类型 / 转移成了以后重问；处理器、`accepts` 抛异常只记一行：检查抛了当不收，Transfer 抛了当没写成。
-- + 只在配方行的 JSON 打开了它的类型上出现（原版工作台打开了：`$plus_button_ignored: false`，[03 §8](03-recipe-page.md#buttons)）；你自己的配方页要 + 就在行上打开它。
+- 配方行缺省就有 +（2026-11-15 起，`$plus_button_ignored` 缺省 `false`；原来只在行上打开了的类型出现）：这一类配方转移不了的灰着、悬停写「这一类配方不能转移」；
+  你的类型用不上的在行上写 `true` 关掉（[03 §8](03-recipe-page.md#buttons)）。
 
 ---
 

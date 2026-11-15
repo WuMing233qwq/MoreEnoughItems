@@ -131,7 +131,7 @@ name = manager.GetDisplayText("crafting_table")                    # 类型的�
 配方行右边的 + 按钮。**你的机器要支持它，用 `ctx.UI.Transfers` 的转移处理器**（[05 §3](05-screens-and-tools.md#transfers)）：
 你的界面开着时，MEI 算好清单（每一格要什么、背包里凑得出多少、挑哪一样）交给你，你说能不能做（+ 亮不亮、悬停写什么），
 玩家点了你发自己的请求、由你自己的服务端照你的规矩搬 —— 只有你知道玩家开着哪台机器、哪几格是输入、搬完要不要同步。
-你的配方行要出 +，在行上写 `"$plus_button_ignored": false`（[03 §8](03-recipe-page.md#buttons)）。
+配方行缺省就有 +（2026-11-15 起；转移不了、当前界面不收、材料不够的都灰着，悬停写原因），你的类型确实用不上的在行上写 `"$plus_button_ignored": true` 关掉（[03 §8](03-recipe-page.md#buttons)）。
 
 MEI 自己的快捷合成只管原版工作台、背包 2×2（玩家侧的格子：`SetPlayerUIItem` 只让写玩家开着的那个界面），
 物品来源、转移策略、清单这些都是 MEI 内部的，不对外（2026-10-30 起；原来的 `ctx.Registry.TransferRegistry`、`ctx.Types.ItemSource` / `SlotTarget` /

@@ -129,6 +129,12 @@
             {
                 "wrapper": {
                     "type": "panel",
+                    "anchor_from": "top_middle",
+                    "anchor_to": "top_middle",
+                    "offset": [
+                        0,
+                        2
+                    ],
                     "size": [
                         134.0,
                         44.0
@@ -139,7 +145,7 @@
                             "content@MeiCampfire.content_panel": {}
                         },
                         {
-                            "buttons@mei_recipe_common.buttons_panel_vertical": {
+                            "buttons@mei_recipe_common.buttons_panel_horizontal": {
                                 "$tree_button_ignored": false
                             }
                         }
@@ -149,7 +155,7 @@
         ],
         "size": [
             188,
-            48
+            64
         ]
     }
 }

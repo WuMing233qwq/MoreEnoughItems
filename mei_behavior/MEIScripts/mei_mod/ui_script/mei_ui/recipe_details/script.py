@@ -594,34 +594,40 @@ class RecipeDetailsScript(object):
     @RecipeAction.Visible(actions.PLUS)
     def CanTransferRecipe(self, _row, recipe):  # type: (int, any) -> bool
         """
-        这一类配方根本转移不了（类型没有转移策略、也没有哪个界面登记收它）才不渲染。
-        能转移、只是当前界面不收或者材料不够，一律**灰掉**（Enabled，悬停写原因）——
-        开着哪个界面是运行时的条件，藏起来玩家就不知道有这个功能（engineering.md §5.1f）
+        有配方就出（行上没写 $plus_button_ignored: true 的话）。这一类根本转移不了、当前界面不收、材料不够，一律**灰掉**
+        （Enabled，悬停写原因）—— 藏起来玩家就不知道有这个功能（engineering.md §5.1f）
         """
-        if recipe is None:
-            return False
-        return self.Craftable.Transferable(self.__CurrentCategory(), recipe, self.CurrentType)
+        return recipe is not None
 
     @RecipeAction.Enabled(actions.PLUS)
     def IsRecipeCraftable(self, _row, recipe):  # type: (int, any) -> bool
         """
-        材料够不够。**每帧被回读，所以必须走缓存** —— 真正的采集在开页时算一次
-
+        能不能点：这一类配方根本转移不了（类型没有转移策略、也没有哪个界面登记收它）的灰着；
+        交给界面登记的转移目标的不看材料，问它收不收这一条；别的看材料够不够。
+        **每帧被回读，所以必须走缓存** —— 真正的采集在开页时算一次
         (不缓存就是每帧扫一遍背包, 正是 binding_cost.md 记的那类事故)
-        交给界面登记的转移目标的不看材料，问它收不收这一条（同样走缓存）
         """
+        category = self.__CurrentCategory()
+        if recipe is None or not self.Craftable.Transferable(category, recipe, self.CurrentType):
+            return False
         target = self.Craftable.TransferTarget(recipe, self.CurrentType)
         if target is not None:
             return self.Craftable.Allows(target, recipe, self.CurrentType)
-        return self.Craftable.CanCraft(self.__CurrentCategory(), recipe)
+        return self.Craftable.CanCraft(category, recipe)
 
     @RecipeAction.Hover(actions.PLUS)
     def PlusHoverText(self, _row, recipe):  # type: (int, any) -> unicode
-        """ + 的悬停文字：能点写点了会怎样，灰着写为什么、缺什么（转移处理器的检查、原版合成格的材料）。同样走缓存 """
+        """
+        + 的悬停文字：能点写点了会怎样，灰着写为什么、缺什么（转移处理器的检查、原版合成格的材料），
+        这一类根本转移不了的写一句。同样走缓存
+        """
         if recipe is None:
             return u""
+        category = self.__CurrentCategory()
+        if not self.Craftable.Transferable(category, recipe, self.CurrentType):
+            return TransferText.Unsupported
         target = self.Craftable.TransferTarget(recipe, self.CurrentType)
-        return self.Craftable.PlusHover(target, self.__CurrentCategory(), recipe, self.CurrentType)
+        return self.Craftable.PlusHover(target, category, recipe, self.CurrentType)
 
     @RecipeAction.Button(actions.PLUS)
     def OnTransferRecipe(self, ctx):

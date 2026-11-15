@@ -40,7 +40,7 @@ PREFIX_ROOT = "mei_ui.recipe.action"
 """ 内置动作的绑定名前缀根；与 recipes/common.json 的 buttons_panel 逐字一致 """
 
 PLUS = PREFIX_ROOT + ".plus"
-""" 快捷转移（调用合成）。只在有转移策略的类型上出现，见 quick_craft.md """
+""" 快捷转移（调用合成）。缺省每条配方都有，转移不了的灰着、悬停写原因，见 quick_craft.md """
 
 TOP = PREFIX_ROOT + ".top"
 """ 置顶配方 """

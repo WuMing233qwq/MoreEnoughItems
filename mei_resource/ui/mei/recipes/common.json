@@ -135,7 +135,7 @@
             "100%+0px"
         ], 
         "$action_collection_name|default": "recipes_grid", 
-        "$plus_button_ignored|default": true, 
+        "$plus_button_ignored|default": false, 
         "$star_button_ignored|default": false, 
         "$toggle_button_size": [
             "100%+-1px", 
@@ -193,7 +193,7 @@
     }, 
     "buttons_panel_vertical": {
         "$action_collection_name|default": "recipes_grid", 
-        "$plus_button_ignored|default": true, 
+        "$plus_button_ignored|default": false, 
         "$star_button_ignored|default": false, 
         "$top_button_ignored|default": false, 
         "$tree_button_ignored|default": true, 

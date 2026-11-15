@@ -138,11 +138,28 @@ class FluidStack(ctx.Types.ItemStack):
 ## 8. 配方行右边的动作按钮条
 
 ```json
-{ "buttons@mei_recipe_common.buttons_panel_vertical": { "$plus_button_ignored": false } }
+{ "buttons@mei_recipe_common.buttons_panel_vertical": { "$tree_button_ignored": false } }
 ```
 
-竖排（挂在内容右边，`buttons_panel_vertical`）与横排（行很矮时挂在下面，`buttons_panel_horizontal`）是两个控件。每颗按钮一个开关：
-`$tree_button_ignored`（配方树，缺省 `false` 的类型才有）/ `$top_button_ignored`（置顶）/ `$star_button_ignored`（收藏）/ `$plus_button_ignored`（快捷转移，**缺省关**）。
+竖排（挂在内容右边，`buttons_panel_vertical`）与横排（挂在内容下面，`buttons_panel_horizontal`）是两个控件。每颗按钮一个开关：
+`$tree_button_ignored`（配方树，**缺省关**）/ `$top_button_ignored`（置顶）/ `$star_button_ignored`（收藏）/ `$plus_button_ignored`（快捷转移，**缺省开**，2026-11-15 起：
+这一类配方转移不了、当前界面不收、材料不够都是灰着、悬停写原因；你的类型确实用不上的写 `true` 关掉）。
+
+**竖排每颗按钮 14 高**，内容（`wrapper`）不够高就用横排（四颗要 56）：横排挂在 `wrapper` 下面、右边和它对齐、隔 3，13 高 ——
+`wrapper` 锚 `top_middle`、`offset [0, 2]`，行高 = 2 + `wrapper` 高 + 3 + 13 + 2。MEI 的营火、锻造台、切石机就是这样（`wrapper` 44 高、行高 64）：
+
+```json
+"recipe@mei_recipe_common.recipe_panel": {
+    "size": [188, 64],
+    "controls": [{ "wrapper": {
+        "type": "panel", "anchor_from": "top_middle", "anchor_to": "top_middle", "offset": [0, 2], "size": [134, 44],
+        "controls": [
+            { "content@your_ns.content_panel": {} },
+            { "buttons@mei_recipe_common.buttons_panel_horizontal": { "$tree_button_ignored": false } }
+        ]
+    } }]
+}
+```
 转移按钮要两件事都做（[02 §8](02-recipes.md#transfer)）。**你自己加的按钮没做完就两层都关**：Python 不注册、JSON 里也 `"ignored": true` ——
 只关 Python 那层，控件照样建出来、绑定每帧照拉，`stack_panel` 里还空出一格。
 
