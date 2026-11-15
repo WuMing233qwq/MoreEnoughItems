@@ -981,6 +981,15 @@ class __BookmarkManager(object):  # noqa
                 return index
         return None
 
+    def TreeEntry(self, root_key):  # type: (str) -> dict or None
+        """ 当前页签里根是这个物品的配方树收藏（拷贝：配方树接着它的选择开）；没有给 None """
+        index = self.TreeIndex(root_key)
+        return dict(self._current_entries()[index]) if index is not None else None
+
+    def RemoveTree(self, root_key):  # type: (str) -> bool
+        """ 取消收藏根是这个物品的配方树（当前页签里那一条）"""
+        return self.RemoveKey(_identity(KIND_TREE, root_key)) if root_key else False
+
     def SaveTree(self, entry):  # type: (dict) -> str or None
         """
         存一棵配方树（recipe_tree 的 TreeState.ToEntry）：同一个根已经收过就原地更新那一条（分组、展开、数量照旧），

@@ -189,7 +189,7 @@ class TreeText(object):
     # 顶栏图标按钮的悬停字（「回到顶部」「全部展开」「折叠2层」照上面的写法）
     TipBack = u"返回上一棵树"
     TipSave = u"收藏这棵树"
-    TipUpdate = u"更新收藏"
+    TipUnsave = u"取消收藏"
     TipSideOpen = u"展开汇总"
     TipSideClose = u"收起汇总"
     TipClose = u"关闭"
@@ -280,8 +280,8 @@ class TreeText(object):
     SumTool = u"工具：不消耗"
     StripItem = u"{} ×{}"
     # 提示
-    Saved = u"已保存到收藏"
-    Updated = u"已更新收藏"
+    Saved = u"已收藏"
+    Unsaved = u"已取消收藏"
     SaveFailed = u"收藏页签已满，保存失败"
     DefaultSet = u"已设为首选，其他配方树也会优先使用"
     DefaultUnset = u"已取消首选"

@@ -130,6 +130,9 @@ class RecipeTreeScript(object):
         self.Pipeline = collections.deque()  # type: collections.deque  # 解算完还没做的几步
         self.Placing = None  # type: list or None  # [Layout, 锚点, 是否回到根]：正在排的那一版
         self.Broken = False  # type: bool  # 这一次解算 / 排版出错了：不再往下推，重新解算时清掉
+        self.SavedEntry = None  # type: dict or None  # 上一次写进收藏的条目（收藏着的树改了自动更新，一样的不再写）
+        self.SavedSig = None  # type: tuple or None  # 上一次看过的选择（TreeState.Signature）
+        self.SavedSummary = None  # type: any  # 上一次看过的汇总（重新解算过就是另一个）
         self.Ready = False  # type: bool
 
     # 生命周期
@@ -166,6 +169,10 @@ class RecipeTreeScript(object):
 
     def DestroyScript(self):
         self.Ready = False
+        try:
+            self.__AutoSave(final=True)  # 刚改完就关：还没解算完的那一下也写进收藏
+        except Exception as e:  # noqa
+            logger.error("[MEI/tree] 关配方树时更新收藏失败: {}".format(error_text(e)))
         try:
             # 首选、当原料：关配方树就写（排着的合并写等不到退出存档 —— SDK 那时把模组的定时器全清了）
             self.Prefs.Flush()
@@ -209,6 +216,7 @@ class RecipeTreeScript(object):
         if self.Canvas.Tick(self.DrawBudgetMs):
             self.__OnDrawn()
         self.Menu.Tick()  # 菜单里的配方预览建齐了才排版、显示
+        self.__AutoSave()
 
     def __InitialState(self):  # type: () -> TreeState or None
         param = self.Param
@@ -225,7 +233,21 @@ class RecipeTreeScript(object):
         key = self.Provider.Remember(item)
         if key is None:
             return None
-        return TreeState(key, param.get("qty") or 1, getattr(recipe, "Id", None) if recipe is not None else None)
+        return self.__StateFor(key, param.get("qty") or 1, getattr(recipe, "Id", None) if recipe is not None else None)
+
+    @staticmethod
+    def __StateFor(key, qty=1, recipe_id=None):  # type: (str, int, str) -> TreeState
+        """
+        以这样物品为根的一棵树：当前页签里收藏过这个根的树就接着那一棵（选择、折叠、数量照收藏的；从配方行打开的换成那一条配方）——
+        一个根只有一棵树，收藏着的改了自动更新，不能拿一棵新的去盖掉它；没收藏过就是新的一棵
+        """
+        saved = BookmarkManager.TreeEntry(key)
+        state = TreeState.FromEntry(saved) if saved is not None else None
+        if state is None:
+            return TreeState(key, qty, recipe_id)
+        if recipe_id:
+            state.RootRecipe = recipe_id
+        return state
 
     # 解算、画
 # ======================================================================================================================
@@ -428,7 +450,7 @@ class RecipeTreeScript(object):
         elif name == "back":
             self.Back()
         elif name == "save":
-            self.Save()
+            self.ToggleSave()
         elif name == "side":
             self.ToggleSide()
 
@@ -448,10 +470,10 @@ class RecipeTreeScript(object):
         room = control_width(self.Screen.GetBaseUIControl(TreePath.Top)) - self.TitleX - bar_w - 4
         self.__SetLabel("title", fit_text(self.Provider.NameOf(root), max(0, room)))
         self.__SetEnabled("back", bool(self.History))
-        # 收藏过的树：星染绿、悬停写「更新收藏」
+        # 收藏着的树：星染绿、悬停写「取消收藏」（改了自动更新那一条，不用再点）
         saved = self.__SavedIndex() is not None
         self.__SetIconOn("save", saved)
-        set_tip(self.TopControls.get("save"), TreeText.TipUpdate if saved else TreeText.TipSave)
+        set_tip(self.TopControls.get("save"), TreeText.TipUnsave if saved else TreeText.TipSave)
 
     def __SetEnabled(self, name, enabled):
         control = self.TopControls.get(name)
@@ -514,20 +536,49 @@ class RecipeTreeScript(object):
         self.CloseMenu()
         self.Resolve(reset=True)
 
-    # 收藏这一棵树（一整棵存成一条收藏，能展开，展开就是原料汇总）
+    # 收藏这一棵树（一整棵存成一条收藏，能展开，展开就是原料汇总）：收藏着的改了自动更新那一条；
+    # 再点一下取消收藏 —— 这一棵不再跟着收藏，关了配方树就没了
 # ======================================================================================================================
     def __SavedIndex(self):  # type: () -> int or None
         finder = getattr(BookmarkManager, "TreeIndex", None)
         return finder(self.State.Root) if finder is not None and self.State is not None else None
 
-    def Save(self):
-        # 解算中 Summary 还是上一版的（数量、选择已经改了）：存进去的展开对不上这棵树
-        if self.Summary is None or self.State is None or not self.Settled():
+    def ToggleSave(self):
+        """ 顶栏的收藏：没收藏 → 收藏这一棵（解算完才存：解算中 Summary 还是上一版的，展开对不上）；收藏着 → 取消收藏 """
+        if self.State is None:
             return
-        entry = self.State.ToEntry(self.Summary.Raw)
-        result = BookmarkManager.SaveTree(entry)
-        self.ShowToast({"added": TreeText.Saved, "updated": TreeText.Updated}.get(result, TreeText.SaveFailed))
+        if self.__SavedIndex() is not None:
+            removed = BookmarkManager.RemoveTree(self.State.Root)
+            self.SavedEntry = None
+            self.ShowToast(TreeText.Unsaved if removed else TreeText.SaveFailed)
+        else:
+            if self.Summary is None or not self.Settled():
+                return
+            entry = self.State.ToEntry(self.Summary.Raw)
+            result = BookmarkManager.SaveTree(entry)
+            if result:
+                self.SavedEntry, self.SavedSig, self.SavedSummary = entry, self.State.Signature(), self.Summary
+            self.ShowToast(TreeText.Saved if result else TreeText.SaveFailed)
         self.__RefreshTop()
+
+    def __AutoSave(self, final=False):
+        """
+        收藏着的树（当前页签里有这个根的树收藏）改了就更新那一条，不提示：选择、数量、折叠变了（TreeState.Signature），
+        或者重新解算过（汇总换了一个）—— 等解算完再写（原料快照要是这一版的）；final（关配方树）时不等，快照用上一版的。没收藏的不写
+        """
+        if self.State is None:
+            return
+        if not final and (self.Summary is None or not self.Settled()):
+            return
+        signature = self.State.Signature()
+        if self.Summary is self.SavedSummary and signature == self.SavedSig:
+            return
+        self.SavedSummary, self.SavedSig = self.Summary, signature
+        if self.__SavedIndex() is None:
+            return
+        entry = self.State.ToEntry(self.Summary.Raw if self.Summary is not None else None)
+        if entry != self.SavedEntry and BookmarkManager.SaveTree(entry):
+            self.SavedEntry = entry
 
     # 汇总
 # ======================================================================================================================
@@ -989,16 +1040,23 @@ class RecipeTreeScript(object):
             self.RenderMenu()
 
     def AsRoot(self, key, qty):
-        """ 以它为根：换一棵树重算（这棵树里的选择带过去，折叠不带 —— 路径签名对不上了），顶栏「返回」回到原来那棵 """
+        """
+        以它为根：换一棵树重算（这棵树里的选择带过去，折叠不带 —— 路径签名对不上了；那个根收藏过树的，接着那一棵、数量换成这一格要的），
+        顶栏「返回」回到原来那棵
+        """
         if self.State is None or key == self.State.Root:
             return
         self.History.append(self.State.Copy())
         del self.History[:-self.HistoryMax]
-        state = TreeState(key, qty)
-        state.Choices = dict(self.State.Choices)
-        state.Types = dict(self.State.Types)
-        state.Picks = dict(self.State.Picks)
-        state.Stop = set(self.State.Stop) - {key}
+        if BookmarkManager.TreeIndex(key) is not None:
+            state = self.__StateFor(key)
+            state.Qty = clamp_qty(qty)
+        else:
+            state = TreeState(key, qty)
+            state.Choices = dict(self.State.Choices)
+            state.Types = dict(self.State.Types)
+            state.Picks = dict(self.State.Picks)
+            state.Stop = set(self.State.Stop) - {key}
         self.State = state
         self.CloseMenu()
         self.Resolve(reset=True)

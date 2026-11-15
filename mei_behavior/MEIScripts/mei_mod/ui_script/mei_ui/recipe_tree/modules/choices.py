@@ -18,7 +18,8 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 """
-这一棵树的选择（纯逻辑）。树里的改动默认只管这一棵，随收藏保存；「设为首选」「当原料（全局）」另写全局表（state/tree_prefs.py）。
+这一棵树的选择（纯逻辑）。树里的改动默认只管这一棵，随收藏保存（收藏着的树改了，配方树按 Signature 认出来、自动更新那一条收藏）；
+「设为首选」「当原料（全局）」另写全局表（state/tree_prefs.py）。
 
 - Root / Qty / RootRecipe：根的物品键、要几个、根用哪条配方（从配方行打开时才有）
 - Choices {物品键: 配方 Id}：本树「用这条」的；Types {物品键: 类型 Id}：本树点工作方块换的类型
@@ -76,6 +77,11 @@ class TreeState(object):
         other.Stop = set(self.Stop)
         other.Fold = set(self.Fold)
         return other
+
+    def Signature(self):  # type: () -> tuple
+        """ 这一棵的选择（比一比改没改：收藏着的树改了自动更新收藏）"""
+        return (self.Root, self.Qty, self.RootRecipe, frozenset(self.Choices.items()), frozenset(self.Types.items()),
+                frozenset(self.Picks.items()), frozenset(self.Stop), frozenset(self.Fold))
 
     def SetType(self, key, type_id):  # type: (str, str) -> None
         """ 点工作方块换类型：这一格本树选过的配方不是这个类型的就作废（原料格只在当前类型里翻）"""
