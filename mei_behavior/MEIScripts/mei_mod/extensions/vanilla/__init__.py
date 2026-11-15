@@ -94,20 +94,27 @@ class VanillaExtension(MeiExtension):
         """
         创造栏里有、物品表里没有的物品（creative/）：物品表每个 id 只有 aux 0（RegItemFromIdList）——
         目录里带附加值的（药水、药箭、床……）与引擎自己加的带 userData 的几族（附魔书、烟花、旗帜）。
+        附魔书全照引擎给的附魔信息出（原版与模组的附魔都有，它们在创造栏里也是引擎按附魔自动加的）。
         先问引擎认不认识，不认识的跳过；目录里只有带附加值那一样的（活塞这类拿方块朝向当图标），aux 0 那份从物品栏藏起来；
-        附魔书、烟花的原件（不带 userData 的）也藏起来。不用撤：每次进世界物品表都重建；同一样再加一遍 AddItems 会跳过
+        附魔书、烟花的原件（不带 userData 的）也藏起来。不用撤：每次进世界物品表都重建；同一样再加一遍 AddItems 会跳过。
+        引擎的附魔信息只在这里问一次
         """
         from MEIScripts.api.facades.utils import logger
-        from .creative import GAME_VERSION, build, enchant_limit
+        from .creative import GAME_VERSION, build, engine_enchants
         items = ctx.Registry.ItemManager
-        plan = build(items.LookUpItem, ctx.Registry.ItemFactory.LoadInfo, enchant_limit())
+        enchants = engine_enchants()
+        plan = build(items.LookUpItem, ctx.Registry.ItemFactory.LoadInfo, enchants)
         added = items.AddItems(plan.Specs)
         for item_id, aux in plan.Hide:
             items.SetHidden(item_id, aux, True)
         for item_id, aux in plan.HidePlain:
             items.SetPlainHidden(item_id, aux, True)
-        logger.info("[MEI/items] 创造栏的变体: 加了 {} 个(表按游戏 {} 生成), 引擎不认识跳过 {} 个".format(
-            added, GAME_VERSION, plan.Unknown))
+        books = "附魔书 {} 本, 其中模组附魔书 {} 本".format(plan.Books, plan.ModBooks) if enchants else             "拿不到引擎的附魔信息(GetAllEnchantsInfo), 没有附魔书"
+        logger.info("[MEI/items] 创造栏的变体: 加了 {} 个(表按游戏 {} 生成, {}), 引擎不认识跳过 {} 个".format(
+            added, GAME_VERSION, books, plan.Unknown))
+        if plan.SkippedEnchants:
+            logger.warn("[MEI/items] 附魔 {} 排在模组附魔后面又不带命名空间, 排不出 id, 这几种附魔书没收".format(
+                ", ".join(plan.SkippedEnchants)))
 
     def _RegisterItemGroups(self, ctx):
         """

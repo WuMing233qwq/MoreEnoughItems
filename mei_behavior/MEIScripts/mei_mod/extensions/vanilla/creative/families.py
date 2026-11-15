@@ -20,10 +20,11 @@
 """
 创造栏里引擎自己加的几族：旗帜、附魔书、烟花火箭、烟火之星 —— 创造栏目录（table.py 的来源）里没有它们，
 游戏目录里也找不到别的来源，只能手写在这里（docs/architecture/item_model.md §9.8）。
+附魔书例外：全照引擎给的附魔信息出（GetAllEnchantsInfo，原版与模组的附魔都在里面），这里不记任何附魔的表。
 userData 一律用带类型的写法 {"__type__": NBT 类型, "__value__": 值}：普通字典引擎读不出来（附魔书显示「保护 0」、烟花「飞行时间：0」）。
 颜色照创造栏的顺序排：旗帜、烟火之星的 aux 是染料下标、0 是黑色，床的 aux 0 却是白色 —— 照着床的 aux 数字排，颜色顺序就全乱了。
 普通旗帜不带 userData（写成 {"Type": 0} 引擎也认）：和物品表里 aux 0 那面、配方做出来的一样，算同一样东西。
-本模块不 import 别的模块（生成器按路径载入它，核对附魔种数）
+本模块不 import 别的模块（生成器按路径载入它）
 """
 
 BYTE, SHORT, INT, BYTES, STRING = 1, 2, 3, 7, 8
@@ -57,28 +58,12 @@ DYE_COLORS = (
 )
 """ 染料下标 → 颜色，0xAARRGGBB 按有符号 32 位整数写（烟火之星的 customColor 就是它）"""
 
-ENCHANT_MAX_LEVEL = (
-    4, 4, 4, 4, 4,  # 0 保护、1 火焰保护、2 摔落保护、3 爆炸保护、4 弹射物保护
-    3, 3, 3, 1,     # 5 荆棘、6 水下呼吸、7 深海探索者、8 水下速掘
-    5, 5, 5,        # 9 锋利、10 亡灵杀手、11 节肢杀手
-    2, 2, 3,        # 12 击退、13 火焰附加、14 抢夺
-    5, 1, 3, 3,     # 15 效率、16 精准采集、17 耐久、18 时运
-    5, 2, 1, 1,     # 19 力量、20 冲击、21 火矢、22 无限
-    3, 3, 2, 1,     # 23 海之眷顾、24 饵钓、25 冰霜行者、26 经验修补
-    1, 1,           # 27 绑定诅咒、28 消失诅咒
-    5, 3, 3, 1,     # 29 穿刺、30 激流、31 忠诚、32 引雷
-    1, 4, 3,        # 33 多重射击、34 穿透、35 快速装填
-    3, 3,           # 36 灵魂疾行、37 迅捷潜行
-    3, 5, 4,        # 38 风爆、39 致密、40 破甲
-)
-"""
-附魔（下标就是引擎 EnchantType 的 id）→ 最高等级。引擎不给最高等级、游戏目录里也没有，这是整个创造栏表里唯一手写的数：
-原版加了新附魔就在末尾补一项（生成器换版本时会比 .lang 里的附魔种数，对不上就提醒）
-"""
+MOD_ENCHANT_ID = 255
+""" 模组附魔在附魔书 userData 里的 id（EnchantType.ModEnchant），附魔的名字写在 modEnchant 里 """
 
 ALL_BOOK_LEVELS = False
 """
-附魔书只收每种附魔的最高级（41 本）；改成 True 收 1 ~ 最高级的每一级（JEI / EMI 的做法，122 本）
+附魔书只收每种附魔的最高级；改成 True 收 1 ~ 最高级的每一级（JEI / EMI 的做法）
 """
 
 OMINOUS_BANNER_AUX = 15
@@ -107,9 +92,73 @@ def typed(kind, value):  # type: (int, any) -> dict
     return {"__type__": kind, "__value__": value}
 
 
-def book_data(enchant_id, level):  # type: (int, int) -> dict
+def book_data(enchant_id, level, mod_enchant=""):  # type: (int, int, str) -> dict
     """ 一本附魔书的 userData：一条附魔（modEnchant 是模组附魔的名字，原版给空串）"""
-    return {"ench": [{"id": typed(SHORT, enchant_id), "lvl": typed(SHORT, level), "modEnchant": typed(STRING, "")}]}
+    return {"ench": [{"id": typed(SHORT, enchant_id), "lvl": typed(SHORT, level), "modEnchant": typed(STRING, mod_enchant)}]}
+
+
+def mod_enchant_of(user_data):  # type: (any) -> str
+    """ 一本附魔书 userData 里的模组附魔名（book_data 写的那样）；原版附魔、认不出给空串 """
+    try:
+        return user_data["ench"][0]["modEnchant"]["__value__"] or ""
+    except (KeyError, IndexError, TypeError):
+        return ""
+
+
+def _native(text):  # type: (any) -> str or None
+    """ 递给引擎的字符串一律 str（unicode 引擎安静地认不出）；不是字符串、空串给 None """
+    if isinstance(text, unicode):
+        text = text.encode("utf-8")
+    return text if isinstance(text, str) and text else None
+
+
+def _level(value):  # type: (any) -> int
+    if isinstance(value, bool) or not isinstance(value, (int, long)):
+        return 0
+    return max(0, int(value))
+
+
+def split_enchants(enchants):  # type: (any) -> tuple
+    """
+    引擎给的附魔信息（GetAllEnchantsInfo：[{"identifier", "max_level", ...}]）→
+    ([(原版附魔的 id, 最高等级)], [(模组附魔的名字, 最高等级)], [排不出 id 的名字])。
+    原版附魔排在最前、照 EnchantType 的 id 排（protection 在 0）、名字不带命名空间 —— 在表里的下标就是 id；
+    带命名空间的是模组附魔（「minecraft:」开头的照原版算）。模组附魔之后又出现不带命名空间的，排不出 id，单独给出来。
+    最高等级照引擎的 max_level，没给按 1；同一个名字只认第一次
+    """
+    vanilla, mods, skipped, seen = [], [], [], set()
+    modded = False
+    for index, info in enumerate(enchants or ()):
+        name = _native(info.get("identifier")) if isinstance(info, dict) else None
+        if name is None or name in seen:
+            continue
+        seen.add(name)
+        top = _level(info.get("max_level")) or 1
+        bare = name[len("minecraft:"):] if name.startswith("minecraft:") else name
+        if ":" in bare:
+            modded = True
+            mods.append((name, top))
+        elif modded:
+            skipped.append(bare)
+        else:
+            vanilla.append((index, top))
+    return vanilla, mods, skipped
+
+
+def book_rows(enchants):  # type: (any) -> list
+    """ 附魔书那一族：[(物品 id, aux, userData)]，原版的照 id 排在前、模组的照引擎给的先后接在后面；没有附魔信息就没有 """
+    vanilla, mods, _skipped = split_enchants(enchants)
+    rows = []
+    for enchant_id, top in vanilla:
+        rows.extend((BOOK, 0, book_data(enchant_id, level)) for level in book_levels(top))
+    for name, top in mods:
+        rows.extend((BOOK, 0, book_data(MOD_ENCHANT_ID, level, name)) for level in book_levels(top))
+    return rows
+
+
+def book_levels(top):  # type: (int) -> list
+    """ 一种附魔出哪几级的书：缺省只出最高级，ALL_BOOK_LEVELS 打开出每一级 """
+    return range(1, top + 1) if ALL_BOOK_LEVELS else [top]
 
 
 def explosion(dye):  # type: (int) -> dict
@@ -133,19 +182,14 @@ def star_data(dye):  # type: (int) -> dict
     return {"FireworksItem": explosion(dye), "customColor": typed(INT, DYE_COLORS[dye])}
 
 
-def entries(enchant_limit=None):  # type: (int or None) -> list
+def entries(enchants=None):  # type: (list or None) -> list
     """
     [(物品 id, aux, userData 或 None)]，每族照创造栏的顺序：旗帜 15 色（黑色 aux 0 物品表本来就有）+ 不祥旗帜、
-    附魔书、烟花火箭（不带烟火之星的一支 + 16 色）、烟火之星 16 色（aux 就是染料下标）。
-    enchant_limit 是引擎认识的附魔种数（EnchantType.NumEnchantments）：id 不小于它的附魔书不收 —— 表比游戏新的时候
+    附魔书（book_rows，照引擎给的附魔信息；没给就没有）、烟花火箭（不带烟火之星的一支 + 16 色）、烟火之星 16 色（aux 就是染料下标）
     """
     rows = [(BANNER, dye, None) for dye in DYE_ORDER if dye]
     rows.append((BANNER, OMINOUS_BANNER_AUX, {"Type": typed(INT, 1)}))
-    for enchant_id, top in enumerate(ENCHANT_MAX_LEVEL):
-        if enchant_limit is not None and enchant_id >= enchant_limit:
-            break
-        levels = range(1, top + 1) if ALL_BOOK_LEVELS else (top,)
-        rows.extend((BOOK, 0, book_data(enchant_id, level)) for level in levels)
+    rows.extend(book_rows(enchants))
     rows.append((ROCKET, 0, rocket_data()))
     rows.extend((ROCKET, 0, rocket_data(dye)) for dye in DYE_ORDER)
     rows.extend((STAR, dye, star_data(dye)) for dye in DYE_ORDER)
