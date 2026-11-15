@@ -33,6 +33,9 @@ ADAPTIVE_LAYOUT = "adaptive_layout"
 FIND_BUTTON = "find_button"
 """ 搜索框旁的查询按钮（只在触屏出现：点一下进查找状态，再点要查的格子出二级菜单）；开界面时读 """
 
+HISTORY_VISIBLE = "history_visible"
+""" 收藏栏底下的最近浏览（左下角那一块）；关掉时那一块藏起来、收藏占满整列。开界面时读 """
+
 SCREEN_BOUNDS = "screen_bounds"
 """
 二级菜单真实尺寸自适应：开着时 tooltip、触屏菜单、配方树的节点菜单贴整个屏幕的边（界面最外层的控件）；
@@ -100,6 +103,7 @@ def RegisterBuiltinSettings():  # type: () -> None
         Toggle(ADAPTIVE_LAYOUT, "options.mei.general.adaptive", default=True),
         Toggle(SCREEN_BOUNDS, "options.mei.general.screen_bounds", default=False),
         Toggle(FIND_BUTTON, "options.mei.general.find_button", default=True),
+        Toggle(HISTORY_VISIBLE, "options.mei.general.history_visible", default=True),
         Toggle(ITEM_GROUPS, "options.mei.general.item_groups", default=True),
         Toggle(GROUP_STACK, "options.mei.general.group_stack", default=True),
         Toggle(GROUP_BADGE, "options.mei.general.group_badge", default=True),
@@ -170,6 +174,11 @@ def IsItemIdShown():  # type: () -> bool
 def IsFindButtonEnabled():  # type: () -> bool
     """ 搜索框旁的查询按钮；设置项没登记时按开 """
     return SettingsManager.Get(FIND_BUTTON) is not False
+
+
+def IsHistoryVisible():  # type: () -> bool
+    """ 收藏栏底下的最近浏览；设置项没登记时按显示 """
+    return SettingsManager.Get(HISTORY_VISIBLE) is not False
 
 
 def IsItemGroupsEnabled():  # type: () -> bool

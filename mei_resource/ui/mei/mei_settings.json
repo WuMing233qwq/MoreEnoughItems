@@ -194,6 +194,20 @@
                 }
             },
             {
+                "history_visible@settings_common.option_toggle": {
+                    "$option_label": "options.mei.general.history_visible",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.history_visible",
+                    "$option_binding_name": "#mei.settings.history_visible.state"
+                }
+            },
+            {
+                "history_visible_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.general.history_visible.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
                 "groups_group@settings_common.option_group_label": {
                     "$text": "options.mei.general.group.groups",
                     "$main_header_text_color": [ 0.67, 0.67, 0.75 ]

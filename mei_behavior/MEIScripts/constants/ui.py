@@ -97,6 +97,7 @@ class ItemsSidebarPath(object):
     TabIndexBar = Top + "/tab_index/progress_bar"
     BookmarksGrid = Root + "/items/grids/bookmarks"
     HistoryGrid = Root + "/items/grids/panel/history"
+    HistoryPanel = Root + "/items/grids/panel"  # 最近浏览那一块（设置「启用浏览记录显示」关着时整块藏起来）
     ModePanel = Top + "/mode"  # 顶栏最左边的模式按钮那一格（普通 / 工具 / 作弊，点一下轮换；原来的 setting 占位）
     ModeButton = ModePanel + "/button"
 

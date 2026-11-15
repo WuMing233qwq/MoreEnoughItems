@@ -24,6 +24,7 @@ from MEIScripts.constants.texts import BookmarkText
 from MEIScripts.constants.ui import CollectionConst, ItemsSidebarPath, PanelProtoConst, UiPathConst
 from MEIScripts.common.classes.types import Item
 from MEIScripts.mei_mod.state import BookmarkManager, BookmarkResolver, CacheManager
+from MEIScripts.mei_mod.state.settings import IsHistoryVisible
 from MEIScripts.mei_mod.ui_script.layout import GroupBorderCalculator
 from MEIScripts.mei_mod.ui_script.mei_ui.common.base import BaseItemsGridScript
 from MEIScripts.mei_mod.ui_script.mei_ui.items_sidebar.controls import (
@@ -35,6 +36,9 @@ from MEIScripts.utils import utilities
 from MEIScripts.utils.text import native_str
 
 ViewBinder = clientApi.GetViewBinderCls()
+
+HISTORY_ROWS = 3
+""" 最近浏览几行（设置「启用浏览记录显示」关着时 0：那一块藏起来，收藏占满整列）"""
 
 
 def _merge_stacks(ingredients):  # type: (any) -> list
@@ -109,7 +113,8 @@ class ItemsSidebarScript(BaseItemsGridScript):
         self.__HighlightKey = None  # type: str or None  # 修饰键高亮：高亮的是哪一条收藏（layout.highlight_key）
 
         self.BookmarksRows = 1
-        self.HistoryRows = 3
+        self.HistoryRows = HISTORY_ROWS
+        self.HistoryShown = True  # 设置「启用浏览记录显示」：关着时最近浏览那一块藏起来、不建它的 grid，收藏占满整列
 
         self.HistoryItems = []
         self.__LastHistorySignature = None
@@ -144,13 +149,14 @@ class ItemsSidebarScript(BaseItemsGridScript):
         self.TabIndexBarControl = self.MainNode.GetUIControl(ItemsSidebarPath.TabIndexBar, "progress_bar")
 
         bookmarks_grid_control = self.MainNode.GetUIControl(ItemsSidebarPath.BookmarksGrid, "grid")
-        history_grid_control = self.MainNode.GetUIControl(ItemsSidebarPath.HistoryGrid, "grid")
-
         self.BookmarksGridIns = BookmarkItemsGrid.from_collection_name(bookmarks_grid_control, CollectionConst.SidebarBookmarks, PanelProtoConst.Bookmark, self.BookmarkItemPanelCallback)
-        self.HistoryGridIns = HistoryItemsGrid.from_collection_name(history_grid_control, CollectionConst.SidebarHistory, PanelProtoConst.Bordered, self.HistoryItemPanelCallback)
-
         self.BookmarksGridIns.InitBindings()
-        self.HistoryGridIns.InitBindings()
+
+        self.HistoryGridIns = None
+        if self.ApplyHistoryShown():
+            history_grid_control = self.MainNode.GetUIControl(ItemsSidebarPath.HistoryGrid, "grid")
+            self.HistoryGridIns = HistoryItemsGrid.from_collection_name(history_grid_control, CollectionConst.SidebarHistory, PanelProtoConst.Bordered, self.HistoryItemPanelCallback)
+            self.HistoryGridIns.InitBindings()
 
         self.ItemsGridIns = self.BookmarksGridIns
 
@@ -163,6 +169,18 @@ class ItemsSidebarScript(BaseItemsGridScript):
                 button.AddTouchEventParams({"isSwallow": True})
                 button.SetButtonTouchDownCallback(callback)
         self.InitModeButton()
+
+    def ApplyHistoryShown(self):  # type: () -> bool
+        """
+        设置「启用浏览记录显示」（开界面时读一次）：关着时最近浏览 0 行、那一块藏起来，收藏占满整列。
+        那一块的显隐两个方向都写（栏跨开关存活，引擎结论 §22）；一样就不写（SetVisible 每调一次刷新整个界面，引擎结论 §57）
+        """
+        self.HistoryShown = IsHistoryVisible()
+        self.HistoryRows = HISTORY_ROWS if self.HistoryShown else 0
+        panel = self.MainNode.GetUIControl(ItemsSidebarPath.HistoryPanel)
+        if panel is not None and panel.GetVisible() != self.HistoryShown:
+            panel.SetVisible(self.HistoryShown)
+        return self.HistoryShown
 
     def InitModeButton(self):
         """
@@ -264,7 +282,8 @@ class ItemsSidebarScript(BaseItemsGridScript):
 
         # 两个 grid 的高在 JSON 里写的 default（行列数 × 格子），推了行列数尺寸就跟着变（引擎结论 §28）
         self.BookmarksGridIns.SetGridDimension(layout.Cols, self.BookmarksRows, False)
-        self.HistoryGridIns.SetGridDimension(layout.Cols, self.HistoryRows, False)
+        if self.HistoryGridIns:
+            self.HistoryGridIns.SetGridDimension(layout.Cols, self.HistoryRows, False)
 
         if self.ItemsPage:
             self.ItemsPage.Rows = self.BookmarksRows
