@@ -85,7 +85,7 @@ class MeiExtension(object):
 
 | 方法 | 说明 |
 |---|---|
-| `RegisterScript(category_id, script_cls, params=None)` → `bool` | 这个类型的配方页用哪个 `RecipeUIScript` 子类；**同一个类型注册第二次拒掉** |
+| `RegisterScript(category_id, script_cls, params=None)` → `bool` | 这个类型的配方页用哪个 `RecipeUIScript` 子类；**同一个类型注册第二次拒掉**。`params` 认 `{"max_rows": N}`：一页最多放几行（2026-11-16 起，[03 §10](03-recipe-page.md#single-row)；旧版 MEI 存下不用、照行高排）|
 | `UnRegisterScript(category_id)` → `bool` | 撤掉 |
 | `GetScriptData(category_id)` → `tuple or None` | 注册的脚本与参数 |
 

@@ -59,6 +59,20 @@ from MEIScripts.utils.text import error_text, native_str, to_unicode
 
 ViewBinder = clientApi.GetViewBinderCls()
 
+
+def script_row_limit(category_id):  # type: (str) -> int
+    """
+    这个类型登记配方页脚本时说的一页最多几行（RecipeUIManager.RegisterScript 的 params {"max_rows": N}）；没说、说的不是正整数给 0（不限）。
+    一页只放一行的类型，行里可以直接放一个 ItemsGrid（只有这一行，它的集合绑定不会和别的行混）
+    """
+    data = RecipeUIManager.GetScriptData(category_id) if category_id else None
+    params = data[1] if data and len(data) > 1 and isinstance(data[1], dict) else {}
+    limit = params.get("max_rows")
+    if isinstance(limit, bool) or not isinstance(limit, (int, long)) or limit <= 0:
+        return 0
+    return int(limit)
+
+
 class RecipeDetailsScript(object):
     def __init__(self):
         self.MainNode = None
@@ -1144,7 +1158,7 @@ class RecipeDetailsScript(object):
     """
 
     def UpdateRecipesGrid(self):
-        """ 更新 RecipesGrid 控件的属性；托管配方页没有 grid，一页放几条问托管者 """
+        """ 更新 RecipesGrid 控件的属性；托管配方页没有 grid，一页放几条问托管者；脚本说了一页最多几行的照它（script_row_limit）"""
         if self.HostedHost is not None:
             self.UpdateHostedPageSize()
             return
@@ -1157,6 +1171,9 @@ class RecipeDetailsScript(object):
         recipe_height = self.RecipeHeight
 
         self.MaxRecipesInPage = max_height // recipe_height
+        limit = script_row_limit(self.CurrentType)
+        if limit:
+            self.MaxRecipesInPage = max(1, min(self.MaxRecipesInPage, limit))
 
         current_recipes = len(self.CurrentRecipes)
         current_page_recipe = len(self.RecipesPage.current_items) if self.RecipesPage else current_recipes

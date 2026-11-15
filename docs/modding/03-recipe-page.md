@@ -202,3 +202,50 @@ MEI 的自制配方页就是这么接的（灰着的样子照配方行的：`but
 - `Show` / `Hide` / `Tick` 抛了 MEI 只记一行（`[MEI/ui] 托管配方页 … 画不出来`），配方页照常，那一页是空的。
 
 下一篇：[04 · 物品](04-items.md)。
+
+<a id="single-row"></a>
+## 10. 一页只放一行：`params={"max_rows": 1}` 与行里的物品网格
+
+一条配方要列很多样东西（适用的物品、可选的掉落……）、固定几格放不下时，让这个类型一页只放一行，行里放一个 MEI 的物品网格：
+
+```python
+ctx.Registry.RecipeUIManager.RegisterScript(category.Id, ListUIScript, params={"max_rows": 1})
+```
+
+- `max_rows`：一页最多几行（正整数），和按行高算出来的取小的；不写就照行高排。2026-11-16 起，旧版 MEI 存下不用（照行高排，不出错）。
+- 一页只有这一行，行里的网格用它自己的集合名，集合绑定只有一层，不会和别的行混 —— 可以直接用 `ctx.UI.Controls.ItemsGrid`：
+
+```jsonc
+"items": {
+    "type": "grid", "size": [160, "default"], "grid_dimensions": [8, 1],
+    "collection_name": "yourmod_list_items",
+    "grid_item_template": "mei_common.item_panel",
+    "$binding_name_prefix": "meiui.yourmod_list_items"
+}
+```
+
+```python
+ItemsGrid, ItemPanel = ctx.UI.Controls.ItemsGrid, ctx.UI.Controls.ItemPanel
+
+class ListUIScript(RecipeUIScript):
+    def OnCreate(self):
+        self.Stacks = [...]  # 这一条要列的 ItemStack
+        grid = self.RecipeControl.GetChildByPath("/wrapper/content/items")
+        self.Grid = ItemsGrid.from_collection_name(grid, "yourmod_list_items", item_panel_callback=self.Panel)
+        self.Grid.InitBindings()
+        self.Grid.SetGridDimension(8, max(1, (len(self.Stacks) + 7) // 8), False)
+
+    def Panel(self, index):
+        control = self.Grid.GetControlByIndex(index)
+        if index < len(self.Stacks):
+            return ItemPanel.from_item_stack(control, self.Stacks[index])
+        return ItemPanel.from_empty(control)
+
+    def OnDestroy(self):
+        self.DestroyBindings()
+        self.Grid.UnbindAll()
+```
+
+- 网格的 `$binding_name_prefix` 必须是 `meiui.<集合名>`（`ItemsGrid.from_collection_name` 按这个规则找绑定）；格子点击、悬停、触屏菜单照 MEI 的格子。
+- 放不下（超出网格那块地方）的不管就行；要都看得见就把网格包进原版的 `common.scrolling_panel`。
+- 这种类型别出 tooltip 预览（`preview_def=None`）：预览里再建一个同名集合的网格会和配方页抢绑定。

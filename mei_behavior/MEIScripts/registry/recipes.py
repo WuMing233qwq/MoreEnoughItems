@@ -255,7 +255,10 @@ class __RecipeUIManager(object):  # noqa
         self.scripts = {}  # type: dict
 
     def RegisterScript(self, category_id, script, params=None):
-        """ 注册一个 RecipeUIScript """
+        """
+        注册一个 RecipeUIScript。params 认 {"max_rows": N}：这个类型的配方页一页最多放几行（配方页的 ScriptRowLimit 读），
+        一页只放一行的，行里可以直接放一个 ItemsGrid
+        """
         # 键从前是 script.TYPE、第一个参数却叫 control_def，看着像键其实不是；
         # Category 化之后类别 id 显式传入，控件定义名退回 RecipeCategory.ControlDef
         if not isinstance(script, type):
