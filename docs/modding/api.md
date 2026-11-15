@@ -194,7 +194,7 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 | `Item` / `ItemStack` / `Stack` / `ItemAttr` / `ItemInfo` / `ItemSpec` | 物品（`Item` 只读；`IsPlain` 是不是原件，探测）、一堆物品、条目基类、附加属性、基本信息、加物品的描述 | [04](04-items.md) |
 | `Ingredient` / `IngredientLike` | 配方的一格：几个候选（tag 折叠）、数量、概率 | [02 §4](02-recipes.md#recipe) |
 | `Recipe` | 配方（`Type` / `Inputs` / `Outputs` / `Catalysts` / `Data` / `Id`）| [02 §4](02-recipes.md#recipe) |
-| `RecipeCategory` | 配方类型（`page_host=` 托管配方页，2026-11-13 起）| [02 §2](02-recipes.md#category) |
+| `RecipeCategory` | 配方类型（`page_host=` 托管配方页，2026-11-13 起；`tree=False` 不参与配方树，2026-11-16 起）| [02 §2](02-recipes.md#category) |
 | `RecipePageHost` | 托管配方页的约定：`CONTAINER`、`PageSize` / `Show` / `Hide` / `Tick` / `RecipeAt`（2026-11-13 起，探测 `hasattr(ctx.Types, "RecipePageHost")`）| [03 §9](03-recipe-page.md#hosted) |
 | `RecipeSource` / `StaticRecipeSource` | 来源：按需查 / 一次给全 | [02 §3](02-recipes.md#source) |
 | `register_recipe_class` / `get_recipe_class` / `keys` | 配方子类的序列化登记、物品键工具 | [02 §4](02-recipes.md#recipe) |

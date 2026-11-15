@@ -41,13 +41,14 @@ class RecipeCategory(object):
     SortIndex: int
     Transfer: Optional[Any]
     PageHost: Optional[Any]
+    Tree: bool
     _stations: List[Tuple[str, ItemStack]]
 
     def __init__(self, category_id: str, name_key: str = "",
                  icon: Optional[Union[Tuple[str, int], str]] = None, control_def: str = "",
                  stations: Optional[List[ItemStack]] = None,
                  sort_index: int = 0, preview_def: Optional[str] = ...,
-                 page_host: Optional[Any] = None) -> None: ...
+                 page_host: Optional[Any] = None, tree: bool = True) -> None: ...
 
     @property
     def IconItem(self) -> Optional[Tuple[str, int]]: ...

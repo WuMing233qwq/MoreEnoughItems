@@ -105,6 +105,8 @@ class TreeProvider(object):
             for type_id, recipes in found.items():
                 if self.IsHosted(type_id):
                     continue
+                if not self.InTree(type_id):
+                    continue
                 rank = order.get(type_id, len(order))
                 for index, recipe in enumerate(recipes or ()):
                     converted = self.__Convert(recipe, key, type_id, (rank, index))
@@ -127,6 +129,12 @@ class TreeProvider(object):
     @staticmethod
     def IsPinned(recipe):  # type: (TreeRecipe) -> bool
         return PinManager.Has(recipe.Id)
+
+    @staticmethod
+    def InTree(type_id):  # type: (str) -> bool
+        """ 类型参不参与配方树（RecipeCategory.Tree，缺省参与）：不参与的这里不用它的配方，展开、换配方、汇总都不算它 """
+        category = RecipeManager.GetCategory(type_id)
+        return category is None or bool(getattr(category, "Tree", True))
 
     # MEI 配方 → TreeRecipe
 # ======================================================================================================================

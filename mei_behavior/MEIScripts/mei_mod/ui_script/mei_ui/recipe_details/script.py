@@ -577,8 +577,13 @@ class RecipeDetailsScript(object):
 # ======================================================================================================================
     @RecipeAction.Visible(actions.TREE)
     def CanOpenTree(self, _row, recipe):  # type: (int, any) -> bool
-        """ 有主产物的配方都能开：以主产物为根，根就用这一条 """
-        primary = recipe.GetPrimaryOutput() if recipe is not None else None
+        """ 有主产物的配方都能开：以主产物为根，根就用这一条；类型不参与配方树的（RecipeCategory.Tree 为假）不出 """
+        if recipe is None:
+            return False
+        category = SourceRegistry.GetCategory(getattr(recipe, "Type", None))
+        if category is not None and not getattr(category, "Tree", True):
+            return False
+        primary = recipe.GetPrimaryOutput()
         return primary is not None and bool(primary.get_stacks())
 
     @RecipeAction.Button(actions.TREE)

@@ -60,13 +60,14 @@ class RecipeCategory(object):
     Stations   List[ItemStack]  工作站展示物, 查用途时按它反查类型(只读属性)
     SortIndex  int              tab 排序权重, 越小越靠前
     PageHost   RecipePageHost   托管配方页：这个类型的配方页内容区整块交给它画（没有 MEI 的配方行，见 page_host.py）；None 是 MEI 自己画
+    Tree       bool             参不参与配方树的计算，缺省参与
 
     `Stations` 只收 ItemStack —— 只给 id 的简易写法请走
     `ItemFactory.GetStacksFromIds()`，那是注册面的事，不该由本类去认识 ItemFactory。
     """
 
     __slots__ = ("Id", "NameKey", "Icon", "ControlDef", "PreviewDef", "SortIndex", "_stations",
-                 "Transfer", "PageHost")
+                 "Transfer", "PageHost", "Tree")
 
     def __init__(
             self,
@@ -77,8 +78,9 @@ class RecipeCategory(object):
             stations=None,
             sort_index=0,
             preview_def=PREVIEW_AUTO,
-            page_host=None
-    ):  # type: (str, str, tuple, str, list, int, str, any) -> None
+            page_host=None,
+            tree=True
+    ):  # type: (str, str, tuple, str, list, int, str, any, bool) -> None
         if not category_id:
             raise ValueError("category_id cannot be empty")
         self.Id = category_id  # type: str
@@ -100,6 +102,12 @@ class RecipeCategory(object):
         配方行不适合放进 tooltip 的，显式写 preview_def=None 不出预览。见 docs/architecture/tooltip.md §4
         """
         self.SortIndex = sort_index  # type: int
+        self.Tree = bool(tree)  # type: bool
+        """
+        参不参与配方树的计算：假的时候配方树不用这个类型的配方（展开节点、换配方、汇总都不算它），配方行上的配方树按钮也不出。
+        给不是「拿原料做出产物」的类型用（物品说明、附魔说明这类：配方里放的是被说明的东西，进树会被当成凭空做出、拿它做它）。
+        托管配方页的类型另有托管的规矩（page_host.py），这一项为真也不改变它
+        """
 
         self.Transfer = None  # type: any
         """

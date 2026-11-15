@@ -39,7 +39,7 @@ def OnUnload(self, ctx):
 <a id="category"></a>
 ## 2. 配方类型 `RecipeCategory`（[api §4.1](api.md#source-registry)）
 
-`RecipeCategory(category_id, name_key="", icon=None, control_def="", stations=None, sort_index=0, preview_def=自动, page_host=None)`
+`RecipeCategory(category_id, name_key="", icon=None, control_def="", stations=None, sort_index=0, preview_def=自动, page_host=None, tree=True)`
 
 - `category_id`：带命名空间。**不能覆盖已注册的的**：同一个 Id 重复注册返回 False、记警告（包括内置类型）。
 - `icon`：`(物品 id, aux)`，类型页签的显示物品图标；**也可以是一张贴图的路径**（字符串，`"textures/ui/xxx"`，不带扩展名，2026-11-13 起）——
@@ -51,6 +51,10 @@ def OnUnload(self, ctx):
 - `stations`：工作站，**只可传入 `ItemStack`**；它们画在配方页顶上，玩家**查工作站的用途**时这个类型排在最前、带上它的全部配方。
 - `page_host`：**托管配方页**（2026-11-13 起，探测 `hasattr(ctx.Types, "RecipePageHost")`）—— 配方页的内容区整块交给你画，
   不用 `control_def`、不登记配方页脚本；适合配方页本来就是你自己的控件和脚本、MEI 不认识里面格子的情况。见 [03 §9](03-recipe-page.md#hosted)。
+- `tree`：**参不参与配方树的计算**（2026-11-16 起，缺省 `True` 参与）。写 `False` 时，配方树展开节点、换配方、算汇总都不用这个类型的配方，
+  配方行上的配方树按钮也不出；配方页、收藏、查来源 / 用途照常。给不是「拿原料做出产物」的类型用 —— 物品说明、附魔说明这类，
+  配方里放的是被说明的那样东西，进了树会被当成凭空做出、拿它做它。托管配方页的类型照托管的规矩（[03 §9](03-recipe-page.md#hosted)），
+  写 `True` 也不改变它。探测：`hasattr(ctx.Types.RecipeCategory, "Tree")`；旧版 MEI 不认这个参数，传了会抛 `TypeError`。
 
 <a id="source"></a>
 ## 3. 配方来源（[api §5](api.md#types)）
