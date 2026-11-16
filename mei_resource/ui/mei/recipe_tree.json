@@ -327,6 +327,9 @@
         "layer": 1,
         "controls": [
             {
+                "ruler@mei_common.text_ruler": {}
+            },
+            {
                 "backdrop": {
                     "type": "image",
                     "size": [

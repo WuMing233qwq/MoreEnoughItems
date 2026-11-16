@@ -46,7 +46,9 @@ import mod.client.extraClientApi as clientApi
 from mod_log import logger
 
 from MEIScripts.constants.texts import MenuKindText
-from MEIScripts.constants.ui import ItemsBrowserPath, ItemsSidebarPath, MenuConst, MenuKey, RecipeDetailsPath, TooltipPath
+from MEIScripts.constants.ui import (
+    ItemsBrowserPath, ItemsSidebarPath, MenuConst, MenuKey, RecipeDetailsPath, TooltipPath, UiPathConst,
+)
 from MEIScripts.mei_mod.state.bookmarks import entry_identity
 from MEIScripts.mei_mod.ui_script.controls.item.panel import render_args
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.actions import (
@@ -54,8 +56,9 @@ from MEIScripts.mei_mod.ui_script.mei_ui.menu.actions import (
 )
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.layout import (
     BAR_LIMIT, CARD_CLOSE_OFFSET, CLOSE_SIZE, DIVIDER_H, ICON_SIZE, TEXT_H, bar_width, button_width, card_layout,
-    number_width, text_width,
+    number_width, real_width,
 )
+from MEIScripts.mei_mod.ui_script.mei_ui.menu.ruler import TextRuler
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import DescribeItem
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.layout import SIDE_LEFT, SIDE_RIGHT
 from MEIScripts.utils import utilities
@@ -224,6 +227,8 @@ class TouchMenu(object):
         self.__Armed = None  # type: int or None  # 要二次确认的动作点过第一下：它在 Actions 里的位置
         self.__Seek = None  # type: tuple or None  # 改完收藏在找新格子：(跟着的那一条, 找了几帧)
         self.__Written = {}  # type: dict  # 写过的底图、颜色、图标（(路径, 哪一样) -> 值）：一样的不再碰引擎
+        self.__Ruler = None  # type: TextRuler or None  # 量字宽（ruler.py）：第一次用到才取覆盖层里那排 label
+        self.__Refine = False  # type: bool  # 排的时候有字还没量（照估的宽排了）：量好了重排一次
 
     def OnCreate(self):
         """ 开界面：复位框里的控件（两个方向都写，§22），挂点击绑定 """
@@ -240,6 +245,31 @@ class TouchMenu(object):
         self.__Touch = None
         self.__Click = None
         self.__Clear()
+        self.__Ruler = None
+        self.__Refine = False
+
+    def Ruler(self):  # type: () -> TextRuler
+        """ 量字宽：这个主节点覆盖层里那排看不见的 label（mei_common.text_ruler），第一次用到才取（那时覆盖层建好了）"""
+        if self.__Ruler is None:
+            self.__Ruler = TextRuler(self.MainNode.GetUIControl, UiPathConst.Ruler)
+        return self.__Ruler
+
+    def MeasureTexts(self):  # type: () -> list
+        """ 这一份菜单排版要量的字：顶栏的种类、操作条与「更多」里每个按钮会写的字、翻页行的数字 —— Layout 按字算宽的就是这几样 """
+        target = self.Target
+        if target is None:
+            return []
+        texts = [self.KindText(), self.PagerValue()]
+        for action, (kind, _) in zip(self.Actions, self.Slots):
+            if kind == BAR:
+                texts.extend(action.BarWidthLabels(target))
+            elif kind == POOL:
+                texts.extend(action.WidthLabels(target))
+        return [text for text in texts if text]
+
+    def Measured(self):  # type: () -> bool
+        """ 要用的字量好了没有：tooltip 管理器显示菜单前问它（量好了再摆，第一眼就是按真宽排的）"""
+        return self.Ruler().Ready(self.MeasureTexts())
 
     def IsOpen(self):  # type: () -> bool
         return self.Target is not None
@@ -274,9 +304,16 @@ class TouchMenu(object):
     def Update(self):
         """ 出错只记日志 —— 这里抛出去会带走同一帧别的代理 """
         try:
+            if self.__Ruler is not None:
+                self.__Ruler.Tick()
             if self.Target is not None and not self.Tooltip.IsVisible():
                 # tooltip 管理器那边收起了（那一格被拆了、换了内容）：菜单跟着清
                 self.__Clear()
+            if self.__Refine and (self.Target is None or self.Measured()):
+                # 亮着的时候换了字（翻候选、改数量、原地换一格），有的还没量：量好了照真宽重排一次
+                self.__Refine = False
+                if self.Target is not None:
+                    self.Tooltip.Relayout()
             if self.__Seek is not None:
                 self.__Follow()
             click, self.__Click = self.__Click, None
@@ -327,7 +364,7 @@ class TouchMenu(object):
             self.Slots = slots
             region, side = menu_region(self.MainNode, panel)
             self.Tooltip.SetTouchRegion(region, side)
-            self.Tooltip.SetTouchLayout(self.Layout)
+            self.Tooltip.SetTouchLayout(self.Layout, self.Measured)
             self.__Fill()
             self.Tooltip.Relayout(measure=True)
             return
@@ -341,8 +378,9 @@ class TouchMenu(object):
         self.Slots = slots
         region, side = menu_region(self.MainNode, panel)
         self.Tooltip.SetTouchRegion(region, side)
-        self.Tooltip.SetTouchLayout(self.Layout)
+        self.Tooltip.SetTouchLayout(self.Layout, self.Measured)
         self.__Fill()
+        self.Ruler().Request(self.MeasureTexts())  # 内容透明着建的这几帧里先量上，显示前（Measured）多半已经量好
 
     def __ClickCloses(self, panel):  # type: (any) -> bool
         """
@@ -474,23 +512,26 @@ class TouchMenu(object):
     def Layout(self, content_size):  # type: (tuple) -> tuple
         """
         tooltip 管理器摆菜单时调（显示那一刻、内容尺寸变了、挂到新格子上、「更多」展开 / 收起）：按内容尺寸排好框里的每样东西，
-        返回框的尺寸。位置、尺寸都由这里写（绝对定位）；按钮改宽带上子控件（SetSize(…, True)：底、遮罩跟着变，图标、字跟着锚点走）
+        返回框的尺寸。位置、尺寸都由这里写（绝对定位）；按钮改宽带上子控件（SetSize(…, True)：底、遮罩跟着变，图标、字跟着锚点走）。
+        字宽按量的算（ruler.py）；有字还没量（亮着的时候换了字）先照估的宽排，量好了 Update 里重排一次
         """
+        if not self.Ruler().Request(self.MeasureTexts()):
+            self.__Refine = True
         target = self.Target
         bar, more = [], []
         for action, (kind, _) in zip(self.Actions, self.Slots):
             if kind == BAR:
-                bar.append(bar_width(action.BarWidthLabels(target)))
+                bar.append(bar_width(action.BarWidthLabels(target), real_width))
             elif kind == POOL:
-                more.append(button_width(action.WidthLabels(target)))
+                more.append(button_width(action.WidthLabels(target), real_width))
         value = self.PagerValue()
         pager = None
         if value is not None:
             icon_w, icon_h = self.__IconSize()
-            pager = (icon_w, icon_h, number_width(value))
+            pager = (icon_w, icon_h, number_width(value, real_width))
         close_size, close_offset = self.__CloseGeometry()
         has_icon = target is not None and icon_render(target.Panel) is not None
-        geo = card_layout(content_size, bar, more, self.More, pager, has_icon, text_width(self.KindText()),
+        geo = card_layout(content_size, bar, more, self.More, pager, has_icon, real_width(self.KindText()),
                           close_size, close_offset)
         if geo["icon"] is not None:
             self.__Move(TooltipPath.TouchIcon, geo["icon"])

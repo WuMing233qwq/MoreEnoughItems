@@ -617,6 +617,9 @@
                 "mei_backdrop@mei_main.float_backdrop": {}
             },
             {
+                "mei_ruler@mei_common.text_ruler": {}
+            },
+            {
                 "mei_tooltip@mei_common.tooltip_root": {}
             },
             {
@@ -666,6 +669,9 @@
             },
             {
                 "mei_backdrop@mei_main.float_backdrop": {}
+            },
+            {
+                "mei_ruler@mei_common.text_ruler": {}
             },
             {
                 "mei_tooltip@mei_common.tooltip_root": {}

@@ -40,6 +40,7 @@ from MEIScripts.constants.texts import TooltipText, TreeText
 from MEIScripts.constants.ui import ModeConst, TreeConst, TreePath
 from MEIScripts.mei_mod.state import BookmarkManager, TreePrefsManager
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.actions import op_toggle_item
+from MEIScripts.mei_mod.ui_script.mei_ui.menu.layout import real_width
 from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
 from MEIScripts.utils.binder import ScreenBinder
 from MEIScripts.utils.events import EventListener
@@ -111,6 +112,7 @@ class RecipeTreeScript(object):
         self.Canvas = None  # type: TreeCanvas or None
         self.Menu = None  # type: TreeMenu or None
         self.SummaryPanel = None  # type: TreeSummary or None
+        self.TitleFit = None  # type: tuple or None  # 顶栏的名字还没量过宽、照估的截了：(名字, 剩下多宽)，量好了 OnTick 里重截一次
         self.RootCell = None  # type: TreeCell or None
         self.TopControls = {}  # type: dict
         self.TopWidths = {}  # type: dict  # 顶栏每个按钮按字算出的宽
@@ -219,7 +221,8 @@ class RecipeTreeScript(object):
             self.SummaryPanel.Refit()  # 展开时按量不准的高排的那一页，露出来量准了再改正
         if self.Canvas.Tick(self.DrawBudgetMs):
             self.__OnDrawn()
-        self.Menu.Tick()  # 菜单里的配方预览建齐了才排版、显示
+        self.Menu.Tick()  # 量字；菜单里的配方预览建齐了、字量好了才排版、显示
+        self.__RefitTitle()
         self.__AutoSave()
 
     def __InitialState(self):  # type: () -> TreeState or None
@@ -498,12 +501,25 @@ class RecipeTreeScript(object):
         # 根物品名：顶栏减去右边那一排按钮剩下多宽就写多长，放不下截短
         bar_w = sum(self.TopWidths.values()) + qty_w + self.BarFixed
         room = control_width(self.Screen.GetBaseUIControl(TreePath.Top)) - self.TitleX - bar_w - 4
-        self.__SetLabel("title", fit_text(self.Provider.NameOf(root), max(0, room)))
+        self.__FitTitle(self.Provider.NameOf(root), max(0, room))
         self.__SetEnabled("back", bool(self.History))
         # 收藏着的树：星染绿、悬停写「取消收藏」（改了自动更新那一条，不用再点）
         saved = self.__SavedIndex() is not None
         self.__SetIconOn("save", saved)
         set_tip(self.TopControls.get("save"), TreeText.TipUnsave if saved else TreeText.TipSave)
+
+    def __FitTitle(self, name, room):  # type: (any, int) -> None
+        """ 根物品名放不下 room 就截短：字宽是量的（menu/ruler.py），还没量过先照估的截，量好了 __RefitTitle 重截一次（只换字）"""
+        self.__SetLabel("title", fit_text(name, room, real_width))
+        ruler = self.Menu.Ruler if self.Menu is not None else None
+        self.TitleFit = None if ruler is None or ruler.Request([name]) else (name, room)
+
+    def __RefitTitle(self):
+        if self.TitleFit is None or not self.Menu.Ruler.Ready([self.TitleFit[0]]):
+            return
+        name, room = self.TitleFit
+        self.TitleFit = None
+        self.__SetLabel("title", fit_text(name, room, real_width))
 
     def __SetEnabled(self, name, enabled):
         control = self.TopControls.get(name)

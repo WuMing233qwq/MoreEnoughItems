@@ -32,6 +32,7 @@ class UiPathConst(object):
     MeiRoot = "/mei_ui"
     LeftWrapper = MeiRoot + "/mei_left_wrapper"
     RightWrapper = MeiRoot + "/mei_right_wrapper"
+    Ruler = MeiRoot + "/mei_ruler"  # 量字宽的一排看不见的 label（mei_common.text_ruler，menu/ruler.py）：触屏菜单按它量的宽排
     # 覆盖层的定义（mei_main 命名空间下）：支持的界面用 mei_proxy_ui，注入的界面（HUD、强制兼容）与 MEI 自己的界面用 mei_float_ui。
     # 两栏不写在覆盖层里，一律由主节点动态建（UIMainNode.EnsureScripts，名字取 LeftWrapper / RightWrapper 的最后一段）：
     # 按设置「两侧UI缩放」选 20 或 18 那一档（mei_ui/common/scale.py），支持的界面用平时那一档层级的定义，
@@ -433,6 +434,7 @@ class TreeConst(object):
 class TreePath(object):
     # 配方树界面里的控件（recipe_tree.json）。根面板就是 $screen_content（common.base_screen 的 root_screen_panel）
     Root = UiPathConst.ScreenRoot
+    Ruler = Root + "/ruler"  # 量字宽的一排看不见的 label（mei_common.text_ruler，menu/ruler.py）：节点菜单按它量的宽排
     Window = Root + "/window"
     Top = Window + "/top"
     RootCell = Top + "/root"

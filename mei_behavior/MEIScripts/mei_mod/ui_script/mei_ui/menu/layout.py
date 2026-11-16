@@ -39,7 +39,7 @@
   ────    分隔线
   按钮区  一段一行：左边一列段名（灰字），右边按钮；数量、候选做成步进器：[-1]  ×2  [+1]、 ‹  2 / 86  ›
 
-按钮的宽按字算（字宽估算 + 两边留白），框宽取「内容、顶栏、最宽的那一段」里宽的那个，别的段再拉满到这个宽。
+按钮的宽按字算（引擎量的字宽，menu/ruler.py；量不到估 + 两边留白），框宽取「内容、顶栏、最宽的那一段」里宽的那个，别的段再拉满到这个宽。
 
 两种都全部绝对定位、不靠 stack_panel 收拢：藏起来的子控件收不收拢还没实证（tooltip.md §6.4），
 脚本改过尺寸的控件、外面的 stack_panel 也不一定跟着重排（表现是贴边时按钮区没算进去）
@@ -61,13 +61,13 @@ COLUMNS = 3
 """ 一行最多几个按钮，多了换行 """
 
 CJK_W = 9
-""" 估算字宽：一个汉字（含全角标点）多宽。按钮的宽靠它算，字宽对不上时改这里 """
+""" 估算字宽：一个汉字（含全角标点）多宽。按默认字体估、宁宽勿窄（菜单要准的用 real_width，量不到才落到它）"""
 
 ASCII_W = 6
 """ 估算字宽：一个半角字符（数字、字母、+ - × / 空格）多宽 """
 
 BUTTON_PAD = 4
-""" 按钮里字的两边各留多少 —— 也给字宽估算留了余量 """
+""" 按钮里字的两边各留多少 """
 
 MIN_BUTTON_W = 20
 """ 文字按钮最窄多宽（「-1」「+1」）"""
@@ -110,12 +110,77 @@ TEXT_H = 10
 """ 数字标签的高（宽由脚本按格子算，字居中）"""
 
 
-def text_width(text):  # type: (any) -> int
-    """ 估算一段字有多宽：汉字 CJK_W、半角 ASCII_W，§ 颜色码不占宽 """
-    if not text:
-        return 0
+FONT_DEFAULT = "default"
+FONT_UNICODE = "unicode"
+
+WIDE_MARKS = (u"！？｡＂＃＄％＆＇（）＊＋，－／：；＜＝＞＠［＼］＾＿｀｛｜｝～｟｠｢｣､、〃》「」『』【】〔〕〖〗〘〙〚〛〜〝〞〟〰〾〿"
+              u"–—‘’‛“”„‟…‧﹏")
+""" 算「中文」的全角、中文标点（照网易富文本 richText.is_chinese 的表，去掉了里面混进去的半角句点）"""
+
+
+def is_chinese(text):  # type: (any) -> bool
+    """ 这段字有没有中文（汉字、中文标点）：有的话引擎整段用 unicode 字体画（引擎结论 §59）"""
+    for char in _unicode(text or ""):
+        if u"一" <= char <= u"鿿" or char in WIDE_MARKS:
+            return True
+    return False
+
+
+def font_for(text):  # type: (any) -> str
+    """ 一个 label 里写这段字（多行的给整段）时引擎用哪种字体画：有中文 unicode，没有 default """
+    return FONT_UNICODE if is_chinese(text) else FONT_DEFAULT
+
+
+MEASURED = {}
+"""
+引擎量过的字宽 {(字体, 字(unicode)): 宽}：real_width 先查它，查不到才估。menu/ruler.py 的 TextRuler 量了往里写 ——
+字里有汉字时引擎整段换 unicode 字体，数字、半角字比估的窄三四成（引擎结论 §59），按量的排菜单才不多出一截。
+同样的字放在不同的 label 里可能用不同的字体画（多行的 label 里有一行有汉字，纯英文的那一行也是 unicode），所以按字体分开记。
+只有先量好了才排的地方（两个菜单、配方树顶栏的名字）用 real_width；别处（页签、筛选菜单、编辑器）照旧 text_width 估 ——
+不然同样的字在那里的宽要看之前别处量没量过，同一个界面这次开和上次开不一样宽
+"""
+
+MEASURED_LIMIT = 4096
+""" 量过的最多记几条：带数字的字（「需要 1 · 背包 0 …」）一种一条，记满了清空重来 """
+
+
+def _unicode(text):  # type: (any) -> unicode
     if not isinstance(text, unicode):  # noqa: F821  py2 的 unicode
         text = text.decode("utf-8", "replace")
+    return text
+
+
+def measured_width(text, font=None):  # type: (any, str) -> int or None
+    """ 这段字用 font（缺省照它自己有没有中文）画、引擎量过的宽；没量过给 None（空字是 0）"""
+    if not text:
+        return 0
+    return MEASURED.get((font or font_for(text), _unicode(text)))
+
+
+def remember_width(text, width, font=None):  # type: (any, int, str) -> None
+    """ 记下引擎量到的宽（TextRuler 调）"""
+    if len(MEASURED) >= MEASURED_LIMIT:
+        MEASURED.clear()
+    MEASURED[(font or font_for(text), _unicode(text))] = int(width)
+
+
+def real_width(text, font=None):  # type: (any, str) -> int
+    """
+    一段字有多宽：引擎量过的照量的（MEASURED），没量过的估（text_width）。先量好了才排的地方用它。
+    font 是这段字所在的 label 用哪种字体画：缺省照这段字自己（单行的 label）；多行 label 的一行给整段的（font_for(整段)）
+    """
+    width = measured_width(text, font)
+    return width if width is not None else text_width(text)
+
+
+def text_width(text):  # type: (any) -> int
+    """
+    估一段字有多宽：汉字 CJK_W、半角 ASCII_W，§ 颜色码不占宽。照默认字体估，
+    字里有汉字时（引擎换 unicode 字体）估大三四成 —— 宁宽勿窄，按钮里的字不会挤出去；要准用 real_width
+    """
+    if not text:
+        return 0
+    text = _unicode(text)
     width, skip = 0, False
     for char in text:
         if skip:
@@ -128,14 +193,15 @@ def text_width(text):  # type: (any) -> int
     return width
 
 
-def button_width(labels):  # type: (list) -> int
-    """ 文字按钮放得下这几种字（开着菜单时会变的字都给上，比如二次确认）要多宽 """
-    return max([MIN_BUTTON_W] + [text_width(label) + 2 * BUTTON_PAD for label in labels if label])
+def button_width(labels, width_of=None):  # type: (list, callable) -> int
+    """ 文字按钮放得下这几种字（开着菜单时会变的字都给上，比如二次确认）要多宽；width_of 是字宽怎么算（缺省估，菜单给 real_width）"""
+    width_of = width_of or text_width
+    return max([MIN_BUTTON_W] + [width_of(label) + 2 * BUTTON_PAD for label in labels if label])
 
 
-def number_width(text):  # type: (any) -> int
+def number_width(text, width_of=None):  # type: (any, callable) -> int
     """ 步进器中间的数字至少要多宽 """
-    return max(NUMBER_MIN_W, text_width(text) + BUTTON_PAD)
+    return max(NUMBER_MIN_W, (width_of or text_width)(text) + BUTTON_PAD)
 
 
 def _lines(items):
@@ -295,9 +361,10 @@ DIVIDER_H = 2
 """ 分隔线控件的高：扁平贴图 flat/divider 是 1×2（上面一行是线、下面一行透明），按原尺寸画才清楚；看得见的只有 1 像素 """
 
 
-def bar_width(labels):  # type: (list) -> int
-    """ 操作条按钮放得下这几种字要多宽（最窄 BAR_MIN_W）"""
-    return max([BAR_MIN_W] + [text_width(label) + 2 * BAR_PAD for label in labels if label])
+def bar_width(labels, width_of=None):  # type: (list, callable) -> int
+    """ 操作条按钮放得下这几种字要多宽（最窄 BAR_MIN_W）；width_of 同 button_width """
+    width_of = width_of or text_width
+    return max([BAR_MIN_W] + [width_of(label) + 2 * BAR_PAD for label in labels if label])
 
 
 def bar_natural(widths):  # type: (list) -> int

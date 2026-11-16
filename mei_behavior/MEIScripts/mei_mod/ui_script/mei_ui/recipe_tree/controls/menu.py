@@ -26,7 +26,11 @@
 建不出来、等 0.5 秒还没齐，就用配方条兜底（工作方块 + 原料 → 产物，格子用 cell 模板）。
 
 按钮是 JSON 里静态的一池（button.mei.tree.menu.<i>，BF_ButtonClickUp 单个绑定，引擎结论 §9）；步进器两头是图标按钮，
-最多两个步进器。动作由脚本给（TreeMenuButton.Action），这里只排版、派发
+最多两个步进器。动作由脚本给（TreeMenuButton.Action），这里只排版、派发。
+
+**字宽是量的**（menu/ruler.py）：排版要用的字（种类、标题与灰字的每一行、段名、按钮、数字）先交给量字的 label，量好了才排 ——
+框跟着最宽的字、不多出一截（字里有汉字时引擎换 unicode 字体，估宽大三四成，引擎结论 §59）。新开的菜单透明着等；
+正亮着的菜单要换内容时先不动它（按钮先不响应），量好了当场换，不闪。量过的字记着，同样的字不用再等
 """
 import mod.client.extraClientApi as clientApi
 from mod_log import logger
@@ -34,6 +38,7 @@ from mod_log import logger
 from MEIScripts.constants.ui import TreeConst, TreePath
 from MEIScripts.mei_mod.state.settings import IsScreenBoundsEnabled, IsTreePreviewEnabled
 from MEIScripts.mei_mod.ui_script.mei_ui.menu import layout
+from MEIScripts.mei_mod.ui_script.mei_ui.menu.ruler import TextRuler
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.layout import place_beside
 from MEIScripts.utils import utilities
 from MEIScripts.utils.text import error_text, native_str
@@ -58,6 +63,19 @@ STRIP_PREVIEW = "preview"
 WHITE = (1.0, 1.0, 1.0)
 MUTED = (0.6, 0.6, 0.6)
 DANGER = (1.0, 0.4, 0.4)
+
+# 菜单在等什么（TreeMenu.Pending 的第三项）
+STAGE_BEGIN = "begin"
+""" 要用配方预览、还没开始建（下一帧的 Tick 里建）"""
+STAGE_BUILD = "build"
+""" 配方预览建着 """
+STAGE_READY = "ready"
+""" 配方预览建齐了（或本来就亮着），只差量字 """
+STAGE_STRIP = "strip"
+""" 不用预览（配方条），只差量字 """
+
+MEASURE_TICKS = 10
+""" 量字最多等几帧（约 0.3 秒）：到了照估的宽排，菜单不能一直不出 """
 
 
 class TreeMenuButton(object):
@@ -117,13 +135,14 @@ def fit_width(texts, minimum=14):  # type: (list, int) -> int
     return max([minimum] + [layout.text_width(text) + 2 * layout.BUTTON_PAD for text in texts if text])
 
 
-def fit_text(text, width):  # type: (any, int) -> unicode
+def fit_text(text, width, width_of=None):  # type: (any, int, callable) -> unicode
     """ 一段字放不下 width 就从后面截短、末尾写「…」（字宽照 menu/layout 的估法）"""
     text = native_str(text or "").decode("utf-8", "replace")
-    if layout.text_width(text) <= width:
+    width_of = width_of or layout.text_width
+    if width_of(text) <= width:
         return text
     ellipsis = u"\u2026"
-    while text and layout.text_width(text + ellipsis) > width:
+    while text and width_of(text + ellipsis) > width:
         text = text[:-1]
     return text + ellipsis
 
@@ -169,7 +188,8 @@ def content_size(model, preview=None):  # type: (TreeMenuModel, tuple) -> tuple
         y = pad - 4 + int(preview[1]) - 4  # 预览里内容的底边：灰字照旧隔 2 接在下面，没有灰字时根的下边正好是内容的下边
     else:
         lines = native_str(model.Title or "").split("\n")
-        width = max([layout.text_width(line) for line in lines] + [0])
+        font = layout.font_for(model.Title)  # 一个 label 里有一行有中文，整段都用 unicode 画（引擎结论 §59）
+        width = max([layout.real_width(line, font) for line in lines] + [0])
         title = (pad, pad)
         y = pad + len(lines) * LINE_H
         if model.Strip:
@@ -182,9 +202,27 @@ def content_size(model, preview=None):  # type: (TreeMenuModel, tuple) -> tuple
         y += 2
         info = (pad, y)
         info_lines = native_str(model.Info).split("\n")
-        width = max([width] + [layout.text_width(line) for line in info_lines])
+        info_font = layout.font_for(model.Info)
+        width = max([width] + [layout.real_width(line, info_font) for line in info_lines])
         y += len(info_lines) * LINE_H
     return (width + 2 * pad, y + pad), title, strip, info, shown
+
+
+def menu_texts(model):  # type: (TreeMenuModel) -> list
+    """
+    这一份菜单排版要量的字（menu/ruler.py）：种类、标题与灰字的每一行、段名、文字按钮、步进器的数字 ——
+    content_size、TreeMenu.__Rows 和 box_layout 按字算宽的就是这几样
+    """
+    texts = [model.Kind]
+    for text in (model.Title, model.Info):
+        font = layout.font_for(text)  # 多行的 label：每一行按整段的字体量
+        texts.extend((line, font) for line in native_str(text or "").split("\n") if line)
+    for row in model.Rows or ():
+        texts.append(row.Section)
+        if row.Stepper:
+            texts.append(row.Number)
+        texts.extend(button.Text for button in row.Buttons if not button.Icon)
+    return [text for text in texts if text]
 
 
 class TreeMenu(object):
@@ -224,9 +262,12 @@ class TreeMenu(object):
         self.ButtonActions = [None] * len(self.Buttons)
         self.IconActions = {}
         self.Open = False
+        self.Displayed = False  # type: bool  # 正亮着（排好了、不透明）：要换内容时先不动它，量好了字当场换
         # 配方预览（preview.py）：建齐之前菜单先不排（Pending 记着要排的那一份），每帧 Tick 开始建、问它好了没有
         self.Preview = TreePreview(screen, TreePath.MenuPreview, self.OnPreviewSlot)
-        self.Pending = None  # type: tuple or None  # (model, anchor, 开始建了没有)
+        self.Pending = None  # type: tuple or None  # (model, anchor, 在等什么 STAGE_*)
+        self.Ruler = TextRuler(get, TreePath.Ruler)  # 量字宽（顶栏的名字也用它，脚本取）
+        self.Waited = 0  # type: int  # 这一份等量字等了几帧
         # 不用的预览先藏起来，拆（解绑定）留到下一帧的 Tick：Hide / 换成配方条多在按钮回调里（引擎结论 §27-2）
         self.StopPending = False  # type: bool
         for index in range(len(self.Buttons)):
@@ -293,6 +334,7 @@ class TreeMenu(object):
 
     def Hide(self):
         self.Open = False
+        self.Displayed = False
         self.Pending = None
         self.__DropPreview()
         self.ButtonActions = [None] * len(self.Buttons)
@@ -308,35 +350,42 @@ class TreeMenu(object):
 
     def Tick(self):
         """
-        每帧（脚本的 OnTick）：Show 记下的配方预览在这里开始建（建控件、挂绑定不在按钮回调里做）；
-        建齐了就排菜单、拉回不透明；等太久（0.5 秒）、脚本接坏了或建不出来就用配方条
+        每帧（脚本的 OnTick）：量字；Show 记下的配方预览在这里开始建（建控件、挂绑定不在按钮回调里做）；
+        预览建齐了（或者不用预览）、要用的字量好了就排菜单、拉回不透明；预览等太久（0.5 秒）、脚本接坏了或建不出来就用配方条，
+        字等太久（MEASURE_TICKS）照估的宽排
         """
+        self.Ruler.Tick()
         if self.StopPending:
             # 先拆上一份再建这一份：Hide 之后马上又 Show 同一条时，Begin 看到的是拆干净的预览、从头建
             self.StopPending = False
             self.Preview.Stop()
         if self.Pending is None:
             return
-        model, anchor, started = self.Pending
-        if not started:
-            if not self.Preview.Begin(model.Recipe, model.PreviewTitle):
-                self.Pending = None
-                self.__Present(model, anchor, None)
+        model, anchor, stage = self.Pending
+        if stage == STAGE_BEGIN:
+            if self.Preview.Begin(model.Recipe, model.PreviewTitle):
+                self.Pending = (model, anchor, STAGE_BUILD)
                 return
-            self.Pending = (model, anchor, True)
-            return
-        if not self.Preview.Poll() and not self.Preview.TimedOut():
+            stage = STAGE_STRIP
+        elif stage == STAGE_BUILD:
+            if not self.Preview.Poll() and not self.Preview.TimedOut():
+                return
+            if self.Preview.Ready:
+                stage = STAGE_READY
+            else:
+                if self.Preview.Ticks >= MAX_TICKS:
+                    logger.warn("[MEI/tree] 配方预览等了 {} 帧还没建齐（{}），用配方条".format(
+                        self.Preview.Ticks, self.Preview.Stage()))
+                else:
+                    logger.warn("[MEI/tree] 配方预览建不成（{}），用配方条".format(self.Preview.Stage()))
+                self.Preview.Stop()
+                stage = STAGE_STRIP
+        self.Pending = (model, anchor, stage)
+        self.Waited += 1
+        if self.Waited < MEASURE_TICKS and not self.Ruler.Ready(menu_texts(model)):
             return
         self.Pending = None
-        if self.Preview.Ready:
-            self.__Present(model, anchor, self.Preview.Size)
-            return
-        if self.Preview.Ticks >= MAX_TICKS:
-            logger.warn("[MEI/tree] 配方预览等了 {} 帧还没建齐（{}），用配方条".format(self.Preview.Ticks, self.Preview.Stage()))
-        else:
-            logger.warn("[MEI/tree] 配方预览建不成（{}），用配方条".format(self.Preview.Stage()))
-        self.Preview.Stop()
-        self.__Present(model, anchor, None)
+        self.__Present(model, anchor, self.Preview.Size if stage == STAGE_READY else None)
 
     def SetInfo(self, text):  # type: (any) -> None
         """ 只改灰字（点了配方条里的一格写它的名字）"""
@@ -347,27 +396,43 @@ class TreeMenu(object):
     def Show(self, model, anchor):  # type: (TreeMenuModel, tuple) -> None
         """
         anchor 是点开它的那一格在界面根面板里的 (x, y, 宽, 高)：菜单摆在它旁边。
-        给了配方的先试配方预览：同一条已经建好、正亮着的当场排；要建的先记着，下一帧的 Tick 里开始建、建齐了再排 ——
-        Show 常在按钮回调里被调（菜单动作改完东西重开），建控件、挂绑定不在那里做（引擎结论 §27-2）
+        给了配方的先试配方预览：同一条已经建好、正亮着的不用再建；要建的先记着，下一帧的 Tick 里开始建、建齐了再排 ——
+        Show 常在按钮回调里被调（菜单动作改完东西重开），建控件、挂绑定不在那里做（引擎结论 §27-2）。
+        要用的字都量过、预览也不用建，当场排；不然记着等：新开的透明着等，正亮着的先不动（按钮先不响应），好了 Tick 里当场换
         """
         if self.Host is None or self.Frame is None:
             return
         pending, self.Pending = self.Pending, None
+        self.Waited = 0
+        measured = self.Ruler.Request(menu_texts(model))
         # 设置「启用节点配方预览Tooltip」关着：直接用配方条（切换时的闪动晃眼，给个开关）
         if model.Recipe is not None and IsTreePreviewEnabled() and self.Preview.Supports(model.Recipe):
             if self.Preview.Showing(model.Recipe):
-                self.__Present(model, anchor, self.Preview.Size)
-                return
-            # 同一条正建着（菜单动作当场重排一次、重画完又排一次）：接着建，只换成新的这一份模型与位置
-            started = pending is not None and pending[2] and self.Preview.Building(model.Recipe)
-            self.Pending = (model, anchor, started)
-            self.__Conceal()
+                stage = STAGE_READY
+            elif pending is not None and pending[2] == STAGE_BUILD and self.Preview.Building(model.Recipe):
+                # 同一条正建着（菜单动作当场重排一次、重画完又排一次）：接着建，只换成新的这一份模型与位置
+                stage = STAGE_BUILD
+            else:
+                stage = STAGE_BEGIN
+        else:
+            stage = STAGE_STRIP
+        if measured and stage in (STAGE_READY, STAGE_STRIP):
+            self.__Present(model, anchor, self.Preview.Size if stage == STAGE_READY else None)
             return
-        self.__Present(model, anchor, None)
+        self.Pending = (model, anchor, stage)
+        if self.Displayed and stage in (STAGE_READY, STAGE_STRIP):
+            self.__Hold()
+        else:
+            self.__Conceal()
+
+    def __Hold(self):
+        """ 正亮着、只差量字：先不动它（换成透明会闪一下），旧的按钮先不响应；量好了 Tick 里当场换成新的 """
+        self.ButtonActions = [None] * len(self.Buttons)
+        self.IconActions = {}
 
     def __Conceal(self):
         """
-        配方预览建着的这几帧：整个框透明（frame 的 alpha 0 + propagate_alpha，子控件跟着），宿主却得亮着 ——
+        配方预览建着、字在量的这几帧：整个框透明（frame 的 alpha 0 + propagate_alpha，子控件跟着），宿主却得亮着 ——
         藏着的话引擎不建预览 grid 的格子（每一类都会等到超时、全用配方条，引擎结论 §38）。旧菜单的按钮先不响应；
         算开着（ESC 先关菜单）
         """
@@ -376,6 +441,7 @@ class TreeMenu(object):
         self.Frame.SetAlpha(0.0)
         self.Host.SetVisible(True)
         self.Open = True
+        self.Displayed = False
 
     def __Present(self, model, anchor, preview):  # type: (TreeMenuModel, tuple, tuple) -> None
         """ 排版、显示；preview 是建齐了的配方预览尺寸（None 就用配方条）"""
@@ -384,8 +450,8 @@ class TreeMenu(object):
         size, title_pos, strip_pos, info_pos, preview_pos = content_size(model, preview)
         rows, specs = self.__Rows(model.Rows)
         # 段名那一列按最长的段名给宽（缺省两个字宽）：段名改长了也不压到按钮
-        label_w = max([layout.LABEL_W] + [layout.text_width(row.Section) for row in model.Rows])
-        box = layout.box_layout(size, rows, labels=True, kind_width=layout.text_width(model.Kind),
+        label_w = max([layout.LABEL_W] + [layout.real_width(row.Section) for row in model.Rows])
+        box = layout.box_layout(size, rows, labels=True, kind_width=layout.real_width(model.Kind),
                                 close_size=layout.CLOSE_SIZE, close_offset=layout.CLOSE_OFFSET, label_w=label_w)
         self.Frame.SetSize(box["size"], False)
         self.Kind.SetPosition(box["kind"])
@@ -416,6 +482,7 @@ class TreeMenu(object):
         self.__Place(box["size"], anchor)
         self.Host.SetVisible(True)
         self.Open = True
+        self.Displayed = True
 
     def __Rows(self, rows):
         """ 交给 box_layout 的 (items, 是不是步进器, 数字至少多宽)，和每个按钮对应的 TreeMenuButton（同样的顺序）"""
@@ -427,9 +494,10 @@ class TreeMenu(object):
                 if button.Icon:
                     items.append((icon_w, icon_h, True))
                 else:
-                    items.append((layout.button_width([button.Text]), layout.BUTTON_H, False))
+                    items.append((layout.button_width([button.Text], layout.real_width), layout.BUTTON_H, False))
                 specs.append(button)
-            result.append((items, row.Stepper, layout.number_width(row.Number) if row.Stepper else 0))
+            result.append((items, row.Stepper,
+                           layout.number_width(row.Number, layout.real_width) if row.Stepper else 0))
         return result, specs
 
     def __ShowStrip(self, model, pos):

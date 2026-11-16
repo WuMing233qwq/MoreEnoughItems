@@ -37,6 +37,7 @@ from mod_log import logger
 
 from MEIScripts.constants.ui import CollectionConst, TooltipPath
 from MEIScripts.mei_mod.ui_script.mei_ui import context
+from MEIScripts.mei_mod.ui_script.mei_ui.menu.ruler import match_font
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.binding import RecipesGridBind
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.recipe import TooltipRecipeView
 from MEIScripts.registry import RecipeManager
@@ -313,3 +314,4 @@ class TreePreview(object):
         label = self.Screen.GetBaseUIControl(self.Path + TooltipPath.TitleSub) if self.Path is not None else None
         if label is not None:
             label.asLabel().SetText(native_str(text or ""))
+            match_font(label.asLabel(), text or "")  # 有中文换 unicode，引擎量的宽才对（引擎结论 §59）

@@ -68,6 +68,7 @@ from MEIScripts.constants.ui import ModeConst, TooltipKind, TooltipPath
 from MEIScripts.mei_mod.state.settings import IsAdvancedTooltipEnabled, IsScreenBoundsEnabled, IsTouchOppositeSide
 from MEIScripts.mei_mod.ui_script.controls.item.panel import panel_controls
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.state import KIND_HUD
+from MEIScripts.mei_mod.ui_script.mei_ui.menu.ruler import match_font
 from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.feedback import DescribeItem
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.items import TooltipItemsView
@@ -186,6 +187,7 @@ class TooltipManager(object):
         self.AnchorRect = None  # type: tuple or None  # 移动端摆在哪一格旁边
         self.TouchRegion = None  # type: tuple or None  # 触屏菜单：(格子所在区域的矩形, 首选的一侧)，摆在区域外侧；没有就摆在格子旁
         self.TouchLayout = None  # type: callable or None  # 触屏菜单：fn(内容尺寸) -> 框的尺寸，顺带把框里的东西摆好（TouchMenu.Layout）
+        self.TouchReady = None  # type: callable or None  # 触屏菜单：fn() -> 框里要用的字量好了没有（TouchMenu.Measured），好了再显示
         self.Placed = None  # type: tuple or None  # 触屏菜单上次按多大的内容摆的，变了就重摆
         self.Candidates = None  # type: any  # 正在显示的多候选面板（监听它换候选）
         self.BuildTicks = 0  # type: int
@@ -353,12 +355,14 @@ class TooltipManager(object):
         """ 触屏菜单：摆在这个区域（物品栏、收藏栏、配方页）外侧，首选 side 那一边；region 为 None 就摆在格子旁 """
         self.TouchRegion = (region, side) if region is not None else None
 
-    def SetTouchLayout(self, layout):  # type: (callable or None) -> None
+    def SetTouchLayout(self, layout, ready=None):  # type: (callable or None, callable or None) -> None
         """
         触屏菜单：fn(内容尺寸) -> 框的尺寸，顺带把框里的东西（顶栏、内容、分隔线、按钮区）摆好。摆框时调（显示那一刻、内容尺寸变了、挂到新格子上）。
-        框多大用菜单算好的、不去量 —— 脚本改过尺寸的控件，外面的 stack_panel 不一定跟着重排（表现是贴边时按钮区没算进去）
+        框多大用菜单算好的、不去量 —— 脚本改过尺寸的控件，外面的 stack_panel 不一定跟着重排（表现是贴边时按钮区没算进去）。
+        ready() 说框里要用的字量好了没有（menu/ruler.py）：内容建齐了还要等它，第一眼就是按真宽排的
         """
         self.TouchLayout = layout
+        self.TouchReady = ready
 
     def Relayout(self, measure=False):  # type: (bool) -> bool
         """
@@ -454,6 +458,7 @@ class TooltipManager(object):
         self.AnchorRect = None
         self.TouchRegion = None
         self.TouchLayout = None
+        self.TouchReady = None
         self.Placed = None
         self.BuildTicks = 0
         self.LastTipSize = None
@@ -633,6 +638,7 @@ class TooltipManager(object):
         label = self.MainNode.GetUIControl(self.Content + TooltipPath.TitleSub, "label")
         if label is not None:
             label.SetText(native_str(text))
+            match_font(label, text)  # 有中文换 unicode：不换的话引擎照默认字体量英文行，框比字宽一截（引擎结论 §59）
 
     def RecipeTitle(self, recipe):  # type: (any) -> unicode
         """ 「类型名 · 主产物名」；没有产物的（燃料页）写第一样原料 """
@@ -702,9 +708,19 @@ class TooltipManager(object):
         size = (int(round(width)), int(round(height)))
         stable = size == self.LastTipSize and size[0] > 0 and size[1] > 0
         self.LastTipSize = size
-        if not (view_ready and stable) and self.BuildTicks < self.BUILD_MAX_TICKS:
+        if not (view_ready and stable and self.__TouchReady()) and self.BuildTicks < self.BUILD_MAX_TICKS:
             return
         self.__Reveal(mouse, size)
+
+    def __TouchReady(self):  # type: () -> bool
+        """ 触屏菜单要用的字量好了没有（SetTouchLayout 的 ready）：不是触屏、没给、问出错都当好了 —— 等太久照常显示（BUILD_MAX_TICKS）"""
+        if self.Host != HOST_TOUCH or self.TouchReady is None:
+            return True
+        try:
+            return bool(self.TouchReady())
+        except Exception as e:  # noqa
+            logger.warn("[MEI/tooltip] 问触屏菜单的字量好没有出错，照常显示: {}".format(error_text(e)))
+            return True
 
     def __ViewReady(self):  # type: () -> bool
         if self.Current == TooltipKind.Items:

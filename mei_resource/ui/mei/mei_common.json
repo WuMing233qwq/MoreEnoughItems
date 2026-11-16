@@ -1935,5 +1935,109 @@
                 }
             }
         ]
+    },
+    "text_ruler": {
+        "type": "panel",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            0,
+            0
+        ],
+        "layer": 0,
+        "controls": [
+            {
+                "m0@mei_common.text_ruler_label": {}
+            },
+            {
+                "m1@mei_common.text_ruler_label": {}
+            },
+            {
+                "m2@mei_common.text_ruler_label": {}
+            },
+            {
+                "m3@mei_common.text_ruler_label": {}
+            },
+            {
+                "m4@mei_common.text_ruler_label": {}
+            },
+            {
+                "m5@mei_common.text_ruler_label": {}
+            },
+            {
+                "m6@mei_common.text_ruler_label": {}
+            },
+            {
+                "m7@mei_common.text_ruler_label": {}
+            },
+            {
+                "m8@mei_common.text_ruler_label": {}
+            },
+            {
+                "m9@mei_common.text_ruler_label": {}
+            },
+            {
+                "m10@mei_common.text_ruler_label": {}
+            },
+            {
+                "m11@mei_common.text_ruler_label": {}
+            },
+            {
+                "m12@mei_common.text_ruler_label": {}
+            },
+            {
+                "m13@mei_common.text_ruler_label": {}
+            },
+            {
+                "m14@mei_common.text_ruler_label": {}
+            },
+            {
+                "m15@mei_common.text_ruler_label": {}
+            },
+            {
+                "m16@mei_common.text_ruler_label": {}
+            },
+            {
+                "m17@mei_common.text_ruler_label": {}
+            },
+            {
+                "m18@mei_common.text_ruler_label": {}
+            },
+            {
+                "m19@mei_common.text_ruler_label": {}
+            },
+            {
+                "m20@mei_common.text_ruler_label": {}
+            },
+            {
+                "m21@mei_common.text_ruler_label": {}
+            },
+            {
+                "m22@mei_common.text_ruler_label": {}
+            },
+            {
+                "m23@mei_common.text_ruler_label": {}
+            }
+        ]
+    },
+    "text_ruler_label": {
+        "type": "label",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            "default",
+            "default"
+        ],
+        "layer": 0,
+        "color": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "enable_profanity_filter": false,
+        "font_type": "default",
+        "localize": false,
+        "shadow": true,
+        "text": ""
     }
 }
