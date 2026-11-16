@@ -35,6 +35,12 @@ DEGRADED = "#mei.settings.degraded"
 
 ABOUT = "#mei.settings.about"
 
+EDITOR = "#mei.settings.editor"
+""" 「编辑器」页那一行字：有几个页面、几条配方 """
+
+EDITOR_ENABLED = "#mei.settings.editor.enabled"
+""" 「编辑器」页里「启用自定义配方」开着没有：关着时「打开 MEI 编辑器」「显示『添加配方』」两行灰着 """
+
 
 def toggle_changed(key):  # type: (str) -> str
     return "toggle.{}.{}".format(PREFIX, key)

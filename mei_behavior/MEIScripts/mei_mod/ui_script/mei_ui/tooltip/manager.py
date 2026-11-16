@@ -360,9 +360,10 @@ class TooltipManager(object):
         """
         self.TouchLayout = layout
 
-    def Relayout(self):  # type: () -> bool
+    def Relayout(self, measure=False):  # type: (bool) -> bool
         """
-        触屏菜单的框里变了样（「更多」展开 / 收起，框变高 / 变矮）：照现在的内容尺寸当场重排、重摆（贴边按新尺寸算）。
+        触屏菜单的框里变了样（「更多」展开 / 收起，框变高 / 变矮；原地换了字）：照现在的内容尺寸当场重排、重摆（贴边按新尺寸算）。
+        measure 为真先当场排一次版（UpdateScreen(True)，同一帧算好）再量 —— 刚换了字，不排的话量到的还是旧字的尺寸，要等下一帧 __Settle 才摆对。
         还在建的不用管 —— 建好显示的那一刻本来就要排；不是触屏、没在显示返回 False
         """
         if self.Host != HOST_TOUCH or self.Phase != PHASE_SHOWN or self.Content is None:
@@ -370,7 +371,30 @@ class TooltipManager(object):
         tip = self.MainNode.GetUIControl(self.Content)
         if tip is None:
             return False
+        if measure:
+            update = getattr(getattr(self.MainNode, "ScreenNode", None), "UpdateScreen", None)
+            if callable(update):
+                update(True)
         self.__PlaceTouch(tip.GetSize())
+        return True
+
+    def RetitleFor(self, panel, text):  # type: (any, any) -> bool
+        """
+        同一种内容原地换（tooltip.md §6.17）：触屏菜单开着、亮着的是「只有标题」的，新的这一格也只要标题 ——
+        不收起、不写回透明，当场换字、换归属，框一直亮着；菜单写好按钮后调 Relayout(measure=True) 按新尺寸、新格子重摆（同一帧）。
+        不是这种情况（不是触屏、没在显示、亮着的不是只有标题、新的这一格要配方预览 / 接受物品）给 False，调用方照原来的路子走
+        """
+        if self.Host != HOST_TOUCH or self.Phase != PHASE_SHOWN or self.Current != TooltipKind.Title or self.Content is None:
+            return False
+        if panel is None or getattr(panel, "Destroyed", False):
+            return False
+        if self.Enabled and panel.TooltipContent() is not None:
+            return False
+        rect = self.__RectOf(panel)
+        if rect is None:
+            return False
+        self.__SetTitle(text)
+        self.__Own(panel, rect, True)
         return True
 
     def Release(self):
@@ -491,8 +515,8 @@ class TooltipManager(object):
         panel = entered[0]
         if getattr(panel, "Destroyed", False) or self.IsInside(panel):
             return
-        # 工具 / 作弊模式下点一格是拿起、给物品（ModeManager.Intercept），划进去不开菜单
-        if ModeManager.Current() != ModeConst.Normal:
+        # 工具 / 作弊模式下点一格是拿起、给物品（ModeManager.Intercept），划进去不开菜单；MEI 编辑器里点一格是挑物品，同样不开
+        if ModeManager.Current() != ModeConst.Normal or getattr(self.MainNode, "Editor", None) is not None:
             return
         menu = getattr(self.MainNode, "Menu", None)
         if menu is not None:

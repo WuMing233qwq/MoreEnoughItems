@@ -195,7 +195,8 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 | `Ingredient` / `IngredientLike` | 配方的一格：几个候选（tag 折叠）、数量、概率 | [02 §4](02-recipes.md#recipe) |
 | `Recipe` | 配方（`Type` / `Inputs` / `Outputs` / `Catalysts` / `Data` / `Id`）| [02 §4](02-recipes.md#recipe) |
 | `RecipeCategory` | 配方类型（`page_host=` 托管配方页，2026-11-13 起；`tree=False` 不参与配方树，2026-11-16 起）| [02 §2](02-recipes.md#category) |
-| `RecipePageHost` | 托管配方页的约定：`CONTAINER`、`PageSize` / `Show` / `Hide` / `Tick` / `RecipeAt`（2026-11-13 起，探测 `hasattr(ctx.Types, "RecipePageHost")`）| [03 §9](03-recipe-page.md#hosted) |
+| `RecipePageHost` | 托管配方页的约定：`CONTAINER`、`TREE`（配方树用不用这个类型的配方，缺省不用；2026-11-15 起）、`PageSize` / `Show` / `Hide` / `Tick` / `RecipeAt`（2026-11-13 起，探测 `hasattr(ctx.Types, "RecipePageHost")`）；`Show` 拿到的那一页另有 `PlusState(recipe)` / `Transfer(recipe)`：+ 和 MEI 配方行的一样（2026-11-15 起，探测 `hasattr(page, "PlusState")`）| [03 §9](03-recipe-page.md#hosted) |
+| `BlockType` / `BlockProp` | MEI 编辑器的积木：一种积木的声明（控件、大小、上限、装不装东西、属性、画法）与它的一个属性（2026-11-15 起，探测 `hasattr(ctx.Types, "BlockType")`）| [§6.9](#ui-blocks)、[05 §7](05-screens-and-tools.md#blocks) |
 | `RecipeSource` / `StaticRecipeSource` | 来源：按需查 / 一次给全 | [02 §3](02-recipes.md#source) |
 | `register_recipe_class` / `get_recipe_class` / `keys` | 配方子类的序列化登记、物品键工具 | [02 §4](02-recipes.md#recipe) |
 | `TransferHandler` / `TransferRequest` / `TransferSlot` / `TransferError` | 按界面登记的转移处理器：处理器基类、清单、清单的一格、「做不了 / 有话要说」（2026-10-30 起，探测；清单的 `Fits` 第三十八轮加）| [05 §3](05-screens-and-tools.md#transfers) |
@@ -324,6 +325,64 @@ netease_tags 里注册的 tag（`#` 引用的自动展开，几个模组注册�
 - 检查的结论每帧被回读（+ 灰不灰、悬停文字），MEI 按 `Recipe.Id` 缓存、翻页 / 换类型 / 转移成了以后重问；处理器、`accepts` 抛异常只记一行：检查抛了当不收，Transfer 抛了当没写成。
 - 配方行缺省就有 +（2026-11-15 起，`$plus_button_ignored` 缺省 `false`；原来只在行上打开了的类型出现）：这一类配方转移不了的灰着、悬停写「这一类配方不能转移」；
   你的类型用不上的在行上写 `true` 关掉（[03 §8](03-recipe-page.md#buttons)）。
+
+<a id="ui-blocks"></a>
+### 6.9 `ctx.UI.Blocks` —— MEI 编辑器的积木（[05 §7](05-screens-and-tools.md#blocks)）
+
+探测（2026-11-15 起，`getattr(ctx.UI, "Blocks", None)`）。玩家在 MEI 编辑器里给自己的机器排配方页（一页 = 一个配方类型），控件池里的东西叫「积木」：
+物品格、物品、箭头、火焰、加号、数值条、文字、图片、底框是 MEI 自带的（Id `mei:slot` 这些；流体就用物品格 —— 流体在 MEI 里以物品身份登记）。
+你登记一种，它就出现在控件池里，玩家排进页面后配方页、编辑器都照你的画法画。
+玩家要先在设置里打开「启用自定义配方」（缺省关）才用得到编辑器和自制的配方页；关着时积木照样登记、不影响你。
+
+| 方法 | 说明 |
+|---|---|
+| `Register(block_type)` → `bool` | 登记一种（`BlockType` 的实例）。Id 要带命名空间、只用 ASCII；被占用（包括 MEI 自带的）拒掉、记一行 |
+| `Unregister(block_id)` → `bool` | 撤自己登记的一种；别人的撤不掉 |
+| `UnregisterAll()` → `int` | 撤掉记在你名下的全部（扩展卸载时 MEI 也会兜底撤）|
+| `Get(block_id)` / `List()` | 查一种 / 全部（按控件池里的先后）|
+
+`BlockType(block_id, name_key, control_def, size=(18, 18), limit=4, holds=False, props=None, icon=None, sort_index=0, unit="")`：
+
+| 字段 | 说明 |
+|---|---|
+| `Id` / `NameKey` / `Icon` | Id；控件池、属性栏写的名字（本地化键）；控件池按钮上的小图（贴图路径，原样画）|
+| `ControlDef` | 每块积木建的控件的 JSON 定义名。**锚点写左上**（MEI 用 `SetPosition` 摆，引擎结论 §39）；要变大小的写绝对尺寸（MEI 用 `SetFullSize` 改）|
+| `Size` / `SizeOf(block)` | 缺省大小；大小跟着属性变的覆写 `SizeOf`（`block` 是排版里这一块的 dict）|
+| `Limit` | 一页最多几块（一页所有积木合起来另有上限 192 块，满了哪一种都放不下）|
+| `Holds` / `Unit` | 装东西（原料 / 产物 / 催化剂的一格）：MEI 管它的角色与编号，把这一格的内容交给 `Paint`（`view.Entry`）；`Unit` 是数量单位（`"mB"` 流体，编辑器的步进跟着换）|
+| `Props` | `BlockProp` 的表：编辑器左栏照它出属性行；位置、角色 MEI 自己管，不用声明 |
+| `Paint(view)` | 写内容（排版、物品、字段变了会再调）。抛异常只丢这一块、记一行 |
+| `IsAnimated(block)` / `Tick(view, ticks)` | 要不要节拍 / 节拍（0.2 秒一拍，`ticks` 从显示起算）|
+| `ShownItem(view)` | 这一块画着的物品（悬停、点击照 MEI 的格子处理）：缺省是装着的那一样（`view.Stack`）；不装东西、自己画一样物品的覆写它（2026-11-15 起）|
+| `TEMPLATE` | 可选（类属性）：新建的控件里各处本来的样子 `{(写法, 子控件路径): 值}`，写法是 `visible` / `text` / `tcolor` / `item`（值写 None）/ `hover` / `sprite` / `color` / `alpha` / `clip` / `size`。MEI 照它把这些记成写过，第一次画时一样的值不写 —— 一行十几块积木能省一半以上的引擎调用；写错了那一样永远不写，所以只写和 JSON 一模一样的（`("size", "")` 只在 JSON 尺寸等于 `Size` 时写）。不写也对 |
+| `Normalize(block)` / `Defaults()` / `Prop(key)` | 规整一块（没声明的键原样留着）、各属性的缺省、取一个属性 |
+
+`BlockProp(key, kind, name_key="", default=None, choices=None, minimum=0, maximum=255, step=1, max_length=32, ascii_only=False)`，`kind`：
+`INT`（步进）、`CHOICE`（`choices=[(值, 本地化键)]`，左右切换）、`BOOL`（开 / 关）、`TEXT`（输入框，文字里可以写 `{字段}`；`ascii_only=True` 只收 ASCII，贴图路径这类）、
+`FIELD`（这一页的一个数值字段，或者不绑）、`ITEM`（一样物品：编辑器给「选」—— 点 MEI 物品栏里的一样，带附魔这类也照原样 —— 和一个输入框打「命名空间:名字[:附加值]」；
+值是 `{"id", "aux"[, "attr"]}` 或 None，`Paint` 里用 `view.PropItem(key)` 取 MEI 的物品，2026-11-15 起）。
+
+`Paint` / `Tick` 拿到的 `view`：
+
+| 读 | 说明 |
+|---|---|
+| `Data` / `Size` / `Control` / `Path` | 这一块（规整过的 dict，只读）、大小、控件、控件路径 |
+| `Entry` / `Stack` / `Stacks` / `Amount` / `Chance` / `Role` / `Number` / `Label` | 装东西的积木：这一格的 `Ingredient`（空格是 None）、正显示的那一样（候选按节拍轮播）、全部候选、数量、概率、角色、同一角色里排第几（从 0）、编辑器里空格写的占位（「原1」）|
+| `Fields` / `FieldValue(f)` / `FieldText(f)` / `FieldRatio(f)` / `Format(text)` | 这条配方的数值字段、某个的值、「能量：3200 FE」、占这一页里最大值的多少（画条用）、把文字里的 `{字段}` 换成值 |
+| `Editing` / `Ticks` | 在编辑器里排版（空格写占位）/ 节拍 |
+| `EntryLore()` / `EntryHoverText()` | 这一格的说明行（数量、概率、标签或候选、不消耗）/ 和 MEI 的格子一样的悬停文字 |
+| `PropItem(key)` / `HoverOf(item, lore=None)` | 物品属性对上的 MEI 物品（没填、物品表里找不到给 None）/ 一样物品和 MEI 的格子一样的悬停文字 |
+
+| 写（`sub` 是相对这块积木控件的路径，`""` 是它自己；只写变了的）| 说明 |
+|---|---|
+| `SetText(sub, text, color=None)` / `SetSprite(sub, texture)` / `SetColor(sub, rgb)` / `SetAlpha(sub, a)` / `SetVisible(sub, on)` | 字、贴图、贴图颜色、透明度（只对 image / label 生效）、显隐 |
+| `SetSize(sub, (w, h))` / `SetClip(sub, ratio)` / `Replay(sub)` | 尺寸规则、裁掉多少（JSON 写 `clip_direction`、**不写** `clip_ratio`，引擎结论 §19）、重播 JSON 里的动画 |
+| `SetItem(sub, stack)` / `SetHoverText(sub, text)` | 物品渲染器画这一样（None 藏起来）/ `common.hover_text` 的字（JSON 里 bindings 写空、`property_bag` 给 `#hover_text`）|
+
+- 装东西的积木要能点：JSON 里放一个按钮，左右键映射到 `button.mei.block.primary` / `button.mei.block.secondary`（照 `MeiBlocks.slot` 的 `click_button` 写，不写 `sound_volume`）。配方页上 MEI 按名字认、照 MEI 的格子处理（工具 / 作弊模式、触屏菜单、PC 左右键）；编辑器里点积木由 MEI 按画面算：点中这一点上画在最上面的那块（控件 JSON 的 `layer` 大的、同层后放的；配方模式装东西的优先），
+  所以**背景类的积木 `layer` 写低一些**（MEI 的底框 0、图片与数值条 1、格子 2），压在格子底下时不挡点格子。
+- 排版里认不出种类的积木（登记它的模组没装了）不画、数据原样留着；它要是装东西的，照样占着自己的编号 —— 后面的格子不会对上别的内容。
+- 写控件的方法**都不当场刷新界面**（`SetVisible` 给引擎的 `forceUpdate` 是假），MEI 每画完一轮刷新一次；`Paint` 里别自己调 `SetVisible(on)`、`CreateChildControl(…, True)` 这类会强制刷新的 —— 每调一次引擎就把整个界面重排一遍（MEI 引擎结论 §57）。
 
 ---
 

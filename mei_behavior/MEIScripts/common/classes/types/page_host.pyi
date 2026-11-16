@@ -20,6 +20,7 @@ from typing import Any, List, Optional
 
 class RecipePageHost(object):
     CONTAINER: str
+    TREE: bool
 
     def PageSize(self, category: Any, recipes: List[Any], height: int) -> int: ...
 

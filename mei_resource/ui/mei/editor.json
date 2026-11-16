@@ -1,0 +1,1258 @@
+{
+    "namespace": "MeiEditor",
+    "editor_screen@common.base_screen": {
+        "$background_animations": [],
+        "$screen_animations": [],
+        "$screen_content": "MeiEditor.editor_root",
+        "$use_loading_bars": false,
+        "button_mappings": [
+            {
+                "from_button_id": "button.menu_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.editor.close"
+            },
+            {
+                "from_button_id": "button.menu_inventory_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.editor.close"
+            }
+        ],
+        "is_showing_menu": true
+    },
+    "form_label": {
+        "type": "label",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            "default",
+            10
+        ],
+        "layer": 3,
+        "color": [
+            0.6,
+            0.62,
+            0.66
+        ],
+        "enable_profanity_filter": false,
+        "font_type": "default",
+        "localize": false,
+        "shadow": false,
+        "text": "",
+        "visible": false
+    },
+    "form_value": {
+        "type": "label",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            "default",
+            10
+        ],
+        "layer": 3,
+        "color": [
+            0.86,
+            0.87,
+            0.9
+        ],
+        "enable_profanity_filter": false,
+        "font_type": "default",
+        "localize": false,
+        "shadow": false,
+        "text": "",
+        "visible": false
+    },
+    "form_button@MeiRecipeTree.flat_button": {
+        "$flat_size": [
+            14,
+            14
+        ],
+        "visible": false
+    },
+    "form_icon": {
+        "type": "image",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            12,
+            12
+        ],
+        "layer": 6,
+        "visible": false,
+        "texture": "textures/ui/mei/blank"
+    },
+    "form_item": {
+        "type": "custom",
+        "renderer": "inventory_item_renderer",
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            16,
+            16
+        ],
+        "layer": 6,
+        "visible": false
+    },
+    "form_edit@mei_common.ore_style_edit_box": {
+        "type": "edit_box",
+        "$font_scale_factor": 1.0,
+        "$is_new_nine_slice": false,
+        "$nine_slice_buttom": 0,
+        "$nine_slice_left": 0,
+        "$nine_slice_right": 0,
+        "$nine_slice_top": 0,
+        "$nineslice_size": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "$place_holder_text": "",
+        "$place_holder_text_color": [
+            0.5,
+            0.5,
+            0.5
+        ],
+        "$text_box_text_color": [
+            1,
+            1,
+            1
+        ],
+        "$text_edit_box_label_anchor_point": "right_middle",
+        "$text_edit_box_label_min_size": [
+            "100%",
+            0
+        ],
+        "$text_edit_box_label_size": [
+            "default",
+            "default"
+        ],
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "size": [
+            60,
+            14
+        ],
+        "layer": 6,
+        "visible": false,
+        "max_length": 256
+    },
+    "editor_root": {
+        "type": "panel",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "controls": [
+            {
+                "window": {
+                    "type": "image",
+                    "anchor_from": "top_left",
+                    "anchor_to": "top_left",
+                    "offset": [
+                        4,
+                        4
+                    ],
+                    "size": [
+                        320,
+                        200
+                    ],
+                    "layer": 1,
+                    "texture": "textures/ui/mei/flat/panel",
+                    "controls": [
+                        {
+                            "top": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    4,
+                                    4
+                                ],
+                                "size": [
+                                    "100% - 8px",
+                                    20
+                                ],
+                                "layer": 4,
+                                "controls": [
+                                    {
+                                        "lbar": {
+                                            "type": "stack_panel",
+                                            "orientation": "horizontal",
+                                            "anchor_from": "top_left",
+                                            "anchor_to": "top_left",
+                                            "offset": [
+                                                0,
+                                                3
+                                            ],
+                                            "size": [
+                                                "100%c",
+                                                14
+                                            ],
+                                            "controls": [
+                                                {
+                                                    "tab_ui@MeiRecipeTree.flat_button": {
+                                                        "$flat_size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.editor.tab_ui"
+                                                    }
+                                                },
+                                                {
+                                                    "g0": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "tab_recipe@MeiRecipeTree.flat_button": {
+                                                        "$flat_size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.editor.tab_recipe"
+                                                    }
+                                                },
+                                                {
+                                                    "g1": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            8,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "page_prev@MeiRecipeTree.flat_icon_button": {
+                                                        "$flat_icon": "textures/ui/mei/icons/arrow_left",
+                                                        "$flat_tip": "上一个页面",
+                                                        "$flat_tip_from": "bottom_left",
+                                                        "$flat_tip_to": "top_left",
+                                                        "$pressed_button_name": "button.mei.editor.page_prev"
+                                                    }
+                                                },
+                                                {
+                                                    "page_slot": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            64,
+                                                            14
+                                                        ],
+                                                        "controls": [
+                                                            {
+                                                                "name": {
+                                                                    "type": "label",
+                                                                    "anchor_from": "center",
+                                                                    "anchor_to": "center",
+                                                                    "size": [
+                                                                        "default",
+                                                                        10
+                                                                    ],
+                                                                    "layer": 3,
+                                                                    "color": [
+                                                                        0.86,
+                                                                        0.87,
+                                                                        0.9
+                                                                    ],
+                                                                    "enable_profanity_filter": false,
+                                                                    "font_type": "default",
+                                                                    "localize": false,
+                                                                    "shadow": false,
+                                                                    "text": ""
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "page_next@MeiRecipeTree.flat_icon_button": {
+                                                        "$flat_icon": "textures/ui/mei/icons/arrow_right",
+                                                        "$flat_tip": "下一个页面",
+                                                        "$flat_tip_from": "bottom_left",
+                                                        "$flat_tip_to": "top_left",
+                                                        "$pressed_button_name": "button.mei.editor.page_next"
+                                                    }
+                                                },
+                                                {
+                                                    "g2": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "page_new@MeiRecipeTree.flat_icon_button": {
+                                                        "$flat_icon": "textures/ui/mei/icons/plus",
+                                                        "$flat_tip": "新页面（工作台的排版）",
+                                                        "$flat_tip_from": "bottom_left",
+                                                        "$flat_tip_to": "top_left",
+                                                        "$pressed_button_name": "button.mei.editor.page_new"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "rbar": {
+                                            "type": "stack_panel",
+                                            "orientation": "horizontal",
+                                            "anchor_from": "top_right",
+                                            "anchor_to": "top_right",
+                                            "offset": [
+                                                0,
+                                                3
+                                            ],
+                                            "size": [
+                                                "100%c",
+                                                14
+                                            ],
+                                            "controls": [
+                                                {
+                                                    "preview@MeiRecipeTree.flat_button": {
+                                                        "$flat_size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.editor.preview"
+                                                    }
+                                                },
+                                                {
+                                                    "g0": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "save@MeiRecipeTree.flat_button": {
+                                                        "$flat_size": [
+                                                            28,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.editor.save"
+                                                    }
+                                                },
+                                                {
+                                                    "g1": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            8,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "left@MeiRecipeTree.flat_icon_button": {
+                                                        "$flat_icon": "textures/ui/mei/icons/open",
+                                                        "$flat_tip": "收起 / 展开左栏",
+                                                        "$flat_tip_from": "bottom_right",
+                                                        "$flat_tip_to": "top_right",
+                                                        "$pressed_button_name": "button.mei.editor.left"
+                                                    }
+                                                },
+                                                {
+                                                    "g2": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "items@MeiRecipeTree.flat_icon_button": {
+                                                        "$flat_icon": "textures/ui/mei/icons/find_slot",
+                                                        "$flat_tip": "收起 / 展开物品栏",
+                                                        "$flat_tip_from": "bottom_right",
+                                                        "$flat_tip_to": "top_right",
+                                                        "$pressed_button_name": "button.mei.editor.items"
+                                                    }
+                                                },
+                                                {
+                                                    "g3": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "manager@MeiRecipeTree.flat_icon_button": {
+                                                        "$flat_icon": "textures/ui/mei/icons/group",
+                                                        "$flat_tip": "自定义配方管理器",
+                                                        "$flat_tip_from": "bottom_right",
+                                                        "$flat_tip_to": "top_right",
+                                                        "$pressed_button_name": "button.mei.editor.manager"
+                                                    }
+                                                },
+                                                {
+                                                    "g4": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            2,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "close_button@MeiRecipeTree.flat_icon_button": {
+                                                        "$flat_icon": "textures/ui/mei/icons/cross",
+                                                        "$flat_tip": "关闭编辑器",
+                                                        "$flat_tip_from": "bottom_right",
+                                                        "$flat_tip_to": "top_right",
+                                                        "$pressed_button_name": "button.mei.editor.close_button"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "left": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    4,
+                                    26
+                                ],
+                                "size": [
+                                    156,
+                                    120
+                                ],
+                                "layer": 3,
+                                "controls": [
+                                    {
+                                        "bg": {
+                                            "type": "image",
+                                            "size": [
+                                                "100%",
+                                                "100%"
+                                            ],
+                                            "layer": 0,
+                                            "texture": "textures/ui/mei/flat/inset"
+                                        }
+                                    },
+                                    {
+                                        "l0@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l1@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l2@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l3@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l4@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l5@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l6@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l7@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l8@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l9@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l10@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l11@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l12@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l13@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l14@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l15@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "v0@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v1@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v2@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v3@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v4@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v5@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v6@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v7@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v8@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v9@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v10@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v11@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v12@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v13@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v14@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v15@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "b0@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b1@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b2@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b3@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b4@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b5@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b6@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b7@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b8@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b9@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b10@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b11@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b12@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b13@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b14@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b15@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b16@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b17@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b18@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b19@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b20@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b21@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b22@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b23@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b24@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b25@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b26@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b27@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b28@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b29@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b30@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b31@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b32@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b33@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b34@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b35@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b36@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b37@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b38@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b39@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "i0@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i1@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i2@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i3@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i4@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i5@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i6@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i7@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i8@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i9@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i10@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i11@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "e0@MeiEditor.form_edit": {
+                                            "$text_box_name": "%MeiEditor.e0",
+                                            "$text_edit_box_content_binding_name": "#MeiEditor.e0_content"
+                                        }
+                                    },
+                                    {
+                                        "e1@MeiEditor.form_edit": {
+                                            "$text_box_name": "%MeiEditor.e1",
+                                            "$text_edit_box_content_binding_name": "#MeiEditor.e1_content"
+                                        }
+                                    },
+                                    {
+                                        "e2@MeiEditor.form_edit": {
+                                            "$text_box_name": "%MeiEditor.e2",
+                                            "$text_edit_box_content_binding_name": "#MeiEditor.e2_content"
+                                        }
+                                    },
+                                    {
+                                        "e3@MeiEditor.form_edit": {
+                                            "$text_box_name": "%MeiEditor.e3",
+                                            "$text_edit_box_content_binding_name": "#MeiEditor.e3_content"
+                                        }
+                                    },
+                                    {
+                                        "e4@MeiEditor.form_edit": {
+                                            "$text_box_name": "%MeiEditor.e4",
+                                            "$text_edit_box_content_binding_name": "#MeiEditor.e4_content"
+                                        }
+                                    },
+                                    {
+                                        "e5@MeiEditor.form_edit": {
+                                            "$text_box_name": "%MeiEditor.e5",
+                                            "$text_edit_box_content_binding_name": "#MeiEditor.e5_content"
+                                        }
+                                    },
+                                    {
+                                        "r0@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r1@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r2@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r3@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r4@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r5@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r6@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r7@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r8@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r9@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r10@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r11@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r12@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r13@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r14@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r15@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r16@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r17@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r18@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r19@MeiEditor.form_item": {}
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "work": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    164,
+                                    26
+                                ],
+                                "size": [
+                                    200,
+                                    120
+                                ],
+                                "layer": 2,
+                                "controls": [
+                                    {
+                                        "bg": {
+                                            "type": "image",
+                                            "size": [
+                                                "100%",
+                                                "100%"
+                                            ],
+                                            "layer": 0,
+                                            "texture": "textures/ui/mei/flat/inset"
+                                        }
+                                    },
+                                    {
+                                        "row": {
+                                            "type": "panel",
+                                            "anchor_from": "center",
+                                            "anchor_to": "center",
+                                            "size": [
+                                                188,
+                                                90
+                                            ],
+                                            "layer": 2,
+                                            "controls": [
+                                                {
+                                                    "bg": {
+                                                        "type": "image",
+                                                        "anchor_from": "center",
+                                                        "anchor_to": "center",
+                                                        "size": [
+                                                            "100% + 8px",
+                                                            "100% + 8px"
+                                                        ],
+                                                        "layer": 0,
+                                                        "texture": "textures/ui/dialog_background_opaque"
+                                                    }
+                                                },
+                                                {
+                                                    "stage": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            6,
+                                                            2
+                                                        ],
+                                                        "size": [
+                                                            172,
+                                                            70
+                                                        ],
+                                                        "layer": 2,
+                                                        "controls": [
+                                                            {
+                                                                "blank@common.button": {
+                                                                    "type": "button",
+                                                                    "$pressed_button_name": "button.mei.editor.blank",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "size": [
+                                                                        "100%",
+                                                                        "100%"
+                                                                    ],
+                                                                    "layer": 20,
+                                                                    "button_mappings": [],
+                                                                    "controls": [
+                                                                        {
+                                                                            "default": {
+                                                                                "type": "panel"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "hover": {
+                                                                                "type": "panel"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "pressed": {
+                                                                                "type": "panel"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "hover": {
+                                                                    "type": "image",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "size": [
+                                                                        20,
+                                                                        20
+                                                                    ],
+                                                                    "layer": 21,
+                                                                    "visible": false,
+                                                                    "alpha": 0.16,
+                                                                    "fill": true,
+                                                                    "texture": "textures/ui/mei/white"
+                                                                }
+                                                            },
+                                                            {
+                                                                "sel": {
+                                                                    "type": "image",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "size": [
+                                                                        22,
+                                                                        22
+                                                                    ],
+                                                                    "layer": 25,
+                                                                    "visible": false,
+                                                                    "color": [
+                                                                        1.0,
+                                                                        0.9,
+                                                                        0.4
+                                                                    ],
+                                                                    "texture": "textures/ui/mei/white_border"
+                                                                }
+                                                            },
+                                                            {
+                                                                "drag": {
+                                                                    "type": "input_panel",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "size": [
+                                                                        20,
+                                                                        20
+                                                                    ],
+                                                                    "draggable": "both",
+                                                                    "layer": 30,
+                                                                    "visible": false,
+                                                                    "is_swallow": true,
+                                                                    "button_mappings": [
+                                                                        {
+                                                                            "to_button_id": "#netease_to_button_id",
+                                                                            "from_button_id": "button.multi_touch",
+                                                                            "mapping_type": "pressed"
+                                                                        }
+                                                                    ],
+                                                                    "controls": [
+                                                                        {
+                                                                            "grip": {
+                                                                                "type": "image",
+                                                                                "size": [
+                                                                                    "100%",
+                                                                                    "100%"
+                                                                                ],
+                                                                                "layer": 1,
+                                                                                "visible": false,
+                                                                                "fill": true,
+                                                                                "color": [
+                                                                                    1.0,
+                                                                                    0.9,
+                                                                                    0.4
+                                                                                ],
+                                                                                "texture": "textures/ui/mei/white",
+                                                                                "controls": [
+                                                                                    {
+                                                                                        "icon": {
+                                                                                            "type": "image",
+                                                                                            "size": [
+                                                                                                "100% - 2px",
+                                                                                                "100% - 2px"
+                                                                                            ],
+                                                                                            "layer": 1,
+                                                                                            "color": [
+                                                                                                0.25,
+                                                                                                0.22,
+                                                                                                0.1
+                                                                                            ],
+                                                                                            "texture": "textures/ui/mei/icons/expand"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "buttons": {
+                                                        "type": "panel",
+                                                        "anchor_from": "top_left",
+                                                        "anchor_to": "top_left",
+                                                        "offset": [
+                                                            122,
+                                                            75
+                                                        ],
+                                                        "size": [
+                                                            56,
+                                                            13
+                                                        ],
+                                                        "layer": 1,
+                                                        "controls": [
+                                                            {
+                                                                "tree": {
+                                                                    "type": "image",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "offset": [
+                                                                        0,
+                                                                        0
+                                                                    ],
+                                                                    "size": [
+                                                                        13,
+                                                                        13
+                                                                    ],
+                                                                    "layer": 1,
+                                                                    "fill": true,
+                                                                    "texture": "textures/ui/mei/button/button",
+                                                                    "controls": [
+                                                                        {
+                                                                            "icon": {
+                                                                                "type": "image",
+                                                                                "size": [
+                                                                                    "100%+-4px",
+                                                                                    "100%+-4px"
+                                                                                ],
+                                                                                "offset": [
+                                                                                    0,
+                                                                                    -1
+                                                                                ],
+                                                                                "layer": 1,
+                                                                                "color": [
+                                                                                    0.478,
+                                                                                    0.478,
+                                                                                    0.478
+                                                                                ],
+                                                                                "texture": "textures/ui/mei/icons/tree"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "pin": {
+                                                                    "type": "image",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "offset": [
+                                                                        14,
+                                                                        0
+                                                                    ],
+                                                                    "size": [
+                                                                        13,
+                                                                        13
+                                                                    ],
+                                                                    "layer": 1,
+                                                                    "fill": true,
+                                                                    "texture": "textures/ui/mei/button/button",
+                                                                    "controls": [
+                                                                        {
+                                                                            "icon": {
+                                                                                "type": "image",
+                                                                                "size": [
+                                                                                    "100%+-4px",
+                                                                                    "100%+-4px"
+                                                                                ],
+                                                                                "offset": [
+                                                                                    0,
+                                                                                    -1
+                                                                                ],
+                                                                                "layer": 1,
+                                                                                "color": [
+                                                                                    0.478,
+                                                                                    0.478,
+                                                                                    0.478
+                                                                                ],
+                                                                                "texture": "textures/ui/mei/icons/pin_to_top"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "star": {
+                                                                    "type": "image",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "offset": [
+                                                                        28,
+                                                                        0
+                                                                    ],
+                                                                    "size": [
+                                                                        13,
+                                                                        13
+                                                                    ],
+                                                                    "layer": 1,
+                                                                    "fill": true,
+                                                                    "texture": "textures/ui/mei/button/button",
+                                                                    "controls": [
+                                                                        {
+                                                                            "icon": {
+                                                                                "type": "image",
+                                                                                "size": [
+                                                                                    "100%+-4px",
+                                                                                    "100%+-4px"
+                                                                                ],
+                                                                                "offset": [
+                                                                                    0,
+                                                                                    -1
+                                                                                ],
+                                                                                "layer": 1,
+                                                                                "color": [
+                                                                                    0.478,
+                                                                                    0.478,
+                                                                                    0.478
+                                                                                ],
+                                                                                "texture": "textures/ui/mei/icons/star"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "plus": {
+                                                                    "type": "image",
+                                                                    "anchor_from": "top_left",
+                                                                    "anchor_to": "top_left",
+                                                                    "offset": [
+                                                                        42,
+                                                                        0
+                                                                    ],
+                                                                    "size": [
+                                                                        13,
+                                                                        13
+                                                                    ],
+                                                                    "layer": 1,
+                                                                    "fill": true,
+                                                                    "texture": "textures/ui/mei/button/button",
+                                                                    "controls": [
+                                                                        {
+                                                                            "icon": {
+                                                                                "type": "image",
+                                                                                "size": [
+                                                                                    "100%+-5px",
+                                                                                    "100%+-5px"
+                                                                                ],
+                                                                                "offset": [
+                                                                                    0,
+                                                                                    -1
+                                                                                ],
+                                                                                "layer": 1,
+                                                                                "color": [
+                                                                                    0.478,
+                                                                                    0.478,
+                                                                                    0.478
+                                                                                ],
+                                                                                "texture": "textures/ui/mei/icons/plus"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "status": {
+                                            "type": "label",
+                                            "anchor_from": "bottom_left",
+                                            "anchor_to": "bottom_left",
+                                            "size": [
+                                                "default",
+                                                10
+                                            ],
+                                            "layer": 5,
+                                            "color": [
+                                                0.6,
+                                                0.62,
+                                                0.66
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": "",
+                                            "offset": [
+                                                4,
+                                                -3
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "hint": {
+                                            "type": "label",
+                                            "anchor_from": "top_middle",
+                                            "anchor_to": "top_middle",
+                                            "size": [
+                                                "default",
+                                                10
+                                            ],
+                                            "layer": 5,
+                                            "color": [
+                                                0.6,
+                                                0.62,
+                                                0.66
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": "",
+                                            "offset": [
+                                                0,
+                                                4
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "toast": {
+                    "type": "label",
+                    "anchor_from": "top_middle",
+                    "anchor_to": "top_middle",
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 70,
+                    "color": [
+                        0.86,
+                        0.87,
+                        0.9
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "default",
+                    "localize": false,
+                    "shadow": true,
+                    "text": "",
+                    "offset": [
+                        0,
+                        30
+                    ]
+                }
+            }
+        ]
+    }
+}

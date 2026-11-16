@@ -342,6 +342,7 @@ class MenuKey(object):
     NextCandidate = "next_candidate"  # 多候选格：下一个候选
     RecipeTree = "recipe_tree"  # 以这个物品为根开配方树（docs/architecture/recipe_tree.md）
     OpenTree = "open_tree"  # 配方树收藏：打开这棵树
+    AddRecipe = "add_recipe"  # 给这样物品记一条自制配方：开 MEI 编辑器（docs/architecture/user_recipes.md），只在「更多」里
     More = "more"  # 「更多」：操作条放不下的动作收在它下面，点一下展开 / 收起（菜单自己加，面板不用写）
     Close = "close"  # 关闭：菜单自己加在最后，面板不用写
 
@@ -496,3 +497,102 @@ class TreePath(object):
     CellButton = "/btn"
     ButtonLabel = "/label"  # mei_common.menu_button 的字
     ButtonMask = "/mask"  # mei_common.menu_button 的灰色遮罩
+
+
+class EditorConst(object):
+    """ MEI 编辑器（mei_ui/editor/，docs/architecture/user_recipes.md §12、§13）"""
+    UiNameSpace = "MeiEditor"  # editor.json 的命名空间
+    ScreenDef = UiNameSpace + ".editor_screen"  # 画布（common.base_screen 派生，根面板的路径与原版界面相同：UiPathConst.ScreenRoot）
+    ScreenKey = "MeiEditor"  # RegisterUI / PushScreen 的 uiKey，命名空间是 NameConst.NameSpace
+    CloseName = "button.mei.editor.close"  # ESC、背包键在画布上 global 映射到它
+    ButtonName = "button.mei.editor.{}"  # 顶栏按钮的点击名（与 JSON 里的控件名相同；BF_ButtonClickUp 只能单个绑定，引擎结论 §9）
+    TopButtons = ("tab_ui", "tab_recipe", "page_prev", "page_next", "page_new", "preview", "save", "left", "items", "manager",
+                  "close_button")
+    TopTextButtons = ("tab_ui", "tab_recipe", "preview", "save")  # 写字的（按字改宽），其余是 14×14 的图标按钮
+    # 左栏的控件池（与 editor.json 一致）：标签、值、按钮、图标、输入框、物品
+    Labels = 16
+    Values = 16
+    Buttons = 40
+    Icons = 12
+    Edits = 6
+    Items = 20
+    LeftWidth = 160  # 左栏宽（含和工作区之间的 Pad；editor.json 里左栏是 LeftWidth - Pad）
+    TopHeight = 20
+    Pad = 4
+    RowHeight = 15  # 左栏一行（按钮 14 + 间隔 1）
+    TitleHeight = 12
+    SelectColor = (1.0, 0.9, 0.4)
+    TabOn = "textures/ui/mei/flat/tab_on"
+    TabOff = "textures/ui/mei/flat/btn"
+    DragSettle = 5  # 拖拽偏移连续这么多帧不变就算停下（写回排版）；把手不 contained，松手的地方总在把手上（引擎结论 §58）
+    TextPoll = 6  # 隔这么多帧读一次输入框（变了才写回草稿）
+    TickFrames = 6  # 积木的节拍：每 6 帧一拍（0.2 秒，和配方页一样）
+    ToastFrames = 75  # 提示挂多久（约 2.5 秒）
+    ConfirmFrames = 90  # 删除要点两下：第二下要在这么多帧里
+
+
+class EditorPath(object):
+    # MEI 编辑器界面里的控件（editor.json）。根面板就是 $screen_content（common.base_screen 的 root_screen_panel）
+    Root = UiPathConst.ScreenRoot
+    Window = Root + "/window"
+    Top = Window + "/top"
+    LeftBar = Top + "/lbar"
+    RightBar = Top + "/rbar"
+    PageName = LeftBar + "/page_slot/name"
+    Left = Window + "/left"
+    Work = Window + "/work"
+    Row = Work + "/row"
+    Stage = Row + "/stage"
+    Blank = Stage + "/blank"  # 拾取层：盖在积木上面的一个透明按钮，点了由脚本算点中的是哪一块
+    Hover = Stage + "/hover"  # PC 上光标下那块积木亮的一层白
+    Select = Stage + "/sel"
+    Drag = Stage + "/drag"
+    RowButtons = Row + "/buttons"  # 配方行下面那一排按钮的样子（配方树、置顶、收藏；位置跟着内容区，mei_ui/blocks/row.py）
+    Status = Work + "/status"
+    Hint = Work + "/hint"
+    Toast = Root + "/toast"
+    Label = Left + "/l{}"
+    Value = Left + "/v{}"
+    Button = Left + "/b{}"
+    Icon = Left + "/i{}"
+    Edit = Left + "/e{}"
+    Item = Left + "/r{}"
+    ButtonLabel = "/label"
+    ButtonMask = "/mask"
+    ButtonFace = "/default"
+
+
+class ManagerConst(object):
+    """ 自定义配方管理器（mei_ui/manager/，docs/architecture/user_recipes.md §22）"""
+    UiNameSpace = "MeiManager"  # manager.json 的命名空间
+    ScreenDef = UiNameSpace + ".manager_screen"  # 画布（common.base_screen 派生，根面板的路径与原版界面相同）
+    ScreenKey = "MeiRecipeManager"  # RegisterUI / PushScreen 的 uiKey，命名空间是 NameConst.NameSpace
+    CloseName = "button.mei.manager.close"  # ESC、背包键在画布上 global 映射到它
+    ButtonName = "button.mei.manager.{}"  # 顶栏按钮的点击名（BF_ButtonClickUp 只能单个绑定，引擎结论 §9）
+    TopButtons = ("editor", "close_button")
+    # 左右两栏的控件池（与 manager.json 一致；模板是编辑器的 MeiEditor.form_*，表单是同一个，editor/form.py）
+    LeftPool = {"l": 22, "v": 22, "b": 26, "i": 20, "e": 0, "r": 0}
+    RightPool = {"l": 12, "v": 40, "b": 44, "i": 2, "e": 2, "r": 18}
+    LeftWidth = 150  # 左栏宽（含和右栏之间的 Pad；manager.json 里左栏是 LeftWidth - Pad）
+    MaxWidth = 460  # 窗口最多这么大（居中）；屏幕小了照屏幕
+    MaxHeight = 300
+    TopHeight = 20
+    Pad = 4
+    ToastFrames = 75
+    ConfirmFrames = 90
+    LayoutFrames = 10  # 隔这么多帧看一眼屏幕尺寸变没变
+    GroupIcon = "textures/ui/mei/icons/group"  # 左栏一个分组的图标：开着的
+    GroupOffIcon = "textures/ui/mei/icons/cross"  # 关着的
+    ServerIcon = "textures/ui/mei/icons/down"  # 服务器上的分组：没订阅（也没统一下来）的
+
+
+class ManagerPath(object):
+    # 自定义配方管理器里的控件（manager.json）。根面板就是 $screen_content（common.base_screen 的 root_screen_panel）
+    Root = UiPathConst.ScreenRoot
+    Window = Root + "/window"
+    Top = Window + "/top"
+    Title = Top + "/title"
+    RightBar = Top + "/rbar"
+    Left = Window + "/left"
+    Right = Window + "/right"
+    Toast = Root + "/toast"

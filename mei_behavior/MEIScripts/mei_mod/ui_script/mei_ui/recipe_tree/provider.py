@@ -117,9 +117,13 @@ class TreeProvider(object):
 
     @staticmethod
     def IsHosted(type_id):  # type: (str) -> bool
-        """ 托管配方页的类型（配方页由别的模组自己画，RecipeCategory.PageHost）：MEI 不知道它的原料，配方树不用它的配方 """
+        """
+        托管配方页的类型（配方页由别的模组自己画，RecipeCategory.PageHost）：MEI 一般不知道它的原料，配方树不用它的配方 ——
+        托管者声明了 TREE 的除外（配方里的原料、产物是 MEI 认得的，比如玩家在 MEI 编辑器里做的页面）
+        """
         category = RecipeManager.GetCategory(type_id)
-        return getattr(category, "PageHost", None) is not None
+        host = getattr(category, "PageHost", None)
+        return host is not None and not getattr(host, "TREE", False)
 
     def IsItem(self, key):  # type: (str) -> bool
         # 看它是什么（物品表里有没有），不看它在配方里以什么格子出现过：按格子的种类记的话，同一个流体从自己打开时

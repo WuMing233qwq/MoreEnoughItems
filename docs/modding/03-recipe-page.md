@@ -181,15 +181,23 @@ MEI 照旧管配方页的框 —— 顶栏（返回、类型名、页码与翻�
 
 `page`（HostedPage）：`Container` / `ContainerPath`（MEI 建的容器）、`Recipes`（这一页的配方）、`Start`（第一条是第几条）、`Total`、`Height`、
 `Serial`（容器的代号）、`ScreenNode`、`ScreenName`（配方页挂在哪个界面上，比如 `"crafting.crafting_screen"`）、`Live`（收回以后为假）；
-`CreateControl(定义, 名字, parent=None)` / `RemoveControl(control)` 在容器里建、删控件（经 MEI 的主节点，控件缓存跟着作废，**不要自己 `CreateChildControl`**），
-`Notice(text)` 在顶栏挂一句话几秒，`Close()` 关掉配方页（排到下一拍）。收回以后这几个方法什么都不做。
+`CreateControl(定义, 名字, parent=None, update=True)` / `RemoveControl(control)` 在容器里建、删控件（经 MEI 的主节点，控件缓存跟着作废，**不要自己 `CreateChildControl`**），
+`UpdateScreen()` 刷新一次界面，`Notice(text)` 在顶栏挂一句话几秒，`Close()` 关掉配方页（排到下一拍）。收回以后这几个方法什么都不做。
+`PlusState(recipe)` → `(能不能点, 悬停字)` / `Transfer(recipe)`（2026-11-15 起，探测 `hasattr(page, "PlusState")`）：你自己画的 +（配方转移）要和 MEI 配方行的 + 一样时用 ——
+一律出，这一类转移不了、当前界面不收、材料不够的灰着，悬停写原因；点了交给 MEI（界面登记的转移处理器，或类型的转移策略），成了关页、没成在顶栏挂原因。
+MEI 的自制配方页就是这么接的（灰着的样子照配方行的：`button_disabled` 底）。
+
+**一次建很多控件的，给 `update=False`、建完调一次 `UpdateScreen()`**（2026-11-15 起，探测 `hasattr(page, "UpdateScreen")`）：缺省每建一个控件引擎就把整个界面重排一遍
+（开着 MEI 的工作台两万多个控件），一页几十个控件就是一秒；`SetVisible` 同理，给第二个参数 `False`、改完一起 `UpdateScreen`（MEI 引擎结论 §57）。
+刚建的控件不管刷没刷新，当场都可能取不到子控件（`GetChildByPath` 给 None），下一帧再取（MEI 自己的自制配方页隔 0.05 秒再画一遍，直到画全）。
 
 几条约束：
 
 - 容器里的控件**宽不要写父控件的百分比**：容器和配方页的宽都跟着它们，写了就绕成圈，引擎排不出来、断言后崩溃（MEI 引擎结论 §56）。高同理。
 - 刚建的容器量不到配方页的高：MEI 等下一帧（排好了）才分页、调 `Show`，你不用自己等。
-- 托管类型**没有 MEI 的配方行**：行上的收藏、置顶、+、配方树按钮都没有（要转移就在你自己的控件里放按钮、自己接）；
-  tooltip 不出配方预览（`preview_def` 缺省就是空）；**配方树不用这个类型的配方**（MEI 不知道它的原料）。
+- 托管类型**没有 MEI 的配方行**：行上的收藏、置顶、+、配方树按钮都没有（要转移就在你自己的控件里放按钮，状态与点击问 `page.PlusState` / `page.Transfer`）；
+  tooltip 不出配方预览（`preview_def` 缺省就是空）；**配方树缺省不用这个类型的配方**（MEI 不知道它的原料）——
+  你的配方的 `Inputs` / `Outputs` / `Catalysts` 是 MEI 认得的 `Ingredient` 的话，托管者上写 `TREE = True`，配方树就照常展开、汇总（2026-11-15 起；玩家自制配方的页面就是这么接的）。
   格子要照 MEI 的交互（工具 / 作弊模式、触屏菜单、左右键查来源 / 用途），点了交给 `ctx.UI.Actions.ClickItem`；光标下的格子要让快捷键认得，登记焦点提供器（`ctx.UI.Focus`，[05 §4.1](05-screens-and-tools.md#focus)）。
 - `Show` / `Hide` / `Tick` 抛了 MEI 只记一行（`[MEI/ui] 托管配方页 … 画不出来`），配方页照常，那一页是空的。
 

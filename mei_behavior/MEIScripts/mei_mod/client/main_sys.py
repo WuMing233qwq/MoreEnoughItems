@@ -24,20 +24,26 @@ import mod.client.extraClientApi as clientApi
 from mod_log import logger
 
 from MEIScripts.mei_mod.client.item_sync import ItemSync
+from MEIScripts.mei_mod.client.share import ShareClient
 from MEIScripts.mei_mod.extensions.loader import ExtensionLoader
 from MEIScripts.constants.codes import NameConst
 from MEIScripts.mei_mod.network.base import Channel, REQUEST_EVENT, RESPONSE_EVENT
+from MEIScripts.mei_mod.network.protocol.share import PUSH_EVENT as SHARE_PUSH_EVENT
 from MEIScripts.mei_mod.transfer import RegisterBuiltinSources
 from MEIScripts.mei_mod.ui_script import settings as settings_ui
 from MEIScripts.mei_mod.ui_script.controls.item import grid as item_grid
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.hosts import FloatHosts
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.screen import register_screen
 from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys import binds as hotkey_binds
+from MEIScripts.mei_mod.ui_script.mei_ui.editor import settings as editor_settings
 from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys import manager as hotkeys
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_tree import register_screen as register_tree_screen
+from MEIScripts.mei_mod.ui_script.mei_ui.editor import register_screen as register_editor_screen
+from MEIScripts.mei_mod.ui_script.mei_ui.manager import register_screen as register_manager_screen
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
 from MEIScripts.mei_mod.state import (
-    BookmarkManager, CacheManager, PinManager, PrefsManager, SettingsManager, TreePrefsManager)
+    BookmarkManager, CacheManager, PinManager, PrefsManager, SettingsManager, TreePrefsManager, UserRecipeManager,
+    UserShareManager)
 from MEIScripts.mei_mod.state.settings import IsBookmarksWorldSpecific, RegisterBuiltinSettings
 from MEIScripts.mei_mod.state.settings.builtin import BOOKMARKS_WORLD
 from MEIScripts.registry import ItemManager, RecipeManager
@@ -65,6 +71,7 @@ class MainSys(ClientSystem):
         # 设置项只是声明，不碰引擎；任何地方读设置之前都得先登记好。快捷键的键位也是设置项（设置「按键绑定」页）
         RegisterBuiltinSettings()
         hotkey_binds.RegisterSettings()
+        editor_settings.RegisterSettings()  # 设置「编辑器」页的「打开 MEI 编辑器」
 
         # 物品表：服务端的列表到了先记下，本地化文字加载好了再建（item_sync.py）
         self.ItemSync = ItemSync(self.BuildItemTable, pack_texts_ready, texts_ready, time.time, logger.warn)
@@ -85,6 +92,8 @@ class MainSys(ClientSystem):
         self.Events.Listen("GridComponentSizeChangedClientEvent", self.onGridRearranged)
         self.Events.Listen("SyncLoadedItems", self.SyncLoadedItems, NameConst.NameSpace, NameConst.ServerSysName)
         self.Events.Listen(RESPONSE_EVENT, self.OnResponse, NameConst.NameSpace, NameConst.ServerSysName)
+        # 自制配方的多人共享：服务器上的分组变了（network/protocol/share.py 广播）
+        self.Events.Listen(SHARE_PUSH_EVENT, ShareClient.OnPush, NameConst.NameSpace, NameConst.ServerSysName)
 
     def DestroyClientListenEvents(self):
         """ 销毁客户端事件监听 """
@@ -127,8 +136,15 @@ class MainSys(ClientSystem):
         register_screen()
         # 配方树（PushScreen 的新界面，docs/architecture/recipe_tree.md）：同样每次进存档注册
         register_tree_screen()
+        # MEI 编辑器（PushScreen，docs/architecture/user_recipes.md）：同上
+        register_editor_screen()
+        # 自定义配方管理器（PushScreen，user_recipes.md §22）：同上
+        register_manager_screen()
         # 进了一个存档：按存档的那份收藏重新读，保存位置照设置页来
         BookmarkManager.ResetWorldStore()
+        # 自制配方的多人共享：这个存档拿下来的分组重新读，问一次服务器上有哪些（user_recipes.md §22）
+        UserShareManager.ResetWorldStore()
+        ShareClient.OnWorldJoined()
         BookmarkManager.SetWorldSpecific(IsBookmarksWorldSpecific())
         SettingsManager.Watch(BOOKMARKS_WORLD, OnBookmarksWorldChanged)
         # 快捷键：MEI 自己的按键绑定（设置「按键绑定」页改键，docs/architecture/bookmarks.md §12），不注册给引擎
@@ -203,6 +219,8 @@ class MainSys(ClientSystem):
         # 扩展的每帧节拍(vanilla 用它推进全量配方扫描); 没有扩展要跑时是空转
         ExtensionLoader.Tick()
         self.Channel.Tick()
+        # 共享的本地分组改了：到点自动上传（只看版本号，没变是一次比较）
+        ShareClient.Tick()
         # 注入在 HUD / 未支持界面上的 MEI 没有代理来调 OnTick，在这里推
         FloatHosts.Tick()
 
@@ -215,5 +233,9 @@ class MainSys(ClientSystem):
         PrefsManager.Flush()
         PinManager.Flush()
         TreePrefsManager.Flush()
+        UserRecipeManager.Flush()
+        # 共享：在路上的不认了；按存档的那份写下去、丢掉读过的（进下一个存档时先读到的是那个存档自己的，user_recipes.md §22.8）
+        ShareClient.OnWorldLeft()
+        UserShareManager.Close()
         self.Channel.Detach()
         self.DestroyClientListenEvents()

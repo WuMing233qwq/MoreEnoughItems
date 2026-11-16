@@ -3132,6 +3132,7 @@
                     "layer": 5,
                     "visible": false,
                     "alpha": 0.55,
+                    "fill": true,
                     "texture": "textures/ui/mei/black"
                 }
             }
@@ -3211,6 +3212,7 @@
                     "layer": 5,
                     "visible": false,
                     "alpha": 0.55,
+                    "fill": true,
                     "texture": "textures/ui/mei/black"
                 }
             }

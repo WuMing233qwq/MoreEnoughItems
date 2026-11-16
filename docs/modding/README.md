@@ -11,7 +11,7 @@
 | [02-recipes.md](02-recipes.md) | 注册配方：类型、来源、配方对象、`Recipe.Id` 要稳定、往别人的类型里加、查配方 | 要让 MEI 显示你的配方 |
 | [03-recipe-page.md](03-recipe-page.md) | 配方页：JSON 规范、配方页脚本、槽位、动画、说明行、多候选格、动作按钮、托管配方页 | 要画你的配方页 |
 | [04-items.md](04-items.md) | 物品：Item 只读、加变体、藏物品、分组、搜索、物品栏的筛选与排序           | 要改物品栏里显示什么 |
-| [05-screens-and-tools.md](05-screens-and-tools.md) | 界面与工具：让你的界面挂上 MEI、工具模式的放置目标、在 MEI 里开配方页      | MEI 的界面互动 |
+| [05-screens-and-tools.md](05-screens-and-tools.md) | 界面与工具：让你的界面挂上 MEI、工具模式的放置目标、在 MEI 里开配方页、给 MEI 编辑器加积木 | MEI 的界面互动 |
 | [api.md](api.md) | **接口参考**：每个门面、每个名字的签名与说明                     | 查某个接口 |
 
 指南讲「怎么做」，每用到一个接口就链到 [api.md](api.md) 的那一条；api.md 每条后面写「见 ……」链回讲它的那一节。

@@ -28,6 +28,7 @@
 - 滚轮：按着修饰键滚、修饰键正好对上某个滚轮类的绑定就做（向上 +1、向下 -1）；各界面的滚轮翻页先问 binds.WheelTaken()。
 - 录键时（设置页点了某一行的按钮）按下的键、滚轮都交给 capture.py，不当快捷键。
 光标下是什么问焦点探针；在搜索框里打字不算（按下后等 DEFER_SECONDS 看搜索框的字变没变）。日志只记出错。每个键做什么在 actions.py。
+- 最上面的界面写着 MEI_NO_HOTKEYS（自定义配方管理器：没有物品格，往输入框里打字时字母别被当成快捷键）时一个都不认。
 """
 import time
 
@@ -60,6 +61,15 @@ def ResetInput():  # type: () -> None
     _HELD.clear()
 
 
+def _muted():  # type: () -> bool
+    """ 最上面的界面不收 MEI 的快捷键（界面类上写 MEI_NO_HOTKEYS = True）"""
+    try:
+        import mod.client.extraClientApi as clientApi
+        return getattr(clientApi.GetTopScreen(), "MEI_NO_HOTKEYS", False) is True
+    except Exception:  # noqa  问不到就照常
+        return False
+
+
 def OnKeyPress(args):  # type: (dict) -> bool
     """ OnKeyPressInGame 的回调；做了（排上了）至少一个快捷键返回 True """
     try:
@@ -88,7 +98,7 @@ def OnKeyPress(args):  # type: (dict) -> bool
     if CAPTURE.Active():
         CAPTURE.FeedKey(code)
         return False
-    if code == keys.IME or code in keys.MOUSE_CODES:
+    if code == keys.IME or code in keys.MOUSE_CODES or _muted():
         return False
     result = False
     for hotkey_id in binds.Lookup(binds.Mods(), code):
@@ -102,6 +112,8 @@ def OnWheel(args):  # type: (dict) -> bool
     if CAPTURE.Active():
         CAPTURE.FeedWheel()
         return True
+    if _muted():
+        return False
     ids = binds.WheelIds(binds.Mods())
     for hotkey_id in ids:
         _start(hotkey_id, step)
@@ -170,6 +182,16 @@ def _search_text(browser):  # type: (any) -> any
         return None
 
 
+def _typed(main, browser):  # type: (any, any) -> tuple
+    """ 此刻各个输入框里的字：物品栏的搜索框，MEI 编辑器开着的话再加它的输入框（Editor.TextSnapshot）"""
+    editor = getattr(main, "Editor", None)
+    try:
+        texts = editor.TextSnapshot() if editor is not None else ()
+    except Exception:  # noqa
+        texts = ()
+    return _search_text(browser), texts
+
+
 def _refresh(main):
     sidebar = getattr(main, "ItemsSidebarIns", None)
     if getattr(sidebar, "Inited", False):
@@ -206,14 +228,14 @@ def _handle(hotkey_id, step):  # type: (str, int) -> bool
         return True
 
     browser = _browser(main)
-    before = _search_text(browser)
+    before = _typed(main, browser)
     game = getattr(browser, "GameComp", None)
     if game is None:
         return _run(main, hotkey_id, target, step)
 
     def deferred():
-        # 字变了就是这一下打进了搜索框，不当快捷键
-        if _search_text(browser) == before:
+        # 字变了就是这一下打进了输入框（搜索框、编辑器的输入框），不当快捷键
+        if _typed(main, browser) == before:
             _run(main, hotkey_id, target, step)
 
     game.AddTimer(DEFER_SECONDS, deferred)

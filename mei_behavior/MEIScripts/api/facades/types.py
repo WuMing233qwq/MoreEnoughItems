@@ -26,14 +26,14 @@ from MEIScripts.common.classes.types.transfer import (
 from MEIScripts.common.classes.base import RecipeSource
 from MEIScripts.common.classes.sources import StaticRecipeSource
 from MEIScripts.common.classes.types import (
-    Ingredient, Item, ItemAttr, ItemInfo, ItemSpec, ItemStack,
+    BlockProp, BlockType, Ingredient, Item, ItemAttr, ItemInfo, ItemSpec, ItemStack,
     Recipe,
     RecipeCategory, RecipePageHost, Stack, get_recipe_class, keys, register_recipe_class,
 )
 from MEIScripts.common.classes.types.ingredient import IngredientLike
 
 __all__ = [
-    "Ingredient", "IngredientLike", "Item", "ItemAttr", "ItemInfo", "ItemStack",
+    "BlockProp", "BlockType", "Ingredient", "IngredientLike", "Item", "ItemAttr", "ItemInfo", "ItemStack",
     "ItemSpec", "Recipe", "RecipeCategory", "RecipePageHost",
     "RecipeSource", "Stack", "TransferError", "TransferHandler", "TransferRequest", "TransferSlot",
     "StaticRecipeSource", "get_recipe_class", "keys", "register_recipe_class",

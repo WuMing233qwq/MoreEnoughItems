@@ -23,6 +23,8 @@ from .pins import PinManager
 from .prefs import PrefsManager
 from .settings import SettingsManager
 from .tree_prefs import TreePrefsManager
+from .user_recipes import UserRecipeManager
+from .user_share import UserShareManager
 
 __all__ = [
     "BookmarkManager",
@@ -32,4 +34,6 @@ __all__ = [
     "PrefsManager",
     "SettingsManager",
     "TreePrefsManager",
+    "UserRecipeManager",
+    "UserShareManager",
 ]

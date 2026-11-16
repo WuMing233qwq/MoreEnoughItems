@@ -40,6 +40,12 @@ KIND_COMPAT = "compat"
 KIND_SCREEN = "screen"
 """ MEI 自己的界面（PushScreen 开的）：在 HUD 上点悬浮窗的 MEI 时用它，不在 HUD 里展开"""
 
+KIND_EDITOR = "editor"
+"""
+MEI 编辑器（PushScreen 开的，editor/screen.py）：只建物品栏（右栏，挑物品用），收藏栏、悬浮窗、黑底、配方页都不要；
+物品栏的显隐归编辑器（UIMainNode.ShowEditorBrowser），点物品交给编辑器（ModeManager.Intercept 先问 main.Editor）
+"""
+
 
 def too_narrow(room, threshold):  # type: (list, int) -> bool
     """

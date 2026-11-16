@@ -20,6 +20,16 @@
             "#panel_title": "options.mei.about.title"
         }
     },
+    "editor_tab@settings_common.section_toggle_base": {
+        "$toggle_view_binding_name": "mei_editor_tab_toggle",
+        "$glyph_texture": "textures/ui/dev_glyph",
+        "$glyph_color_texture": "textures/ui/dev_glyph_color",
+        "$glyph_size": [ 14, 14 ],
+        "$button_text": "options.mei.editor.tab",
+        "$toggle_property_bag": {
+            "#panel_title": "options.mei.editor.title"
+        }
+    },
     "keys_tab@settings_common.section_toggle_base": {
         "$toggle_view_binding_name": "mei_keys_tab_toggle",
         "$glyph_texture": "textures/ui/keyboard_and_mouse_glyph",
@@ -53,6 +63,12 @@
                 }
             },
             {
+                "editor_tab@mei_settings.editor_tab": {
+                    "$toggle_group_forced_index": 2026111501,
+                    "$tts_section_header": "$mei_section_header"
+                }
+            },
+            {
                 "keys_tab@mei_settings.keys_tab": {
                     "$toggle_group_forced_index": 2026102903,
                     "$tts_section_header": "$mei_section_header"
@@ -76,6 +92,11 @@
                 }
             },
             {
+                "editor_section@mei_settings.editor_section": {
+                    "visible": false
+                }
+            },
+            {
                 "keys_section@mei_settings.keys_section": {
                     "visible": false
                 }
@@ -83,6 +104,99 @@
             {
                 "about_section@mei_settings.about_section": {
                     "visible": false
+                }
+            }
+        ]
+    },
+    "editor_section": {
+        "type": "stack_panel",
+        "size": [ "100%", "100%c" ],
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "bindings": [
+            {
+                "binding_type": "view",
+                "source_control_name": "mei_editor_tab_toggle",
+                "source_property_name": "#toggle_state",
+                "target_property_name": "#visible"
+            }
+        ],
+        "controls": [
+            {
+                "editor_group@settings_common.option_group_label": {
+                    "$text": "options.mei.editor.group",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "user_recipes@settings_common.option_toggle": {
+                    "$option_label": "options.mei.editor.enabled",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.user_recipes",
+                    "$option_binding_name": "#mei.settings.user_recipes.state"
+                }
+            },
+            {
+                "editor_info@mei_settings.tips_label": {
+                    "$text": "#mei.settings.editor",
+                    "$text_bindings": [
+                        {
+                            "binding_name": "#mei.settings.editor"
+                        }
+                    ],
+                    "$line_padding": 2.0
+                }
+            },
+            {
+                "open_editor@settings_common.action_button": {
+                    "$button_text": "options.mei.editor.open",
+                    "$pressed_button_name": "button.mei.settings.open_editor",
+                    "bindings": [
+                        {
+                            "binding_name": "#mei.settings.editor.enabled",
+                            "binding_name_override": "#enabled"
+                        }
+                    ]
+                }
+            },
+            {
+                "open_manager@settings_common.action_button": {
+                    "$button_text": "options.mei.editor.manager",
+                    "$pressed_button_name": "button.mei.settings.open_manager"
+                }
+            },
+            {
+                "editor_menu@settings_common.option_toggle": {
+                    "$option_label": "options.mei.editor.menu",
+                    "$option_enabled_binding_name": "#mei.settings.editor.enabled",
+                    "$toggle_name": "toggle.mei.settings.editor_menu",
+                    "$option_binding_name": "#mei.settings.editor_menu.state"
+                }
+            },
+            {
+                "share_group@settings_common.option_group_label": {
+                    "$text": "options.mei.editor.group.share",
+                    "$main_header_text_color": [ 0.67, 0.67, 0.75 ]
+                }
+            },
+            {
+                "share_override@settings_common.option_toggle": {
+                    "$option_label": "options.mei.editor.override",
+                    "$option_enabled_binding_name": "#mei.settings.enabled",
+                    "$toggle_name": "toggle.mei.settings.share_override",
+                    "$option_binding_name": "#mei.settings.share_override.state"
+                }
+            },
+            {
+                "share_override_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.editor.override.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
+                }
+            },
+            {
+                "editor_hint@mei_settings.tips_label": {
+                    "$text": "options.mei.editor.hint",
+                    "$text_color": [ 0.5, 0.5, 0.5 ]
                 }
             }
         ]

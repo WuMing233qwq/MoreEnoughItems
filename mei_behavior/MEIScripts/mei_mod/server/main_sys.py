@@ -24,6 +24,7 @@ from mod_log import logger
 from MEIScripts.constants.codes import NameConst
 from MEIScripts.mei_mod.network.base import Channel, REQUEST_EVENT, RESPONSE_EVENT
 from MEIScripts.mei_mod.network.protocol.cheat import CheatService
+from MEIScripts.mei_mod.network.protocol.share import ShareService
 from MEIScripts.mei_mod.network.protocol.transfer import TransferService
 from MEIScripts.mei_mod.transfer import RegisterBuiltinSources
 from MEIScripts.utils.events import EventListener
@@ -37,11 +38,13 @@ class MainSys(ServerSystem):
         self.Events.Listen("ClientLoadAddonsFinishServerEvent", self.onAddonsLoaded)
         self.ItemIds = []
 
-        # 通讯. 服务端在这一端只做两件事: 开局发 id 表 + 应答请求
+        # 通讯. 服务端在这一端只做两件事: 开局发 id 表 + 应答请求（快捷合成、作弊、自制配方的共享）
         self.Channel = Channel("server")
         self.Channel.Attach(self.__SendToPlayer)
         self.Channel.RegisterAll(TransferService())
         self.Channel.RegisterAll(CheatService(self))
+        self.Share = ShareService(self)  # 自制配方的多人共享（docs/architecture/user_recipes.md §22）
+        self.Channel.RegisterAll(self.Share)
         self.Events.Listen(REQUEST_EVENT, self.OnRequest, NameConst.NameSpace, NameConst.ClientSysName)
         RegisterBuiltinSources()
 
@@ -81,7 +84,10 @@ class MainSys(ServerSystem):
         """
         # 清超时的待响应. 表为空时是一次判空, 不构成常驻开销
         self.Channel.Tick()
+        # 共享分组：攒着的存档、广播到点了做，清过期的上传
+        self.Share.Tick()
 
     def Destroy(self):
+        self.Share.Flush()
         self.Channel.Detach()
         self.Events.UnlistenAll()

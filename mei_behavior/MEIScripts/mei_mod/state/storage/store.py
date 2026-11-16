@@ -55,8 +55,8 @@ class Store(object):
     """
 
     def __init__(self, backend, config_name, is_global=True,
-                 version=1, migrations=None, scheduler=None, delay=2.0):
-        # type: (any, str, bool, int, dict, any, float) -> None
+                 version=1, migrations=None, scheduler=None, delay=2.0, compact=False):
+        # type: (any, str, bool, int, dict, any, float, bool) -> None
         self.Backend = backend
         self.ConfigName = config_name
         self.IsGlobal = bool(is_global)
@@ -64,6 +64,8 @@ class Store(object):
         self.Migrations = migrations or {}
         self.Scheduler = scheduler  # schedule(delay, fn); 为空则只标脏、不自动落盘
         self.Delay = delay
+        # 写盘不排序（C 编码器）：几 MB 的大表用 —— 排序的编码器是纯 Python 的，4 MB 要半秒，C 的只要几十毫秒
+        self.Compact = bool(compact)
 
         self._data = {}
         self._loaded = False
@@ -171,6 +173,17 @@ class Store(object):
         self._request_flush()
         return True
 
+    def Put(self, key, value):
+        """
+        直接放进去、标脏：不复制、不规约、不比较（大表每次 Set 都深拷贝一遍、再整个比一遍，几万条就要零点几秒）。
+        value 是调用方自己持有的那一份，之后改了它，落盘时写的就是改过的样子 —— 改完要再 Put 一次才会排上写盘。
+        里面的字是 unicode 还是 str 都行（落盘时统一写成 ASCII 的 JSON，读回来照常规约）
+        """
+        self.Load()
+        self._data[to_native(key)] = value
+        self._dirty = True
+        self._request_flush()
+
     def Delete(self, key):
         self.Load()
         if key not in self._data:
@@ -198,7 +211,7 @@ class Store(object):
 
         record = {
             KEY_VERSION: self.Version,
-            KEY_PAYLOAD: stable_text(self._data),
+            KEY_PAYLOAD: self._encode(),
         }
 
         if self._write(record):
@@ -214,6 +227,19 @@ class Store(object):
 
     # 内部
 # ======================================================================================================================
+    def _encode(self):  # type: () -> str
+        """
+        载荷那一串。缺省排序（stable_text：同样的数据写出来一字不差）；Compact 的不排序、写成 ASCII（Put 进来的可能 unicode 与 str 混着，
+        不转义的写法拼起来会抛）。编不出来退回先规约成 str 再排序地写
+        """
+        if self.Compact:
+            try:
+                return json.dumps(self._data, separators=(",", ":"))
+            except Exception as e:  # noqa
+                logger.warn("[MEI/store] {} 快速写法编不出来，改用排序的写法: {}".format(self.ConfigName, error_text(e)))
+            return stable_text(to_native(self._data))
+        return stable_text(self._data)
+
     def _write(self, record):  # type: (dict) -> bool
         for attempt in range(2 if RETRY_ONCE else 1):
             try:

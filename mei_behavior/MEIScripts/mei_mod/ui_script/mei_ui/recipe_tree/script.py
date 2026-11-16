@@ -99,6 +99,7 @@ class RecipeTreeScript(object):
         self.Metrics = DEFAULT
         self.State = None  # type: TreeState or None
         self.Solver = None  # type: Solver or None
+        self.SeenRevision = None  # type: int or None  # 上一次解算时类型、来源表的版本（SourceRegistry.Revision）
         self.Summary = None  # type: any
         self.Subtree = []  # type: list
         self.Have = {}  # type: dict  # 背包：{物品键: 有几个}
@@ -196,6 +197,7 @@ class RecipeTreeScript(object):
             if self.ToastLeft == 0:
                 self.__SetLabel("toast", "", False)
         solver = self.Solver
+        self.__CheckRevision(solver)
         try:
             if self.Broken:
                 pass
@@ -254,6 +256,31 @@ class RecipeTreeScript(object):
     def Settled(self):  # type: () -> bool
         """ 解算完了、解算完的几步也做完了（汇总、格子的「+N」都是这一版的）：这时才能开菜单、收藏、重画 """
         return self.Solver is not None and self.Solver.Done and not self.Pipeline and not self.Broken
+
+    def __CheckRevision(self, solver):
+        """
+        类型、来源表变了（在 MEI 编辑器里存了配方、页面）：丢掉按物品记下的配方、重新解算 —— 编辑器压在配方树上面，关了回来就是新的。
+        只比一个整数；解算中途不打断（解完下一帧再来）
+        """
+        from MEIScripts.registry.sources import SourceRegistry
+        revision = SourceRegistry.Revision()
+        if self.SeenRevision is None:
+            self.SeenRevision = revision
+            return
+        if revision == self.SeenRevision or (solver is not None and not solver.Done):
+            return
+        self.SeenRevision = revision
+        self.Provider.Forget()
+        self.Resolve()
+
+    def AddRecipe(self, key):
+        """ 节点菜单「添加配方」：开 MEI 编辑器给这样物品记一条自制配方（编辑器压在配方树上，存了回来重新解算）"""
+        item = self.__Item(key)
+        if item is None:
+            return
+        from MEIScripts.mei_mod.ui_script.mei_ui.editor import OpenMeiEditor  # 编辑器用到才 import
+        self.CloseMenu()
+        OpenMeiEditor(item=item)
 
     def Resolve(self, anchor=None, reset=False):
         """ 重新解算（分帧，OnTick 推进）；解算完重画，anchor 那一格摆回原处，reset 时根回到上方正中 """
@@ -802,7 +829,7 @@ class RecipeTreeScript(object):
                              strip=strip, arrow=arrow, info=info, rows=rows, recipe=preview, preview_title=title)
 
     def __OtherButtons(self, key, qty):  # type: (str, int or None) -> list
-        """ 以它为根（qty 给 None 就不出：已经是根）、收藏 / 取消收藏、查看配方页 """
+        """ 以它为根（qty 给 None 就不出：已经是根）、收藏 / 取消收藏、查看配方页、添加配方（自定义配方开着才有）"""
         buttons = []
         if qty is not None:
             buttons.append(TreeMenuButton(TreeText.AsRoot, lambda: self.AsRoot(key, qty)))
@@ -811,6 +838,9 @@ class RecipeTreeScript(object):
         buttons.append(TreeMenuButton(TreeText.Unbookmark if had else TreeText.Bookmark, lambda: self.ToggleBookmark(key),
                                       enabled=item is not None and (had or not BookmarkManager.IsTabFull())))
         buttons.append(TreeMenuButton(TreeText.ViewRecipes, lambda: self.ViewRecipes(key), enabled=item is not None))
+        from MEIScripts.mei_mod.ui_script.mei_ui.editor.settings import IsUserRecipesEnabled  # 设置「编辑器」页的开关
+        if IsUserRecipesEnabled():
+            buttons.append(TreeMenuButton(TreeText.AddRecipe, lambda: self.AddRecipe(key), enabled=item is not None))
         return buttons
 
     def __BrowseIndex(self, node, candidates):  # type: (any, list) -> int

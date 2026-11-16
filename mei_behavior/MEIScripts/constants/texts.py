@@ -119,6 +119,7 @@ class MenuText(object):
     NextCandidate = u"下一个"
     RecipeTree = u"配方树"
     OpenTree = u"打开配方树"
+    AddRecipe = u"添加配方"
     More = u"更多"
     # 操作条上的短字（按钮等宽、一排最多六个，放不下长字）
     BarOpen = u"打开"
@@ -249,6 +250,7 @@ class TreeText(object):
     Bookmark = u"收藏"
     Unbookmark = u"取消收藏"
     ViewRecipes = u"查看配方"
+    AddRecipe = u"添加配方"  # 开 MEI 编辑器给这样物品记一条自制配方
     # 菜单：步进器中间的数字
     Value = u"{}/{}"
     TypeValue = u"{} {}/{}"
@@ -293,3 +295,197 @@ class TreeText(object):
     BookmarkFull = u"收藏页签满了"
     TypeUnusable = u"{}此处只有递归配方"  # 工作方块菜单换类型：这个类型在这一格用不了
     NoRoot = u"无法识别该物品，打开配方树失败"
+
+
+class UserText(object):
+    # 玩家自制配方（MEI 编辑器做的页面）：配方页上的积木、行按钮
+    Fields = {"energy": (u"能量", u"FE"), "time": (u"时间", u"秒"), "heat": (u"热量", u"HU")}  # 字段 Id -> (名字, 单位)
+    RoleShort = {"in": u"原", "out": u"产", "cat": u"催"}  # 编辑器里空格子写的「原1」「产2」
+    RoleName = {"in": u"原料", "out": u"产物", "cat": u"催化剂"}
+    LoreAmount = u"数量 {}"
+    LoreFluid = u"{} mB"
+    LoreChance = u"概率 {}%"
+    LoreTag = u"标签 #{}"
+    LoreAlts = u"{} 种之一(轮换显示)"
+    LoreCatalyst = u"不消耗"
+    FieldLine = u"{}：{} {}"  # 能量：3200 FE
+    Note = u"备注：{}"
+    # 配方行右边的按钮
+    Tree = u"配方树"
+    Star = u"收藏这条配方"
+    Unstar = u"取消收藏"
+    Pin = u"置顶这条配方"
+    Unpin = u"取消置顶"
+    Unknown = u"(无法解析该种类积木：未安装其对应的模组？)"
+
+
+class EditorText(object):
+    # MEI 编辑器（mei_ui/editor/）。按钮两到四个字
+    TabUi = u"界面"
+    TabRecipe = u"配方"
+    Preview = u"预览"
+    EndPreview = u"返回"
+    Save = u"保存"
+    NewPage = u"新页面"
+    Unnamed = u"未命名"
+    Dirty = u"*"
+    # 左栏：界面模式
+    TabBlocks = u"控件"
+    TabPage = u"页面"
+    PaletteHint = u"点击放置，可拖动编辑"
+    Name = u"名字"
+    Station = u"工作站"
+    Pick = u"选"
+    Clear = u"清"
+    PickStationHint = u"点击右侧物品加入工作站"
+    AddStation = u"+ 工作站"
+    Remove = u"删"
+    Icon = u"图标"
+    IconFirst = u"第一个工作站"
+    PickIconHint = u"点击右侧物品作为这一页的图标（清掉就用第一个工作站）"
+    IconSet = u"图标：{}"
+    StationDup = u"已经有这个工作站了"
+    StationFull = u"工作站最多 {} 个"
+    Width = u"宽"
+    Height = u"高"
+    Fit = u"贴合积木"
+    Fields = u"字段"
+    Preset = u"预设"
+    Apply = u"使用预设"
+    DeletePage = u"删除页面"
+    Confirm = u"再点一次确认"
+    Position = u"位置"
+    X = u"横"
+    Y = u"纵"
+    Role = u"角色"
+    Copy = u"复制"
+    Delete = u"删除"
+    Done = u"完成"
+    On = u"开"
+    Off = u"关"
+    NoField = u"无绑定"
+    Presets = {"craft": u"工作台", "furnace": u"熔炉", "one": u"1→1", "two": u"2→1", "crush": u"1→4", "alloy": u"4→1"}
+    PickItemHint = u"点击右侧物品展示"
+    ItemSet = u"物品：{}"
+    ItemMissing = u"物品表中不存在"
+    PreviewHint = u"预览: 显示实际效果"
+    # 左栏：配方模式
+    RecipeOf = u"第 {}/{} 条"
+    NewRecipe = u"新建配方"
+    Add = u"新建"
+    DeleteRecipe = u"删除"
+    Count = u"数量"
+    Chance = u"概率"
+    Fill = u"填法"
+    FillModes = {"one": u"单个", "alts": u"候选", "tag": u"标签"}
+    Tag = u"标签"
+    ClearCell = u"清空这一格"
+    CellEmpty = u"(空)"
+    CellHint = u"点击右侧物品填入"
+    AltsHint = u"点击右侧物品候选({} 样)"
+    NoCellHint = u"点击后再选择右侧物品"
+    Values = u"数值"
+    Note = u"备注"
+    # 提示
+    SavedPage = u"页面已保存"
+    SavedRecipe = u"配方已保存"
+    Discard = u"有改动没保存 再按一次将会丢弃更改!"
+    Limit = u"{}最多 {} 块"
+    BlocksFull = u"一页最多 {} 块积木"
+    NeedPage = u"至少需要在界面编辑器中完成一个页面！"
+    PickInUi = u"当前没有需要使用物品栏的行为"
+    StationSet = u"工作站：{}"
+    Deleted = u"已删除"
+    Errors = {"bad": u"保存失败：数据不完整", "name": u"先给页面起个名字", "output": u"至少要有一个产物格 / 一个产物",
+              "pages": u"页面已满(最多 2048 个)", "recipes": u"配方已满(最多 32768 条)"}
+    Problems = {"name": u"未命名!", "output": u"至少需要一个产物格", "unknown": u"{} 块积木的种类不受支持"}
+    Status = u"{} 块积木 · {}×{}"
+    StatusRecipe = u"{} · {}"
+    Moved = u"{}：x {} y {}"
+
+
+class ManagerText(object):
+    """ 自定义配方管理器（mei_ui/manager/，docs/architecture/user_recipes.md §22）"""
+    Editor = u"编辑器"
+    Local = u"本地分组"
+    DefaultName = u"默认"
+    Unnamed = u"未命名分组"
+    NewGroup = u"新建分组"
+    NewName = u"新分组 {}"
+    Import = u"导入"
+    Export = u"导出"
+    Disband = u"解散"
+    Delete = u"删除"
+    Confirm = u"再点一次"
+    Name = u"名字"
+    Desc = u"介绍"
+    Enabled = u"已启用"
+    Disabled = u"已停用"
+    Pages = u"页面"
+    Counts = u"{} 个页面 · {} 条配方"
+    RecipeCount = u"{} 条"
+    Move = u"移"
+    Edit = u"改"
+    UnnamedPage = u"未命名"
+    PickGroup = u"选择左侧分组"
+    DefaultHint = u"默认置于此分组"
+    Empty = u"这个分组里暂无页面"
+    MoveHint = u"点左侧分组移动{} (再点 移 取消)"
+    Moved = u"已把 {} 移到 {}"
+    Off = u"启用自定义配方功能被关闭：分组功能可用，但配方页不会显示"
+    Exported = u"已复制到剪贴板 ({} 字)"
+    Imported = u"已导入 {}：{} 个页面、{} 条配方"
+    ClipboardFail = u"读写剪贴板失败(游戏版本太旧？)"
+    Disbanded = u"已解散：{} 个页面回到默认分组"
+    Deleted = u"已删除：{} 个页面、{} 条配方"
+    Created = u"已新建分组"
+    NeedEnable = u"先在设置里打开 启用自定义配方"
+    EditorDirty = u"编辑器里还有没保存的改动，再次点击丢弃"
+    Errors = {"none": u"剪贴板里没有 MEI 的配方分组", "newer": u"来自更新版本的 MEI 导出数据，请先升级 MEI",
+              "broken": u"剪贴板里的数据不完整", "zlib": u"该设备不支持解析，静待后续适配",
+              "empty": u"该包为空", "groups": u"分组已满 (最多 256 个)", "big": u"剪贴板里的这一包太大了",
+              "pages": u"页面过多 (最多 2048 个)", "recipes": u"配方过多 (最多 32768 条)"}
+    Server = u"服务器共享"
+    Refresh = u"刷新"
+    Asking = u"…"
+    NoAnswer = u"服务器未响应，点刷新重试"
+    Mine = u"我的"
+    UnifiedTag = u"统一"
+    GoneTag = u"已下架"
+    Sharing = u"共享中"
+    NotShared = u"不共享"
+    Version = u"版本 {}"
+    Owner = u"上传者：{}"
+    You = u"(你)"
+    NoDesc = u"(没有介绍)"
+    ServerCounts = u"{} 个页面 · {} 条配方 · {} KB"
+    Subscribe = u"订阅"
+    Subscribed = u"已订阅"
+    CopyToLocal = u"复制到本地"
+    DeleteRemote = u"从服务器删除"
+    Unify = u"统一配方"
+    Unified = u"已启用统一"
+    MineHint = u"该分组已被共享: 本地的修改都会自动再次上传"
+    SubscribeHint = u"订阅后可以看到页面"
+    Gone = u"服务器上无这个分组 (仅本地保留)"
+    UnifiedHint = u"操作员统一了这个分组：该分组将以最高优先级替代你的自定义配方"
+    OverrideOff = u"你已关闭 启用强制覆盖：统一的配方不会自动下载、覆盖"
+    ShareHint = u"共享后，同一个存档里的玩家能在 服务器共享 里订阅它"
+    ShareStatus = {"pending": u"等待上传…", "uploading": u"正在上传…", "done": u"已共享(版本 {})", "failed": u"上传失败：{}",
+                   "offline": u"已离线，稍后再传"}
+    Copied = u"已复制到本地：{}"
+    SubscribedToast = u"已订阅 {}"
+    UnsubscribedToast = u"已取消订阅"
+    UnifiedToast = u"已启用统一：所有玩家默认使用"
+    UnunifiedToast = u"已取消统一"
+    RemoteDeleted = u"已从服务器删除"
+    ShareErrors = {"trust": u"服务器无法确认分享者", "owner": u"您的权限不足，仅操作员与上传者可修改", "full": u"服务器上的共享分组满了(最多 128 个)",
+                   "size": u"这个分组太大了(最多 1 MB)", "total": u"服务器上的分组已满(合起来最多 16 MB)",
+                   "empty": u"这个分组里还没有页面", "order": u"上传顺序混乱，稍后再试", "gone": u"服务器上的该分组已被删除",
+                   "op": u"只有操作员能统一配方", "timeout": u"服务器没有回应", "bad": u"数据不完整", "busy": u"服务器上该分组正在同步，请稍后再试",
+                   "full_local": u"你无法再继续订阅分组了 (最多 128 个、合起来 32 MB)", "rate": u"请求太频繁，稍后自动重试",
+                   "removed": u"被操作员从服务器撤下了 (已停止共享)", "quota": u"你共享的分组太多了(每人最多 16 个, 共 2 MB)",
+                   "many": u"页面或配方太多 (一个共享分组最多 256 个页面 4096 条配方)"}
+    Review = u"统一后的内容被修改: 等待操作员重新启用 (期间不强制覆盖)"
+    Reunify = u"重新统一"
+    RemovedHint = u"这个分组被操作员撤下，已停止共享，再次打开共享会作为新的分组上传"

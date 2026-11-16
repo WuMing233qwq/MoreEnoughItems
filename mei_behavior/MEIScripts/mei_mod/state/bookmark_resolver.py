@@ -78,6 +78,17 @@ class RegistryBackend(object):
         from MEIScripts.registry import RecipeManager
         return RecipeManager.QueryRecipe(item, role, [category_id]).get(category_id, [])
 
+    @staticmethod
+    def find(category_id, rid):  # type: (str, str) -> any
+        """ 按配方 Id 直接找：只问有 FindById 的来源（手登记的配方表，StaticRecipeSource）—— 引擎来源没有、也不该为它扫全表 """
+        from MEIScripts.registry import SourceRegistry
+        for source in SourceRegistry.GetSources(category_id):
+            finder = getattr(source, "FindById", None)
+            hit = finder(rid) if callable(finder) else None
+            if hit is not None:
+                return hit
+        return None
+
 
 def _attr_from(fields):  # type: (any) -> ItemAttr or None
     """ 存下的变体字段还原成 ItemAttr，用来现造显示用的物品 """
@@ -190,11 +201,13 @@ class __BookmarkResolver(object):  # noqa
             if not backend.has_category(category_id):
                 return None
             probe = self.ResolveItem(data)
-            if probe is None:
-                return None
-            for recipe in backend.query(probe, role, category_id) or ():
-                if native_str(recipe_id(recipe)) == rid:
-                    return recipe
+            if probe is not None:
+                for recipe in backend.query(probe, role, category_id) or ():
+                    if native_str(recipe_id(recipe)) == rid:
+                        return recipe
+            # 显示的物品找不回、或者那条配方不再出它了（玩家在编辑器里改过的自制配方，Id 不变）：能按 Id 找的来源再问一次
+            finder = getattr(backend, "find", None)
+            return finder(category_id, rid) if callable(finder) else None
         except Exception as e:  # noqa
             logger.warn("[MEI/bookmarks] 配方 {} 找不回: {}".format(rid, error_text(e)))
         return None

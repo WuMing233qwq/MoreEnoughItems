@@ -120,6 +120,14 @@ class __ModeManager(object):  # noqa
         点了 MEI 的一格（点击绑定的回调里）：作弊、工具模式接走返回 True，调用方不再走平时的点击。
         工具模式要这个界面有拿起的宿主（main.Tool）—— 配方树没有，照平时
         """
+        # MEI 编辑器里点物品栏：挑物品（填进选中的格子、当工作站……），一律由编辑器接走 —— 左键点分组头照旧是展开 / 收起
+        editor = getattr(getattr(panel, "MainNode", None), "Editor", None)
+        if editor is not None:
+            if getattr(panel, "IsGroupHead", False) and not secondary:
+                return False
+            picked = stack_of(panel)
+            editor.PickItem(picked.Item if picked is not None else None, bool(secondary))
+            return True
         mode = self.Current()
         if mode == ModeConst.Normal:
             return False

@@ -52,6 +52,9 @@ class SettingsProxy(ScreenProxy):
         self.Bindings.Bind(
             self._Safe(names.DEGRADED, SettingsManager.IsDegraded, False), ViewBinder.BF_BindBool, names.DEGRADED)
         self.Bindings.Bind(self._Safe(names.ABOUT, self.AboutText, ""), ViewBinder.BF_BindString, names.ABOUT)
+        self.Bindings.Bind(self._Safe(names.EDITOR, self.EditorInfo, ""), ViewBinder.BF_BindString, names.EDITOR)
+        self.Bindings.Bind(
+            self._Safe(names.EDITOR_ENABLED, self.EditorEnabled, False), ViewBinder.BF_BindBool, names.EDITOR_ENABLED)
         binders = {"toggle": self._BindToggle, "slider": self._BindSlider,
                    "choice": self._BindSlider, "action": self._BindAction, "keybind": self._BindKey}
         for spec in SettingsManager.GetSpecs():
@@ -174,6 +177,19 @@ class SettingsProxy(ScreenProxy):
             self.Text("options.mei.about.repo").format(mod_info.Repository),
             self.Text("options.mei.about.license").format(mod_info.License),
         ])
+
+    def EditorInfo(self):  # type: () -> str
+        """ 「编辑器」页：做了几个页面、几条配方；自定义配方关着时写它们都不出现（mei_ui/editor/settings.py）"""
+        from MEIScripts.mei_mod.state import UserRecipeManager
+        pages, recipes = UserRecipeManager.Counts()
+        key = "options.mei.editor.info" if self.EditorEnabled() else "options.mei.editor.off"
+        return self.Text(key).format(pages, recipes)
+
+    @staticmethod
+    def EditorEnabled():  # type: () -> bool
+        """ 「编辑器」页：自定义配方开着没有（关着时编辑器那两行灰着）"""
+        from MEIScripts.mei_mod.ui_script.mei_ui.editor.settings import IsUserRecipesEnabled
+        return IsUserRecipesEnabled()
 
     def _Safe(self, name, func, fallback):
         """ 包一层：绑定回调抛异常会让那条绑定当场失效且没有日志（CLAUDE.md 引擎结论 §15） """

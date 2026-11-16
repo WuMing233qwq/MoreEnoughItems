@@ -318,6 +318,19 @@ class TouchMenu(object):
                 MenuConst.PoolSize + len(pool), MenuConst.PoolSize))
             actions = [action for index, action in enumerate(actions) if index not in pool]
             slots = [slot for index, slot in enumerate(slots) if index not in pool]
+        if self.Target is not None and self.__Seek is None and self.Tooltip.RetitleFor(panel, menu_title(panel)):
+            # 同一种内容（只有标题）原地换：框不收起、不变透明，字、按钮、位置当场换成新格子的（tooltip.md §6.17）
+            self.__Clear()
+            self.__HoldRotation(panel)
+            self.Target = MenuTarget(self.MainNode, panel)
+            self.Actions = actions
+            self.Slots = slots
+            region, side = menu_region(self.MainNode, panel)
+            self.Tooltip.SetTouchRegion(region, side)
+            self.Tooltip.SetTouchLayout(self.Layout)
+            self.__Fill()
+            self.Tooltip.Relayout(measure=True)
+            return
         self.__Clear()
         self.__HoldRotation(panel)
         if not self.__ShowContent(panel):

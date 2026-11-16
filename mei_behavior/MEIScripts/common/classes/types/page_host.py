@@ -24,7 +24,7 @@
 顶栏（返回、类型名、页码与翻页、关闭）、右边的类型页签、左边的工作站一列、滚轮翻页、导航；
 内容区里建一个容器（CONTAINER），一页放几条、这一页怎么画交给托管者。
 
-这种类型没有 MEI 的配方行，所以行上的动作按钮（收藏、置顶、+、配方树）没有，tooltip 不出配方预览，配方树不用它的配方。
+这种类型没有 MEI 的配方行，所以行上的动作按钮（收藏、置顶、+、配方树）没有，tooltip 不出配方预览；配方树缺省不用它的配方（TREE）。
 
 只是约定，零引擎依赖：MEI 按名字调下面这几个方法，没写的照这里的缺省。第三方继承 ctx.Types.RecipePageHost，
 或者写一个有同样方法的类都行；登记在类型上（RecipeCategory(page_host=…)）
@@ -38,6 +38,12 @@ class RecipePageHost(object):
     MEI 在配方页内容区建的容器（这一页的控件建在它下面）的 JSON 定义名。缺省是竖排的 stack_panel：
     宽取里面最宽的那个控件、高是它们加起来，摆在顶栏下面、水平居中。
     建在里面的控件**宽不要写父控件的百分比** —— 容器（和配方页）的宽跟着它们，写了就绕成圈，引擎排不出来
+    """
+
+    TREE = False
+    """
+    配方树用不用这个类型的配方：缺省不用 —— 托管页的配方往往只是个壳（原料、产物在托管者自己的数据里）。
+    配方的 Inputs / Outputs / Catalysts 是 MEI 认得的 Ingredient 时写 True，配方树照常展开、汇总
     """
 
     def PageSize(self, category, recipes, height):  # type: (any, list, int) -> int

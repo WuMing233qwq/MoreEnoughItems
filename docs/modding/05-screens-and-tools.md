@@ -223,3 +223,46 @@ if focus is not None:
 | 连锁挖矿设置 | 方块列表 | 是方块就加进列表（这个界面由这里登记挂 MEI）|
 
 代码在蔚蓝仓 `skybluetech_scripts/skybluetech/external/mei/` 的 `workstation.py`、`crafting_template.py`、`selectors.py`（三处共用的取界面 / 认格子的小工具在 `ui_access.py`）。
+
+<a id="blocks"></a>
+## 7. 给 MEI 编辑器加积木：`ctx.UI.Blocks`（[api §6.9](api.md#ui-blocks)）
+
+玩家可以在 MEI 编辑器里给自己的机器排一页配方页（设置 → MEI → 编辑器 → 打开「启用自定义配方」（缺省关）→ 打开 MEI 编辑器），用控件池里的积木拼：物品格、物品、箭头、火焰、加号、数值条、文字、图片、底框。
+你的模组有自己风格的部件（比如一个压力表），可以声明成积木：玩家排进页面后，配方页和编辑器的工作区都照你的画法画。
+
+1. **JSON**：一个控件定义，**锚左上**（MEI 用 `SetPosition` 摆）；会变大小的写绝对尺寸；要显示悬停文字就放一个 `common.hover_text`（`bindings` 写空、`property_bag` 给 `#hover_text`）。
+   装东西的积木（一格原料 / 产物）要能点：放一个按钮，左右键映射到 `button.mei.block.primary` / `button.mei.block.secondary`（照 MEI 的 `MeiBlocks.slot`）。
+2. **Python**：继承 `ctx.Types.BlockType`，构造时给 Id（带你的命名空间）、名字的本地化键、控件定义、大小、一页最多几块；有属性就给 `BlockProp` 的表；覆写 `Paint(view)` 写内容。
+   想省引擎调用就写类属性 `TEMPLATE`：JSON 里各处本来的样子（哪些藏着、字是空的、贴图是哪张），MEI 第一次画时一样的就不写（[api §6.9](api.md#ui-blocks)）。
+3. **登记**：在扩展的 `OnRegister` 里 `ctx.UI.Blocks.Register(你的积木())`；`OnUnload` 里 `ctx.UI.Blocks.UnregisterAll()`（不写 MEI 也会兜底撤）。
+
+```python
+def make_gauge(ctx):
+    BlockType, BlockProp = ctx.Types.BlockType, ctx.Types.BlockProp
+
+    class Gauge(BlockType):
+        def __init__(self):
+            BlockType.__init__(self, "yourmod:gauge", name_key="yourmod.block.gauge", control_def="yourmod_mei.gauge",
+                               size=(16, 16), limit=2, icon="textures/ui/yourmod/gauge_icon", props=[
+                                   BlockProp("field", BlockProp.FIELD, "yourmod.block.gauge.field"),
+                               ])
+
+        def Paint(self, view):
+            field = view.Data.get("field")
+            # 指针转多少：这条配方的值占这一页里最大的那个的多少
+            view.SetSprite("/needle", "textures/ui/yourmod/needle_{}".format(int(view.FieldRatio(field) * 8)))
+            view.SetHoverText("/hover/hover_text", view.FieldText(field) if field else "")
+    return Gauge()
+
+
+class MyExtension(MeiExtension):
+    def OnRegister(self, ctx):
+        blocks = getattr(ctx.UI, "Blocks", None)  # 老版本的 MEI 没有：探测
+        if blocks is not None:
+            blocks.Register(make_gauge(ctx))
+```
+
+- 排版存在玩家的设备上，记的是积木的 Id 和属性值：**Id 定了别改**；属性加新的可以（旧页面读回来按缺省），删掉的键 MEI 原样留着。
+- 你的模组没装时，排版里你的积木不画、数据不丢；它要是装东西的，格子编号照样占着（后面的格子不会对上别的内容）。
+- `Paint` 拿到的 `view` 能读这一块的数据、这一格的内容（候选按节拍轮播）、这条配方的数值字段，写控件的方法只写变了的、不当场刷新界面 —— 全表在 [api §6.9](api.md#ui-blocks)。
+- 要让玩家选一样物品（画在你的积木上）就用 `BlockProp.ITEM`，`Paint` 里 `view.PropItem(key)` 取；悬停、点击要照 MEI 的格子处理就覆写 `ShownItem(view)` 给这一样，JSON 里照 `MeiBlocks.item` 放按钮。

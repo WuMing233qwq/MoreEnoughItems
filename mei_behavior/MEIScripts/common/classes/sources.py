@@ -77,6 +77,10 @@ class StaticRecipeSource(RecipeSource):
     def GetAll(self):  # type: () -> list
         return list(self._all)
 
+    def FindById(self, recipe_id):  # type: (str) -> any
+        """ 按配方 Id 找（收藏找回时用：显示的物品换了也找得到）；没有给 None """
+        return self._Find(recipe_id)
+
     # 内部
 # ======================================================================================================================
     def _Find(self, recipe_id):  # type: (str) -> any

@@ -26,6 +26,36 @@ mei.recipe.fuel.unknown=燃烧时长未知
 ## 扩展元信息（MeiExtension.NAME / DESCRIPTION）
 mei.ext.vanilla.name=原版配方
 mei.ext.vanilla.desc=工作台、熔炉家族、切石机、制图台、锻造台、酿造台与燃料
+mei.ext.user.name=玩家自制配方
+mei.ext.user.desc=在 MEI 编辑器里做的页面与配方
+
+## 积木（MEI 编辑器的控件池、自制配方页；BlockType.NameKey / BlockProp.NameKey）
+mei.block.slot=物品格
+mei.block.item=物品
+mei.block.arrow=箭头
+mei.block.flame=火焰
+mei.block.plus=加号
+mei.block.bar=数值条
+mei.block.text=文字
+mei.block.image=图片
+mei.block.frame=底框
+mei.block.prop.style=样式
+mei.block.prop.anim=动画
+mei.block.prop.height=高
+mei.block.prop.width=宽
+mei.block.prop.field=字段
+mei.block.prop.text=内容
+mei.block.prop.color=颜色
+mei.block.prop.texture=贴图
+mei.block.prop.item=物品
+mei.block.prop.size=大小
+mei.block.arrow.large=合成
+mei.block.arrow.furnace=熔炉
+mei.block.arrow.down=向下
+mei.block.arrow.brew=酿造
+mei.block.color.gray=灰
+mei.block.color.white=白
+mei.block.color.yellow=黄
 
 ## 设置页（游戏设置界面左栏的 MEI 分栏）
 options.mei.group=MEI 设置
@@ -91,6 +121,19 @@ options.mei.keys.group.item=物品
 options.mei.keys.group.bookmark=收藏
 options.mei.keys.group.recipe=配方页
 options.mei.keys.reset_all=恢复全部默认按键
+options.mei.editor.tab=编辑器
+options.mei.editor.title=MEI 编辑器
+options.mei.editor.group=玩家自制配方
+options.mei.editor.enabled=启用自定义配方
+options.mei.editor.open=打开 MEI 编辑器
+options.mei.editor.manager=自定义配方管理器
+options.mei.editor.group.share=多人共享
+options.mei.editor.override=启用强制覆盖
+options.mei.editor.override.hint=关闭后，多人游戏的统一配方不会被自动下载与覆盖你的配方
+options.mei.editor.menu=启用在二级菜单显示添加配方
+options.mei.editor.info=已保存 {} 个页面 {} 条配方
+options.mei.editor.off=已关闭该功能：{} 个页面、{} 条配方不会以任何形式显示
+options.mei.editor.hint=为不兼容的机器设计配方UI与配方：支持积木式编辑交互，存储后的配方可以被查询，也允许在配方树/收藏等原生查看原料
 options.mei.about.tab=关于
 options.mei.about.title=关于 MEI
 options.mei.about.group=模组信息

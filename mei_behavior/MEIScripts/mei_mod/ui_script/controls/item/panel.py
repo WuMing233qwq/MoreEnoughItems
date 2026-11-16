@@ -149,6 +149,9 @@ class ItemPanel(object):
         """
         if self.Item is None:
             return ()
+        from MEIScripts.mei_mod.ui_script.mei_ui.editor import settings as editor_settings  # 设置「编辑器」页的开关
+        if editor_settings.IsMenuEntryShown():
+            return MenuKey.Source, MenuKey.Uses, MenuKey.Bookmark, MenuKey.RecipeTree, MenuKey.AddRecipe
         return MenuKey.Source, MenuKey.Uses, MenuKey.Bookmark, MenuKey.RecipeTree
 
     def MenuKind(self):  # type: () -> any

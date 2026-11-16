@@ -34,7 +34,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui import context
 from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys.binds import WheelTaken
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details import actions
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.controls.button import (
-    RecipeAction, RecipeActionBind,
+    ActionContext, RecipeAction, RecipeActionBind,
 )
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules import RecipesGridBind
 from MEIScripts.mei_mod.network.protocol.client import BuildPlan, SendTransfer
@@ -160,6 +160,7 @@ class RecipeDetailsScript(object):
         节拍里等它们扫完、重新查一次刷新（PollScan，只刷新一次）
         """
         self.ScanEntry = None  # type: tuple or None  # 上面那份结果是查哪个 (物品, 方向) 得来的
+        self.QueryRevision = None  # type: int or None  # 上面那份结果查的时候类型、来源表的版本（SourceRegistry.Revision）
         self.CraftingStationItems = []  # type: list
 
         self.ControlDef = ""  # type: str
@@ -367,6 +368,11 @@ class RecipeDetailsScript(object):
             self.ScanPending = []
             logger.error("[MEI/ui] 扫描完成后刷新工作站的用途失败: {}".format(error_text(e)))
         try:
+            self.PollRevision()
+        except Exception as e:  # noqa
+            self.QueryRevision = None
+            logger.error("[MEI/ui] 类型、来源变了以后重查配方失败: {}".format(error_text(e)))
+        try:
             self.ExpireNotice()
         except Exception as e:  # noqa
             self.NoticeText = None
@@ -461,6 +467,26 @@ class RecipeDetailsScript(object):
         if any(RecipeManager.IsCategoryBuilding(category_id) for category_id in self.ScanPending):
             return False
         entry, self.ScanPending = self.ScanEntry, []
+        if entry is None or not self.RecipesResult or CacheManager.GetRecipeNav().Current != entry:
+            return False
+        result = self.ResolveQuery(*entry)
+        if result is None:
+            return False
+        shown = self.RecipesPage.current_items if self.RecipesPage else []
+        focus = native_str(recipe_id(shown[0])) if shown and recipe_id(shown[0]) else None
+        self.SetRecipesResult(result, prefer_type=self.CurrentType, focus_id=focus)
+        return True
+
+    def PollRevision(self):  # type: () -> bool
+        """
+        类型、来源表变了（SourceRegistry 的版本，比如在 MEI 编辑器里存了配方、页面）：正看的物品重查一次，停在原来的类型和那一页 ——
+        PollScan 的做法。节拍里调，只比一个整数
+        """
+        revision = SourceRegistry.Revision()
+        if self.QueryRevision is None or revision == self.QueryRevision:
+            return False
+        self.QueryRevision = revision
+        entry = self.ScanEntry
         if entry is None or not self.RecipesResult or CacheManager.GetRecipeNav().Current != entry:
             return False
         result = self.ResolveQuery(*entry)
@@ -634,6 +660,16 @@ class RecipeDetailsScript(object):
         target = self.Craftable.TransferTarget(recipe, self.CurrentType)
         return self.Craftable.PlusHover(target, category, recipe, self.CurrentType)
 
+    def PlusState(self, recipe):  # type: (any) -> tuple
+        """ 托管配方页上的 +（自制配方页这类，HostedPage.PlusState）：(能不能点, 悬停字) —— 和配方行的 + 同一套，转移不了的灰着、悬停写原因 """
+        return self.IsRecipeCraftable(None, recipe), self.PlusHoverText(None, recipe)
+
+    def TransferRecipe(self, recipe):  # type: (any) -> None
+        """ 托管配方页上点了 +（HostedPage.Transfer）：和配方行的 + 同一套；灰着的不做事 """
+        if recipe is None or not self.IsRecipeCraftable(None, recipe):
+            return
+        self.OnTransferRecipe(ActionContext(actions.PLUS, None, recipe, False, None))
+
     @RecipeAction.Button(actions.PLUS)
     def OnTransferRecipe(self, ctx):
         """
@@ -771,6 +807,7 @@ class RecipeDetailsScript(object):
         # 置顶重排在这里做而不是在 QueryRecipe 里：查询缓存存的是引擎事实，
         # 置顶是展示决策，混进缓存键会让每次 toggle 都把整个缓存作废
         self.RawRecipesResult = result
+        self.QueryRevision = SourceRegistry.Revision()
         result = SortResult(result)
 
         self.RecipesResult = result

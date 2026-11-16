@@ -1,0 +1,848 @@
+{
+    "namespace": "MeiManager",
+    "manager_screen@common.base_screen": {
+        "$background_animations": [],
+        "$screen_animations": [],
+        "$screen_content": "MeiManager.manager_root",
+        "$use_loading_bars": false,
+        "button_mappings": [
+            {
+                "from_button_id": "button.menu_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.manager.close"
+            },
+            {
+                "from_button_id": "button.menu_inventory_cancel",
+                "mapping_type": "global",
+                "to_button_id": "button.mei.manager.close"
+            }
+        ],
+        "is_showing_menu": true
+    },
+    "manager_root": {
+        "type": "panel",
+        "size": [
+            "100%",
+            "100%"
+        ],
+        "controls": [
+            {
+                "window": {
+                    "type": "image",
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "size": [
+                        440,
+                        280
+                    ],
+                    "layer": 1,
+                    "texture": "textures/ui/mei/flat/panel",
+                    "controls": [
+                        {
+                            "top": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    4,
+                                    4
+                                ],
+                                "size": [
+                                    "100% - 8px",
+                                    20
+                                ],
+                                "layer": 4,
+                                "controls": [
+                                    {
+                                        "title": {
+                                            "type": "label",
+                                            "anchor_from": "left_middle",
+                                            "anchor_to": "left_middle",
+                                            "offset": [
+                                                3,
+                                                1
+                                            ],
+                                            "size": [
+                                                "default",
+                                                10
+                                            ],
+                                            "color": [
+                                                0.86,
+                                                0.87,
+                                                0.9
+                                            ],
+                                            "enable_profanity_filter": false,
+                                            "font_type": "default",
+                                            "localize": false,
+                                            "shadow": false,
+                                            "text": "自定义配方管理器"
+                                        }
+                                    },
+                                    {
+                                        "rbar": {
+                                            "type": "stack_panel",
+                                            "orientation": "horizontal",
+                                            "anchor_from": "top_right",
+                                            "anchor_to": "top_right",
+                                            "offset": [
+                                                0,
+                                                3
+                                            ],
+                                            "size": [
+                                                "100%c",
+                                                14
+                                            ],
+                                            "controls": [
+                                                {
+                                                    "editor@MeiRecipeTree.flat_button": {
+                                                        "$flat_size": [
+                                                            36,
+                                                            14
+                                                        ],
+                                                        "$pressed_button_name": "button.mei.manager.editor"
+                                                    }
+                                                },
+                                                {
+                                                    "g0": {
+                                                        "type": "panel",
+                                                        "size": [
+                                                            4,
+                                                            14
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "close_button@MeiRecipeTree.flat_icon_button": {
+                                                        "$flat_icon": "textures/ui/mei/icons/cross",
+                                                        "$flat_tip": "关闭",
+                                                        "$flat_tip_from": "bottom_right",
+                                                        "$flat_tip_to": "top_right",
+                                                        "$pressed_button_name": "button.mei.manager.close_button"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "left": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    4,
+                                    26
+                                ],
+                                "size": [
+                                    146,
+                                    120
+                                ],
+                                "layer": 3,
+                                "controls": [
+                                    {
+                                        "bg": {
+                                            "type": "image",
+                                            "size": [
+                                                "100%",
+                                                "100%"
+                                            ],
+                                            "layer": 0,
+                                            "texture": "textures/ui/mei/flat/inset"
+                                        }
+                                    },
+                                    {
+                                        "l0@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l1@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l2@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l3@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l4@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l5@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l6@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l7@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l8@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l9@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l10@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l11@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l12@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l13@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l14@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l15@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l16@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l17@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l18@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l19@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l20@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l21@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "v0@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v1@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v2@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v3@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v4@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v5@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v6@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v7@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v8@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v9@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v10@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v11@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v12@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v13@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v14@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v15@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v16@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v17@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v18@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v19@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v20@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v21@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "b0@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b1@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b2@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b3@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b4@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b5@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b6@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b7@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b8@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b9@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b10@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b11@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b12@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b13@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b14@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b15@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b16@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b17@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b18@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b19@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b20@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b21@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b22@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b23@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b24@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b25@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "i0@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i1@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i2@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i3@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i4@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i5@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i6@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i7@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i8@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i9@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i10@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i11@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i12@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i13@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i14@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i15@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i16@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i17@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i18@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i19@MeiEditor.form_icon": {}
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "right": {
+                                "type": "panel",
+                                "anchor_from": "top_left",
+                                "anchor_to": "top_left",
+                                "offset": [
+                                    154,
+                                    26
+                                ],
+                                "size": [
+                                    200,
+                                    120
+                                ],
+                                "layer": 3,
+                                "controls": [
+                                    {
+                                        "bg": {
+                                            "type": "image",
+                                            "size": [
+                                                "100%",
+                                                "100%"
+                                            ],
+                                            "layer": 0,
+                                            "texture": "textures/ui/mei/flat/inset"
+                                        }
+                                    },
+                                    {
+                                        "l0@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l1@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l2@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l3@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l4@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l5@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l6@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l7@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l8@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l9@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l10@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "l11@MeiEditor.form_label": {}
+                                    },
+                                    {
+                                        "v0@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v1@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v2@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v3@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v4@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v5@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v6@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v7@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v8@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v9@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v10@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v11@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v12@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v13@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v14@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v15@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v16@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v17@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v18@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v19@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v20@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v21@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v22@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v23@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v24@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v25@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v26@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v27@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v28@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v29@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v30@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v31@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v32@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v33@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v34@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v35@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v36@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v37@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v38@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "v39@MeiEditor.form_value": {}
+                                    },
+                                    {
+                                        "b0@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b1@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b2@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b3@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b4@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b5@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b6@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b7@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b8@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b9@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b10@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b11@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b12@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b13@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b14@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b15@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b16@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b17@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b18@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b19@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b20@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b21@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b22@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b23@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b24@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b25@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b26@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b27@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b28@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b29@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b30@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b31@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b32@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b33@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b34@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b35@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b36@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b37@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b38@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b39@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b40@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b41@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b42@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "b43@MeiEditor.form_button": {}
+                                    },
+                                    {
+                                        "i0@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "i1@MeiEditor.form_icon": {}
+                                    },
+                                    {
+                                        "e0@MeiEditor.form_edit": {
+                                            "$text_box_name": "%MeiManager.right_e0",
+                                            "$text_edit_box_content_binding_name": "#MeiManager.right_e0_content"
+                                        }
+                                    },
+                                    {
+                                        "e1@MeiEditor.form_edit": {
+                                            "$text_box_name": "%MeiManager.right_e1",
+                                            "$text_edit_box_content_binding_name": "#MeiManager.right_e1_content"
+                                        }
+                                    },
+                                    {
+                                        "r0@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r1@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r2@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r3@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r4@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r5@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r6@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r7@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r8@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r9@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r10@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r11@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r12@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r13@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r14@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r15@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r16@MeiEditor.form_item": {}
+                                    },
+                                    {
+                                        "r17@MeiEditor.form_item": {}
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "toast": {
+                    "type": "label",
+                    "anchor_from": "top_middle",
+                    "anchor_to": "top_middle",
+                    "offset": [
+                        0,
+                        30
+                    ],
+                    "size": [
+                        "default",
+                        10
+                    ],
+                    "layer": 70,
+                    "color": [
+                        0.86,
+                        0.87,
+                        0.9
+                    ],
+                    "enable_profanity_filter": false,
+                    "font_type": "default",
+                    "localize": false,
+                    "shadow": true,
+                    "text": ""
+                }
+            }
+        ]
+    }
+}

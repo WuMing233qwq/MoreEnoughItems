@@ -1,7 +1,10 @@
 {
     "ui_defs": [
+        "ui/mei/editor.json",
         "ui/mei/items_browser.json",
         "ui/mei/items_sidebar.json",
+        "ui/mei/manager.json",
+        "ui/mei/mei_blocks.json",
         "ui/mei/mei_common.json",
         "ui/mei/mei_icons.json",
         "ui/mei/mei_main.json",

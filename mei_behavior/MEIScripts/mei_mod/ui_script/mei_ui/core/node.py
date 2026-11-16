@@ -30,7 +30,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui import context
 from MEIScripts.mei_mod.ui_script.mei_ui.hotkeys import hover
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.manager import FloatController
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.screen import open_screen
-from MEIScripts.mei_mod.ui_script.mei_ui.floating.state import KIND_COMPAT, KIND_HUD, KIND_SCREEN, KIND_SUPPORTED
+from MEIScripts.mei_mod.ui_script.mei_ui.floating.state import KIND_COMPAT, KIND_EDITOR, KIND_HUD, KIND_SCREEN, KIND_SUPPORTED
 from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
 from MEIScripts.mei_mod.ui_script.mei_ui.modes.tool import ToolHost
 from MEIScripts.mei_mod.ui_script.mei_ui.filters.menu import FilterMenu
@@ -42,7 +42,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.node import RecipeDetail
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.manager import TooltipManager
 from MEIScripts.mei_mod.ui_script.proxy.manager import ProxyManager
 from MEIScripts.mei_mod.ui_script.mei_ui.core.script import UIScriptMain
-from MEIScripts.mei_mod.state import BookmarkManager, PinManager, PrefsManager, TreePrefsManager
+from MEIScripts.mei_mod.state import BookmarkManager, PinManager, PrefsManager, TreePrefsManager, UserRecipeManager
 from MEIScripts.mei_mod.state.settings import IsBookmarksVisible
 
 ViewBinder = clientApi.GetViewBinderCls()
@@ -68,6 +68,7 @@ class UIMainNode(UIScriptMain):
 		self.Tool = None  # type: ToolHost or None  # 工具模式拿起的物品（docs/architecture/modes.md），OnCreate 建、OnDestroy 拆
 		self.Filters = None  # type: FilterMenu or None  # 物品栏的筛选与排序菜单（mei_ui/filters/），OnCreate 建、OnDestroy 拆
 		self.Covered = False  # type: bool  # 注入的界面被别的界面盖着（Cover / Uncover）：不推每帧
+		self.Editor = None  # type: any  # MEI 编辑器（KIND_EDITOR 的界面才有，editor/script.py）：点物品栏的物品先交给它
 		# 覆盖层用哪个定义：两种都不带两栏，两栏由 EnsureScripts 按「两侧UI缩放」的那一档建（支持的界面开界面就建，平时那一档的层级；
 		# 注入的界面第一次展开才建、MEI 自己的界面一打开就建，都是悬浮窗那一档的层级 —— HUD 上平时只多一个悬浮窗，
 		# 不把两栏几百个控件塞进游戏界面的每次重排；生下来就是要的层级，不用每次开都 SetLayer（很贵：要重算整个界面的层级））
@@ -129,6 +130,8 @@ class UIMainNode(UIScriptMain):
 		if self.Kind in (KIND_SUPPORTED, KIND_SCREEN):
 			self.EnsureScripts()
 			PrefsManager.BumpOpenCount()
+		elif self.Kind == KIND_EDITOR:
+			self.EnsureScripts()
 
 		# tooltip：全局各一个（接受物品、配方预览），控件随 MEI 根控件跨开关存活，开界面时显式藏掉，见 docs/architecture/tooltip.md
 		self.Tooltip = TooltipManager(self)
@@ -137,8 +140,10 @@ class UIMainNode(UIScriptMain):
 		self.Menu = TouchMenu(self, self.Tooltip)
 		self.Menu.OnCreate()
 		# 悬浮窗与查找状态（docs/architecture/floating.md）：按设置定这次是展开还是收成悬浮窗
-		self.Float = FloatController(self, self.Kind)
-		self.Float.OnCreate()
+		# 编辑器不要悬浮窗、黑底：物品栏的显隐归编辑器（ShowEditorBrowser）
+		if self.Kind != KIND_EDITOR:
+			self.Float = FloatController(self, self.Kind)
+			self.Float.OnCreate()
 		# 三种模式（docs/architecture/modes.md）：工具模式拿起的物品、捕获层一个界面一份；每次开界面问一次服务端有没有作弊的权限
 		self.Tool = ToolHost(self)
 		self.Tool.OnCreate()
@@ -158,7 +163,7 @@ class UIMainNode(UIScriptMain):
 		scale = side_scale.current()
 		floating = self.Kind != KIND_SUPPORTED
 		self.__EnsureSide(self.ItemsBrowserIns, UiPathConst.RightWrapper, scale, floating)
-		if IsBookmarksVisible():
+		if IsBookmarksVisible() and self.Kind != KIND_EDITOR:
 			self.__EnsureSide(self.ItemsSidebarIns, UiPathConst.LeftWrapper, scale, floating)
 
 	def __EnsureSide(self, script, path, scale, floating):  # type: (any, str, any, bool) -> None
@@ -215,6 +220,8 @@ class UIMainNode(UIScriptMain):
 		游戏界面（HUD）上不开配方页：先查有没有配方（没有就照常提示），有就开 MEI 自己的界面、在那里开。
 		别的界面照常（UIScriptMain.ShowRecipeDetails）
 		"""
+		if self.Kind == KIND_EDITOR:
+			return False  # 编辑器里不开配方页（会盖在编辑器上）
 		if self.Kind != KIND_HUD:
 			return UIScriptMain.ShowRecipeDetails(self, item, query_by, prefer_type=prefer_type, focus_id=focus_id)
 		if self.RecipeDetailsIns.ResolveQuery(item, query_by) is None:
@@ -310,6 +317,13 @@ class UIMainNode(UIScriptMain):
 			if script is not None and getattr(script, "Inited", False):
 				script.RefreshAvoidance()
 
+	def ShowEditorBrowser(self, on):  # type: (bool) -> None
+		""" 编辑器的右栏（物品栏）开 / 收：外层的显隐两个方向都写（引擎结论 §22），再照 ShowSides 补推行列数 """
+		wrapper = self.GetUIControl(UiPathConst.RightWrapper)
+		if wrapper is not None:
+			wrapper.SetVisible(bool(on))
+		self.ShowSides(bool(on), False)
+
 	def ShowSides(self, browser, sidebar):  # type: (bool, bool) -> None
 		"""
 		两栏显没显示（悬浮窗控制器每次换样子、开界面都写，两个方向都写，FloatController.Apply）：藏着时 grid 不自检、不快速核对
@@ -373,8 +387,9 @@ class UIMainNode(UIScriptMain):
 		# 「用户用完了」的时机. 平时的写由 Store 的节流合并负责.
 		# 两个 Store 各自独立, 得各刷各的 —— 漏掉书签会丢掉关界面前 2s 内的收藏.
 		# 注入的界面（HUD、强制兼容）每次被别的界面盖住都要拆一次：有改动才写，不强刷
-		force = self.Kind in (KIND_SUPPORTED, KIND_SCREEN)
+		force = self.Kind in (KIND_SUPPORTED, KIND_SCREEN, KIND_EDITOR)
 		PrefsManager.Flush(force=force)
 		BookmarkManager.Flush(force=force)
 		PinManager.Flush(force=force)
 		TreePrefsManager.Flush()  # 配方树的首选、当原料：有改动才写
+		UserRecipeManager.Flush()  # 编辑器里做的页面与配方：有改动才写

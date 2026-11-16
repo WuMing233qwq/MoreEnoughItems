@@ -41,6 +41,10 @@ def _channel():  # type: () -> any
     return getattr(system, "Channel", None) if system else None
 
 
+GetChannel = _channel
+""" 对模块外的名字（客户端的共享，client/share.py）"""
+
+
 def BuildPlan(category, recipe, ctx, multiplier=None):
     # type: (any, any, any, int) -> TransferPlan or None
     """

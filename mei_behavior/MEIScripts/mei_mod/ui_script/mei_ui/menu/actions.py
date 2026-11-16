@@ -303,6 +303,13 @@ def _recipe_tree(target):
         OpenRecipeTree(item=target.Item)
 
 
+def _add_recipe(target):
+    """ 给这样物品记一条自制配方：开 MEI 编辑器，新的一条的产物格先填上它（docs/architecture/user_recipes.md）"""
+    from MEIScripts.mei_mod.ui_script.mei_ui.editor import OpenMeiEditor  # 编辑器用到才 import
+    if target.Item is not None:
+        OpenMeiEditor(item=target.Item)
+
+
 def _open_tree(target):
     """ 配方树收藏：按存下的选择、折叠、数量打开那棵树 """
     from MEIScripts.mei_mod.ui_script.mei_ui.recipe_tree import OpenRecipeTree
@@ -509,6 +516,7 @@ ACTIONS = {
                                    enabled=_has_recipes(QueryConst.Output), section=SECTION_QUERY, bar=4, glyph="tree"),
     MenuKey.OpenTree: MenuAction(MenuKey.OpenTree, MenuText.OpenTree, _open_tree, section=SECTION_RECIPE,
                                  bar=1, bar_label=MenuText.BarOpen, glyph="tree"),
+    MenuKey.AddRecipe: MenuAction(MenuKey.AddRecipe, MenuText.AddRecipe, _add_recipe, section=SECTION_QUERY, glyph="edit"),
     MenuKey.CountDown: MenuAction(MenuKey.CountDown, MenuText.CountDown, _changes_bookmarks(lambda c: op_count(c, -1)),
                                   enabled=_count_enabled(-1), follow=True, section=SECTION_COUNT, bar=2, glyph="minus"),
     MenuKey.CountUp: MenuAction(MenuKey.CountUp, MenuText.CountUp, _changes_bookmarks(lambda c: op_count(c, 1)),

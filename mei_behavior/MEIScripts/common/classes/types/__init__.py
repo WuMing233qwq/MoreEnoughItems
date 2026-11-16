@@ -17,6 +17,7 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 from . import keys
+from .block import BlockProp, BlockType
 from .category import RecipeCategory
 from .ingredient import IngredientLike
 from .item import Stack, ItemStack, Item, ItemInfo, ItemAttr, set_item_factory
@@ -32,6 +33,8 @@ from .recipe import (
 
 __all__ = [
     "keys",
+    "BlockProp",
+    "BlockType",
     "RecipeCategory",
     "RecipePageHost",
     "IngredientLike",

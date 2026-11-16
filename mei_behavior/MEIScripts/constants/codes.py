@@ -34,6 +34,8 @@ class PathConst(object):
     ServerMainSysPath = "MEIScripts.mei_mod.server.main_sys.MainSys"
     MeiScreenClsPath = "MEIScripts.mei_mod.ui_script.mei_ui.floating.screen.MeiScreen"  # MEI 自己的界面（HUD 上点 MEI 时开）
     RecipeTreeScreenClsPath = "MEIScripts.mei_mod.ui_script.mei_ui.recipe_tree.screen.RecipeTreeScreen"  # 配方树（PushScreen）
+    EditorScreenClsPath = "MEIScripts.mei_mod.ui_script.mei_ui.editor.screen.EditorScreen"  # MEI 编辑器（PushScreen）
+    ManagerScreenClsPath = "MEIScripts.mei_mod.ui_script.mei_ui.manager.screen.ManagerScreen"  # 自定义配方管理器（PushScreen）
 
 class QueryConst(object):
     # 配方查询方向, 即 RecipeManager.QueryRecipe(query_by=...) 的取值.
@@ -48,3 +50,5 @@ class StorageConst(object):
     PinsConfigName = "mei_pins"
     SettingsConfigName = "mei_settings"
     TreePrefsConfigName = "mei_tree_prefs"  # 配方树的全局表：首选配方、当原料、工作方块显示哪个
+    UserRecipesConfigName = "mei_user_recipes"  # 玩家在 MEI 编辑器里做的页面与配方（全局，跨存档）
+    UserShareConfigName = "mei_user_share"  # 多人共享：这个存档里从服务器拿下来的分组、传过哪一版（按存档）

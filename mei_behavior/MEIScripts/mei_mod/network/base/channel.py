@@ -63,6 +63,7 @@ class Channel(object):
         self._pending = req.PendingTable()
         self._send = None         # type: any   # fn(payload, player_id) -> None
         self._attached = False    # type: bool
+        self._unknown = set()     # type: set   # 记过日志的没有处理器的请求名（每个只记一次，免得被刷屏）
 
     # 装配
 # ======================================================================================================================
@@ -130,7 +131,9 @@ class Channel(object):
 
         func = self._handlers.get(name)
         if func is None:
-            logger.error("[MEI/net] 没有处理器: {}".format(name))
+            if name not in self._unknown and len(self._unknown) < 64:
+                self._unknown.add(name)
+                logger.error("[MEI/net] 没有处理器: {}".format(name))
             self.__Reply(req.make_response(
                 request_id, name, False, None, req.ERR_NO_HANDLER), player_id)
             return
