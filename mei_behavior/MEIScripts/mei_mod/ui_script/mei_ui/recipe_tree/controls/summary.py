@@ -174,6 +174,9 @@ class TreeSummary(object):
         self.Rows = []
         self.Selected = None
         self.FootText = u""
+        self.ShownWidth = 0  # 汇总栏露出来多宽（SetShown 写的，0 是收起）
+        self.Height = 0  # 露着时量到的高：收着的面板藏着、引擎不给它排版，那时量到的是 0 或旧的
+        self.Per = None  # 这一页是按一页几行画的（Refit 拿它比）
         # 页签按字改宽（SetFullSize：它们在 stack_panel 里，stack_panel 照尺寸规则排，SetSize 管不到 —— 引擎结论 §28）；
         # 汇总栏的宽跟着页签走，最窄 SideMinWidth
         tabs_width = sum(self.__Fit(self.TabControls.get(tab), TAB_TEXTS[tab]) for tab in TABS)
@@ -239,19 +242,39 @@ class TreeSummary(object):
         width = max(0, int(round(width)))
         self.Panel.SetFullSize("x", {"absoluteValue": width})
         self.Panel.SetVisible(width > 0)
+        self.ShownWidth = width
 
     # 画
 # ======================================================================================================================
+    def MeasureHeight(self):  # type: () -> int
+        """ 汇总栏的高：露着才量，量不到（还没排过）用上一次露着时量到的；一次都没量到给 0 """
+        if self.ShownWidth > 0 and self.Panel is not None:
+            try:
+                height = int(self.Panel.GetSize()[1])
+            except Exception:  # noqa
+                height = 0
+            if height > 0:
+                self.Height = height
+        return self.Height
+
     def Capacity(self):  # type: () -> int
-        """ 一页放几行：汇总栏的高减去页签、统计、底下那一行 """
-        try:
-            height = int(self.Panel.GetSize()[1])
-        except Exception:  # noqa
-            height = 0
+        """ 一页放几行：汇总栏的高减去页签、统计、底下那一行；高还不知道时先放满（露出来以后 Refit 改正）"""
+        height = self.MeasureHeight()
         if height <= 0:
             return len(self.Lines)
         lines = foot_lines(self.FootText, self.Width - 6) if self.FootText else 0
         return min(len(self.Lines), capacity(height, lines * LINE_H))
+
+    def Refit(self):  # type: () -> None
+        """
+        每帧（脚本的 OnTick）：汇总栏露着、一页放得下的行数和这一页画的时候不一样了就重排 ——
+        展开那一刻面板还藏着，按量不准的高排了这一页（多画一行、不翻页），露出来、引擎排过一遍以后在这里改正；窗口变了大小也跟着改
+        """
+        if self.ShownWidth <= 0 or self.Per is None:
+            return
+        if self.Capacity() != self.Per:
+            self.Page = min(self.Page, self.Pages() - 1)
+            self.Render()
 
     def Pages(self):  # type: () -> int
         per = self.Capacity()
@@ -287,7 +310,7 @@ class TreeSummary(object):
                 cell.SetSelected(cell.Target == key)
 
     def Render(self):
-        per = self.Capacity()
+        per = self.Per = self.Capacity()
         start = self.Page * per
         shown = self.Rows[start:start + per]
         text_w = self.Width - 2 * PAD - NAME_X - 2

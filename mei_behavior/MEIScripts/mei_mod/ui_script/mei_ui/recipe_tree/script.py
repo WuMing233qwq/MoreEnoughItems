@@ -215,6 +215,8 @@ class RecipeTreeScript(object):
         except Exception as e:  # noqa  哪一步坏了都不能让整棵树停在一片空白上：记下来、提示一句，这一版不画了
             self.__Fail(e)
         self.__StepSide()
+        if self.SummaryPanel is not None:
+            self.SummaryPanel.Refit()  # 展开时按量不准的高排的那一页，露出来量准了再改正
         if self.Canvas.Tick(self.DrawBudgetMs):
             self.__OnDrawn()
         self.Menu.Tick()  # 菜单里的配方预览建齐了才排版、显示
