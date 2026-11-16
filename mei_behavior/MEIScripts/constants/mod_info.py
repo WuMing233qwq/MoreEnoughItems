@@ -18,7 +18,7 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 
-Version = "1.0.1"
+Version = "1.0.2"
 ModName = "MoreEnoughItems"
 Author = "WuMing233qwq"
 Repository = "https://github.com/WuMing233qwq/MoreEnoughItems"
