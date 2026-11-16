@@ -18,14 +18,16 @@
 #  If not, see <https://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------
 """
-配方树右侧的材料汇总清单：四个页签（原料 / 副产物 / 工具 / 还缺），一行一样东西 —— 格子、名字、一行「需 · 有 · 缺」，
+配方树右侧的材料汇总清单：四个页签（原料 / 副产物 / 工具 / 还缺），一行一样东西 —— 格子、名字、一行「需要 x/x · 状态」，
 放不下翻页；底下是统计、翻页与「刷新背包」。中间物不单列（玩家要看的只有原料和副产物）；副产物是合成多出来的加上配方的其他产出，
 概率产出的格子右上标小方块。
 
 背包对照只在这里：缺不缺看背包放进库存走的那一遍（modules/summary.shortfall）：背包里的中间材料也扣 ——
 有 9 个铁锭就不再缺这 9 个铁锭的粗铁。背包开界面时读一次，「刷新背包」再读（脚本做，这里只画）。
 
-汇总栏的宽（展开 / 收起的过渡）由脚本改（SetShown），里面的 body 定宽：变窄时从右边裁掉
+汇总栏的宽（展开 / 收起的过渡）由脚本改（SetShown），里面的 body 定宽：变窄时从右边裁掉。
+一行的两段字原样写进定宽的 label，放不下由引擎按真实字宽截、加省略号 —— 不拿 menu/layout 的估宽先截：
+字里有汉字时引擎整段换 unicode 字体，数字、半角字比估的窄三成左右，先截会把放得下的字截掉
 """
 import mod.client.extraClientApi as clientApi
 from mod_log import logger
@@ -36,7 +38,7 @@ from MEIScripts.mei_mod.ui_script.mei_ui.menu import layout
 from MEIScripts.utils.text import native_str
 
 from .cell import CellSpec, TreeCell
-from .menu import control_width, fit_text, fit_width
+from .menu import control_width, fit_width
 
 ViewBinder = clientApi.GetViewBinderCls()
 
@@ -52,8 +54,6 @@ TAB_GAPS = ("gap_0", "gap_1", "gap_2")
 """ 页签之间的间隔（JSON 里写死的宽，脚本读回来算页签一共多宽）"""
 PAD = 2
 """ 页签、清单离汇总栏左边的空（JSON 里 tabs / rows 的 offset）"""
-NAME_X = 23
-""" 名字、第二行从这一行的哪儿开始（格子 20 + 间隔 3，JSON 里 name / info 的 offset）"""
 LINE_H = 10
 PAGER_W = 58
 """ 左下翻页那一块（◀ 页码 ▶，JSON 里 prev / page / next 的位置）连同它和「刷新背包」之间的空 """
@@ -61,10 +61,23 @@ FOOT_GAP = 19
 """ 统计贴着底下那一行往上长（JSON 里 foot 的 offset）"""
 
 
+def raw_status(need, owned, short):  # type: (int, int, int) -> unicode
+    """
+    「所需原料」一行的状态（纯函数）：need 要几个、owned 背包里这一样有几个、short 背包放进库存走一遍还缺几个（shortfall）。
+    不缺：这一样本身够 → 已集齐，不够 → 背包里的中间产物（或同一格的别的候选）全抵掉了 → 已有中间产物（绿）；
+    还缺：抵掉了一部分（还缺的比「要的减有的」少）→ 由中间产物抵扣（橙），没抵掉 → 缺少 N（红）
+    """
+    if short <= 0:
+        return TreeText.RowEnough if owned >= need else TreeText.RowCovered
+    if need - owned > short:
+        return TreeText.RowPartly
+    return TreeText.RowLack.format(short)
+
+
 def list_rows(tab, summary, have, flags=None, lack=None):  # type: (str, any, dict, dict, dict) -> list
     """
     这一页的清单：[(物品键, 第二行的字, 右上小方块的颜色)]，纯函数（探针测）。
-    lack 是还缺的原料（shortfall 的结果，中间物也扣）：「缺少材料」页就是它，「所需原料」页的「缺 / 够了」也看它（「需」照旧不扣背包）；
+    lack 是还缺的原料（shortfall 的结果，中间物也扣）：「缺少材料」页就是它，「所需原料」页的状态也看它（raw_status；「需要」照旧不扣背包）；
     不给时退回只在原料那一层比背包
     """
     flags = flags or {}
@@ -87,9 +100,11 @@ def list_rows(tab, summary, have, flags=None, lack=None):  # type: (str, any, di
             rows.append((key, TreeText.RowExtra.format(count) + (TreeText.RowChance if chance else u""),
                          TreeConst.ChanceColor if chance else None))
             continue
-        short = lack.get(key, 0) if tab == TAB_RAW else count - owned
-        info = TreeText.RowNeedHave.format(count, owned) + (TreeText.RowLack.format(short) if short > 0 else
-                                                             TreeText.RowEnough)
+        if tab == TAB_RAW:
+            status = raw_status(count, owned, lack.get(key, 0))
+        else:  # 工具只比背包里这一样
+            status = TreeText.RowLack.format(count - owned) if owned < count else TreeText.RowEnough
+        info = TreeText.RowNeedHave.format(count, owned) + status
         rows.append((key, info, TreeConst.BadgeColors.get(flags.get(key)) if tab == TAB_RAW else None))
     return rows
 
@@ -313,14 +328,13 @@ class TreeSummary(object):
         per = self.Per = self.Capacity()
         start = self.Page * per
         shown = self.Rows[start:start + per]
-        text_w = self.Width - 2 * PAD - NAME_X - 2
         for index, line in enumerate(self.Lines):
             if index >= len(shown):
                 line.SetVisible(False)
                 continue
             key, info, badge, render, name = shown[index]
             line.Cell.Apply(CellSpec(key, (0, 0), render, badge=badge, selected=key == self.Selected))
-            line.SetTexts(fit_text(name, text_w), fit_text(info, text_w))
+            line.SetTexts(name, info)  # 原样写：放不下由引擎截（见模块说明）
             line.SetVisible(True)
         if self.Empty is not None:
             if not self.Rows:

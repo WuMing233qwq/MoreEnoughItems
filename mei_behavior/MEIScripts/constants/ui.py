@@ -454,7 +454,7 @@ class TreePath(object):
     SummaryBody = Summary + "/body"  # 定宽的内容：汇总栏变窄时从右边裁掉，像抽屉
     Tabs = SummaryBody + "/tabs"
     Rows = SummaryBody + "/rows"
-    SummaryRow = Rows + "/r{}"  # 清单的一行：格子 + 名字 + 一行「需 · 有 · 缺」
+    SummaryRow = Rows + "/r{}"  # 清单的一行：格子 + 名字 + 一行「需要 x/x · 状态」
     SummaryCell = SummaryRow + "/cell"
     RowName = "/name"
     RowInfo = "/info"

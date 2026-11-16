@@ -208,10 +208,12 @@ class TreeText(object):
     Partial = u"部分结果 (已到达计算上限)"
     Foot = u"原料 {} 种 · 背包已有 {} 种 · 缺少 {} 种"
     Page = u"{}/{}"
-    # 汇总清单每一行的第二行（灰字；§ 颜色码只写在最后一段，免得要「恢复颜色」）
-    RowNeedHave = u"需 {} · 有 {}"
-    RowLack = u" · §c缺 {}"
-    RowEnough = u" · §a够了"
+    # 汇总清单每一行的第二行（灰字；§ 颜色码只写在最后一段，免得要「恢复颜色」）：「需要 需求量/已有量 · 状态」
+    RowNeedHave = u"需要 {}/{}"
+    RowLack = u" · §c缺少{}"
+    RowEnough = u" · §a已集齐"  # 背包里这一样本身就够
+    RowCovered = u" · §a已有中间产物"  # 这一样不够，背包里的中间产物（或同一格的别的候选）把它全抵掉了
+    RowPartly = u" · §6由中间产物抵扣"  # 抵掉了一部分、还缺（缺几个写在「缺少材料」页与点开的菜单里）
     RowExtra = u"多出 {}"
     RowChance = u" · §d含概率产出"
     RowLackOnly = u"有 {} · §c缺 {}"
