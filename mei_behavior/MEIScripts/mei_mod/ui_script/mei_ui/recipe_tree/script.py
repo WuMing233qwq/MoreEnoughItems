@@ -358,17 +358,18 @@ class RecipeTreeScript(object):
         m = self.Metrics
         scene = Scene((placement.Width, placement.Height), m.Cell, m.Cell + 2 * m.Frame)
         node_spec, ws_spec = self.__NodeSpec, self.__WsSpec
-        # 根排第一个：画布按第一格认根（回到根、找不到锚点时摆回它）
+        # 根排第一个：画布按第一格认根（回到根、找不到锚点时摆回它）。
+        # lambda 的参数不和默认值同名：机审的 pylint 1.9 把和参数同名、在外面赋值来的默认值误报成未定义（E0602）
         for node_id in [0] + [i for i in placement.Cells if i != 0]:
             pos = placement.Cells.get(node_id)
             if pos is not None:
                 node = nodes[node_id]
                 scene.Cells.append(LazyCell((TARGET_NODE, node.Sig), pos,
-                                            lambda node=node, pos=pos: node_spec(node, pos)))
+                                            lambda target=node, at=pos: node_spec(target, at)))
         for node_id, (x, y) in placement.Groups.items():
             node = nodes[node_id]
             scene.Cells.append(LazyCell((TARGET_WS, node.Sig), (x, y),
-                                        lambda node=node, pos=(x, y): ws_spec(node, pos)))
+                                        lambda target=node, at=(x, y): ws_spec(target, at)))
             scene.WsFrames.append((x - m.Frame, y - m.Frame))
             if node.Children:
                 scene.IngFrames.append(((x + m.Cell + m.WsGap - m.Frame, y - m.Frame),

@@ -397,7 +397,8 @@ class __ShareClient(object):  # noqa
         generation = self.Generation
         self.Downloads[key] = record
         self.Busy[key] = "down"
-        chunks, state = [], {"version": None, "owner": "", "restarts": 0, "resumes": 0}
+        # 版本号、指纹、统一另外各记一份：存盘时不对 state["version"] 解包（机审的 pylint 只认字典里写的初值 None，解包就拦）
+        chunks, state = [], {"version": None, "rev": 0, "digest": "", "unified": False, "owner": "", "restarts": 0, "resumes": 0}
 
         def request(part):
             channel.Request(REQUEST_SHARE_DOWNLOAD, {"key": key, "part": part}, on_reply=lambda response: reply(part, response))
@@ -414,6 +415,7 @@ class __ShareClient(object):  # noqa
             version = (body.get("rev"), body.get("digest"), body.get("unified") is True)
             if state["version"] is None:
                 state["version"] = version
+                state["rev"], state["digest"], state["unified"] = version
                 state["owner"] = body.get("owner") if isinstance(body.get("owner"), basestring) else ""
             elif version != state["version"]:  # 下到一半服务器上换了一版（删了再传版本号可能一样，所以连指纹一起比）：从头再要
                 state["restarts"] += 1
@@ -436,9 +438,8 @@ class __ShareClient(object):  # noqa
                 self._touch()
                 return
             if reason is None:
-                rev, digest, unified = state["version"]
-                reason = self.__Save(key, "".join(chunks), rev, digest, unified, state["owner"], record["subscribe"],
-                                     record["unified"])
+                reason = self.__Save(key, "".join(chunks), state["rev"], state["digest"], state["unified"], state["owner"],
+                                     record["subscribe"], record["unified"])
             if reason is not None:
                 logger.warn("[MEI/share] 下载共享分组 {} 失败: {}".format(key, reason))
             self._touch()
