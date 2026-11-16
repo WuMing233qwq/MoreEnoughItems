@@ -351,12 +351,33 @@ class ItemsGrid(object):
             return None
         return self.Rows * self.Cols
 
+    def __InRange(self, collection_index):  # type: (int) -> bool
+        """
+        这一格在现在的行 × 列之内（没设行列数、关了自动上限的不限）。行列数变少时，引擎重建格子之前那一两轮还会拉多出来的旧格子 ——
+        不能给它们建面板：写满没有是按个数算的，旧格子先被拉到就占掉了位置，真正的格子反而建不出来（只剩底框、点不动，
+        自检看着也是「建全了」，一直好不了）。配方页的工作站从 2 格变 1 格、配方页控件又不重建时（熔炉 → 高炉 / 烟熏炉）就是这样
+        """
+        limit = self.__GetAutoCacheLimit()
+        return limit is None or collection_index < limit
+
+    def __Filled(self, limit):  # type: (int) -> int
+        """ 缓存里落在前 limit 格之内的面板有几个 """
+        return len([index for index in self.ItemPanels if index < limit])
+
+    def __DropOutOfRange(self):
+        """ 行列数变少：落在新的行 × 列之外的面板拆掉（那几格引擎会删掉）"""
+        limit = self.__GetAutoCacheLimit()
+        if limit is None:
+            return
+        for index in [index for index in self.ItemPanels if index >= limit]:
+            self.ItemPanels.pop(index).Destroy()
+
     def __RefreshCacheSaturatedState(self):
         limit = self.__GetAutoCacheLimit()
         if limit is None:
             self.CacheSaturated = False
             return
-        self.CacheSaturated = len(self.ItemPanels) >= limit
+        self.CacheSaturated = self.__Filled(limit) >= limit
 
     def __CanCreateItemPanel(self):
         self.__RefreshCacheSaturatedState()
@@ -500,6 +521,7 @@ class ItemsGrid(object):
         """
         self.Cols = cols
         self.Rows = rows
+        self.__DropOutOfRange()
         if update_control or (cols, rows) != self.__PushedDims:
             self.__PushDims()
         self.__RefreshCacheSaturatedState()
@@ -656,9 +678,14 @@ class ItemsGrid(object):
             raise ValueError("ItemPanelCallback must return an ItemPanel instance")
 
     def __EnsureItemPanelVisible(self, collection_index):
-        """ 懒加载ItemPanel；缓存达到上限后不再创建，绑定可见性仍返回True """
+        """
+        懒加载ItemPanel；缓存达到上限后不再创建，绑定可见性仍返回True。
+        行 × 列之外的格子（行列数变少后引擎还没删掉的旧格子）不建面板、不占缓存，藏起来（__InRange）
+        """
         if collection_index == 0:
             self.Pulls += 1
+        if not self.__InRange(collection_index):
+            return False
         if collection_index in self.ItemPanels:
             self.__CheckIcon(collection_index)
             self.__CountPassAndMaybePause(collection_index)
@@ -719,7 +746,7 @@ class ItemsGrid(object):
         """
         self.__CheckPushedDims(now)
         limit = (self.Rows or 0) * (self.Cols or 0)
-        if not self.Shown or self.BindingsPaused or limit <= 0 or len(self.ItemPanels) >= limit:
+        if not self.Shown or self.BindingsPaused or limit <= 0 or self.__Filled(limit) >= limit:
             # 藏着的栏引擎不建格子，不算卡住（显出来时脚本 SetShown → Revive 当场补推）
             self.__StuckSince = None
             self.__Repairs = 0
