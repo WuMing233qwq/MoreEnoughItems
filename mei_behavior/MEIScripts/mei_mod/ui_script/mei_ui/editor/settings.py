@@ -18,7 +18,7 @@
 # ----------------------------------------------------------------------
 """
 设置 MEI 分栏的「编辑器」页（和「通用」「按键绑定」「关于」同级，docs/architecture/settings.md §6）：
-「启用自定义配方」（Toggle，缺省关）、一行字写现在有几个页面、几条配方（绑定 names.EDITOR，设置页的代理写，settings/proxy.py 的 EditorInfo）、
+「启用自定义配方」（Toggle，缺省开）、一行字写现在有几个页面、几条配方（绑定 names.EDITOR，设置页的代理写，settings/proxy.py 的 EditorInfo）、
 「打开 MEI 编辑器」（Action）、「自定义配方管理器」（Action，自定义配方关着也能开，mei_ui/manager/）、
 「在物品菜单里显示『添加配方』」（Toggle，缺省关）、「启用强制覆盖」（Toggle，缺省开：多人游戏里操作员统一的配方自动下载、
 同 Id 替换本地的，client/share.py 与 extensions/user 看它）。
@@ -39,7 +39,7 @@ def RegisterSettings():  # type: () -> None
     """ 登记「编辑器」页的几行（不碰引擎；重复调用无副作用）"""
     if SettingsManager.GetSpec(OPEN_EDITOR) is not None:
         return
-    SettingsManager.Register(Toggle(USER_RECIPES, "options.mei.editor.enabled", default=False))
+    SettingsManager.Register(Toggle(USER_RECIPES, "options.mei.editor.enabled", default=True))
     SettingsManager.Register(Action(OPEN_EDITOR, "options.mei.editor.open", OpenFromSettings))
     SettingsManager.Register(Action(OPEN_MANAGER, "options.mei.editor.manager", OpenManagerFromSettings))
     SettingsManager.Register(Toggle(MENU_ENTRY, "options.mei.editor.menu", default=False))
@@ -47,8 +47,9 @@ def RegisterSettings():  # type: () -> None
 
 
 def IsUserRecipesEnabled():  # type: () -> bool
-    """ 自定义配方开着没有（设置项没登记时按缺省：关）"""
-    return bool(SettingsManager.Get(USER_RECIPES))
+    """ 自定义配方开着没有（缺省开；设置项没登记时也按开）"""
+    value = SettingsManager.Get(USER_RECIPES)
+    return True if value is None else bool(value)
 
 
 def IsForceOverride():  # type: () -> bool
