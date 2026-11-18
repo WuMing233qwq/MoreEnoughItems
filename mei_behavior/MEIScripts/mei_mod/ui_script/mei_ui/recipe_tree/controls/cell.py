@@ -23,9 +23,12 @@
 
 同一个控件在池里反复用（换配方、折叠后重排、拖动时换给别的格子都只改内容和位置），每样东西记着上次写的值、没变就不碰引擎
 （一次引擎调用约 0.1 毫秒，引擎结论 §25）。刚建出来的按模板的样子记成写过（Prime），同样的值不再写。
-子控件第一次用到才取；取不到（刚建出来还没排好）这次跳过、记下 Missed，画布下一帧再写一遍
+子控件第一次用到才取；取不到（刚建出来还没排好）这次跳过、记下 Missed，画布下一帧再写一遍。
+改显隐不当场刷新（show_later）：SDK 缺省每改一次就重排整个界面，拖动时一批格子进出视口就是一批整屏重排（引擎结论 §57）——
+一批写完由用它的人（画布、菜单、汇总、配方树的每帧）flush 一次
 """
 from MEIScripts.constants.ui import TreeConst, TreePath
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import show_later
 from MEIScripts.utils.text import native_str
 
 _UNSET = object()
@@ -151,7 +154,7 @@ class TreeCell(object):
 # ======================================================================================================================
     def SetVisible(self, on):  # type: (bool) -> None
         if self.__Changed("visible", bool(on)):
-            self.Control.SetVisible(bool(on))
+            show_later(self.Control, on, self.Screen)
 
     def SetPos(self, pos):  # type: (tuple) -> None
         pos = (int(pos[0]), int(pos[1]))
@@ -198,7 +201,7 @@ class TreeCell(object):
             except Exception:  # noqa  有的东西渲染不了（minecraft:air 之类）：藏起渲染器
                 shown = False
         if self.__Changed("item.shown", shown):
-            renderer.SetVisible(shown)
+            show_later(renderer, shown, self.Screen)
 
     def SetIcon(self, texture):  # type: (str or None) -> None
         """ 不画物品时画的贴图；None 藏起来 """
@@ -211,7 +214,7 @@ class TreeCell(object):
             return
         if texture:
             part.asImage().SetSprite(texture)
-        part.SetVisible(bool(texture))
+        show_later(part, bool(texture), self.Screen)
 
     def SetSelected(self, on):  # type: (bool) -> None
         self.__Toggle("sel", TreePath.CellSel, on)
@@ -226,7 +229,7 @@ class TreeCell(object):
             if text:
                 label.asLabel().SetText(text)
             if self.__Changed(name + ".shown", bool(text)):
-                label.SetVisible(bool(text))
+                show_later(label, bool(text), self.Screen)
         if color is not None and text and self.__Changed(name + ".color", tuple(color)):
             label = self.__Part(sub, None)
             if label is not None:
@@ -240,7 +243,7 @@ class TreeCell(object):
             if part is None:
                 self.__Forget(name)
                 return
-            part.SetVisible(bool(on))
+            show_later(part, on, self.Screen)
 
     def __Dot(self, name, sub, color):
         """ 上标（2×2 的白色小方块）：给了颜色就染上显示，None 就藏起来 """
@@ -252,4 +255,4 @@ class TreeCell(object):
             return
         if color:
             part.asImage().SetSpriteColor(tuple(color))
-        part.SetVisible(bool(color))
+        show_later(part, bool(color), self.Screen)

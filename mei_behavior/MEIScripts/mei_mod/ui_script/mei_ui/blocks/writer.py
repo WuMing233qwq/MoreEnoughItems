@@ -23,7 +23,8 @@
 每样东西记着上次写的值，没变就不碰引擎（一次引擎调用约 0.1 毫秒，引擎结论 §25）。
 
 **改显隐、建控件都不当场刷新界面**：SDK 的 SetVisible、CreateChildControl 缺省每调一次就把整个界面重排一遍（开着 MEI 的工作台两万多个控件），
-一行配方几十次、一页就是一秒（引擎结论 §57）。这里一律不刷新、记下这个界面（mark_dirty），这一批写完由调用方 flush 一次（UpdateScreen）
+一行配方几十次、一页就是一秒（引擎结论 §57）。这里一律不刷新、记下这个界面（mark_dirty），这一批写完由调用方 flush 一次（UpdateScreen）。
+show_later / full_size 是同一套写法的两个小件，触屏菜单、tooltip、配方树也用（主节点、配方树每帧末尾各 flush 一次）
 """
 from mod_log import logger
 
@@ -48,6 +49,21 @@ def mark_dirty(screen):  # type: (any) -> None
 def forget_screen(screen):  # type: (any) -> None
     """ 界面要关了：记下的不刷了 """
     _PENDING.pop(id(screen), None)
+
+
+def show_later(control, on, screen):  # type: (any, bool, any) -> None
+    """ 改显隐、不当场刷新（forceUpdate 给 False）：记下这个界面，这一批写完由调用方 flush 一次 """
+    control.SetVisible(bool(on), False)
+    mark_dirty(screen)
+
+
+def full_size(control, size):  # type: (any, tuple) -> None
+    """
+    改大小：写尺寸规则（SetFullSize），不用 SetSize —— 后者只改当前的值、不改规则，排版一刷新就回到 JSON 写的大小（引擎结论 §28）。
+    JSON 里写 100% 的子控件（按钮的底、遮罩）跟着它变
+    """
+    control.SetFullSize("x", {"absoluteValue": int(size[0])})
+    control.SetFullSize("y", {"absoluteValue": int(size[1])})
 
 
 def flush():  # type: () -> int
@@ -138,23 +154,15 @@ class ControlWriter(object):
         self.__Write("pos" + sub, pos, sub, None, lambda c: c.SetPosition(pos))
 
     def SetSize(self, sub, size):  # type: (str, tuple) -> None
-        """ 大小：写尺寸规则（SetFullSize），不是 SetSize —— 后者排版一刷新就回去（引擎结论 §28）"""
+        """ 大小：写尺寸规则（full_size），不是 SetSize —— 后者排版一刷新就回去（引擎结论 §28）"""
         size = (int(size[0]), int(size[1]))
-
-        def write(control):
-            control.SetFullSize("x", {"absoluteValue": size[0]})
-            control.SetFullSize("y", {"absoluteValue": size[1]})
-        self.__Write("size" + sub, size, sub, None, write)
+        self.__Write("size" + sub, size, sub, None, lambda c: full_size(c, size))
 
     def SetVisible(self, sub, on):  # type: (str, bool) -> None
-        """ 显隐：不当场刷新（forceUpdate 给 False），记下界面等 flush """
+        """ 显隐：不当场刷新（show_later），记下界面等 flush """
         on = bool(on)
         screen = self.Screen
-
-        def write(control):
-            control.SetVisible(on, False)
-            mark_dirty(screen)
-        self.__Write("visible" + sub, on, sub, None, write)
+        self.__Write("visible" + sub, on, sub, None, lambda c: show_later(c, on, screen))
 
     def SetText(self, sub, text, color=None):  # type: (str, any, tuple) -> None
         text = native_str(text if text is not None else "")

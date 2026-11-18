@@ -32,11 +32,14 @@
   这里**不动主节点的栈**，只在预览自己的代码里临时把主节点顶成配方树的壳（TreeShell，context.Using）：建脚本、接脚本、拆脚本、节拍、
   以及预览格子的每一条绑定回调（ItemPanel 在绑定回调里建）。快捷键、悬浮窗这些问当前主节点的，照旧拿到下面那块界面的。
 - 点预览里的一格：不走全局的点击策略（那会去开配方页），交给菜单 —— 和点配方条一样，灰字写它的名字与数量。
+- **正亮着时换同一类型的另一条**（换配方、上一条 / 下一条）不重建：同一个 PREVIEW 上只换配方页脚本、换标题（Swap），
+  菜单不变透明、当场排版（TreeMenu 的 STAGE_SWAP）。换了类型照旧透明着建（两个类型的预览格子共用一套集合绑定名，不能同时挂两份）。
 """
 from mod_log import logger
 
 from MEIScripts.constants.ui import CollectionConst, TooltipPath
 from MEIScripts.mei_mod.ui_script.mei_ui import context
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import show_later
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.ruler import match_font
 from MEIScripts.mei_mod.ui_script.mei_ui.recipe_details.modules.binding import RecipesGridBind
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.recipe import TooltipRecipeView
@@ -132,6 +135,10 @@ class TreeRecipeView(TooltipRecipeView):
         with context.Using(self.MainNode):
             return TooltipRecipeView.Show(self, recipe, content_path)
 
+    def Swap(self, recipe):
+        with context.Using(self.MainNode):
+            return TooltipRecipeView.Swap(self, recipe)
+
     def CreateScript(self, cell):
         with context.Using(self.MainNode):
             TooltipRecipeView.CreateScript(self, cell)
@@ -179,6 +186,7 @@ class TreePreview(object):
         self.Ready = False  # type: bool
         self.Ticks = 0  # type: int
         self.Size = (0, 0)  # type: tuple  # 建齐后量到的 PREVIEW 尺寸（含它自己四周各 4 的边）
+        self.SlotShown = None  # type: bool or None  # 上次写的插槽显隐：一样的不再写
 
     @staticmethod
     def Supports(recipe):  # type: (any) -> bool
@@ -194,6 +202,13 @@ class TreePreview(object):
         """ 这一条已经开始建、还没齐（建的这几帧里菜单又排了一次：接着建，不从头来）"""
         return not self.Ready and self.Path is not None and self.View.Script is not None and recipe is not None \
             and getattr(recipe, "Id", None) == self.RecipeId
+
+    def CanSwap(self, recipe):  # type: (any) -> bool
+        """ 正亮着一条（建齐了）、要换的这一条同一类型、不是同一条：能原地换（Swap）。只是判断，什么都不动 """
+        if not self.Ready or self.Path is None or not self.Supports(recipe) or self.Showing(recipe):
+            return False
+        current = self.View.Recipe
+        return current is not None and getattr(current, "Type", None) == recipe.Type             and RecipeManager.GetPreviewDef(recipe.Type) == self.Def
 
     def Begin(self, recipe, title):  # type: (any, any) -> bool
         """
@@ -212,8 +227,34 @@ class TreePreview(object):
             self.Stop()
             return False
         self.__SetTitle(title)
-        self.Slot.SetVisible(True)
+        self.__ShowSlot(True)
         self.RecipeId, self.Ready, self.Ticks, self.Size = getattr(recipe, "Id", None), False, 0, (0, 0)
+        return True
+
+    def Swap(self, recipe, title):  # type: (any, any) -> bool
+        """
+        正亮着一条、要换成**同一类型**的另一条：不重建、不写回透明 —— 同一个 PREVIEW 上只换配方页脚本（TreeRecipeView.Swap）、换标题，
+        尺寸要调用方排过版再量（Measure）。没在亮着、类型不同、换不了给 False（什么都没动），调用方照 Begin 那条路重建。
+        和 Begin 一样只在每帧的 Tick 里调（新脚本的 OnCreate 会建控件、挂绑定）
+        """
+        if not self.Ready or self.Path is None or not self.Supports(recipe):
+            return False
+        if RecipeManager.GetPreviewDef(recipe.Type) != self.Def or not self.View.Swap(recipe):
+            return False
+        self.__SetTitle(title)
+        self.RecipeId = getattr(recipe, "Id", None)
+        return True
+
+    def Measure(self):  # type: () -> bool
+        """ 原地换了配方、调用方排过版以后：重新量 PREVIEW 的尺寸（标题的宽可能变了）；量不到照旧用上一次的 """
+        tip = self.Screen.GetBaseUIControl(self.Path) if self.Path is not None else None
+        if tip is None:
+            return False
+        width, height = tip.GetSize()
+        size = (int(round(width)), int(round(height)))
+        if size[0] <= 0 or size[1] <= 0:
+            return False
+        self.Size = size
         return True
 
     def Poll(self):  # type: () -> bool
@@ -242,7 +283,7 @@ class TreePreview(object):
         """ 菜单排好了：插槽摆到 pos（菜单内容里的坐标），拉回不透明 """
         if self.Slot is not None:
             self.Slot.SetPosition((int(pos[0]), int(pos[1])))
-            self.Slot.SetVisible(True)
+            self.__ShowSlot(True)
         tip = self.Screen.GetBaseUIControl(self.Path) if self.Path is not None else None
         if tip is not None:
             tip.SetAlpha(1.0)
@@ -256,8 +297,7 @@ class TreePreview(object):
         tip = self.Screen.GetBaseUIControl(self.Path) if self.Path is not None else None
         if tip is not None:
             tip.SetAlpha(0.0)
-        if self.Slot is not None:
-            self.Slot.SetVisible(False)
+        self.__ShowSlot(False)
 
     def Stop(self):
         """ 收起：拆脚本、绑定器、节拍；控件藏着留给下一次同一类型（全透明） """
@@ -266,13 +306,19 @@ class TreePreview(object):
         tip = self.Screen.GetBaseUIControl(self.Path) if self.Path is not None else None
         if tip is not None:
             tip.SetAlpha(0.0)
-        if self.Slot is not None:
-            self.Slot.SetVisible(False)
+        self.__ShowSlot(False)
 
     def Destroy(self):
         """ 关配方树：拆完再删控件 """
         self.Stop()
         self.__Discard()
+
+    def __ShowSlot(self, on):
+        """ 插槽显隐：一样的不再写；写也不当场刷新（菜单这一份写完、配方树这一帧末尾 flush 一次，引擎结论 §57）"""
+        if self.Slot is None or self.SlotShown == on:
+            return
+        self.SlotShown = on
+        show_later(self.Slot, on, self.Screen)
 
     def __Mount(self, preview_def):  # type: (str) -> str or None
         """ 同一类型复用（透明度先写回 0）；换类型先删旧的再建新的（生下来全透明、底图换成透明的）"""

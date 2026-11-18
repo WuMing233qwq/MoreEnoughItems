@@ -24,6 +24,7 @@ from MEIScripts.constants.ui import FocusConst, RecipeDetailsPath, UiPathConst
 from MEIScripts.constants.codes import NameConst, QueryConst
 from MEIScripts.mei_mod.ui_script.mei_ui.items_browser.node import ItemsBrowserNode
 from MEIScripts.mei_mod.ui_script.mei_ui.items_sidebar.node import ItemsSidebarNode
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import flush
 from MEIScripts.mei_mod.ui_script.mei_ui.common import scale as side_scale
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.manager import TouchMenu
 from MEIScripts.mei_mod.ui_script.mei_ui import context
@@ -139,6 +140,7 @@ class UIMainNode(UIScriptMain):
 		# 触屏的二级菜单：就是 tooltip 的移动端宿主，内容归 tooltip 建、按钮区归它填，见 docs/architecture/tooltip.md §6
 		self.Menu = TouchMenu(self, self.Tooltip)
 		self.Menu.OnCreate()
+		flush()  # tooltip、菜单复位时写的显隐都没当场刷新（show_later）：这里一次刷新
 		# 悬浮窗与查找状态（docs/architecture/floating.md）：按设置定这次是展开还是收成悬浮窗
 		# 编辑器不要悬浮窗、黑底：物品栏的显隐归编辑器（ShowEditorBrowser）
 		if self.Kind != KIND_EDITOR:
@@ -357,6 +359,8 @@ class UIMainNode(UIScriptMain):
 			details.PollHostedPage()
 		# 按着修饰键悬停（PC）：Ctrl / Shift 高亮同一条配方收藏
 		hover.Tick(self)
+		# 这一帧 tooltip、触屏菜单写的显隐都没当场刷新（show_later：SDK 缺省每改一次显隐就重排整个界面，引擎结论 §57）：一帧刷新一次
+		flush()
 
 	def OnDestroy(self):
 		context.ClearMainNode(self)
@@ -375,6 +379,7 @@ class UIMainNode(UIScriptMain):
 		if self.Tooltip is not None:
 			self.Tooltip.OnDestroy()
 			self.Tooltip = None
+		flush()  # 收起菜单、tooltip 写的显隐（没当场刷新）：刷新一次
 		# 开着配方页关的界面：先把避让目标与原版主内容的显隐还原（界面状态跨开关存活，引擎结论 §22）
 		self.OnRecipeDetailsClosed()
 		recipe_details_control = self.GetRootBaseUIControl(RecipeDetailsPath.Root)

@@ -26,7 +26,7 @@ PREVIEW 就是整个 tooltip（背景、标题、1×1 的预览 grid），管理
 mei_recipe_common.preview_cell：骨架同样是 `wrapper/content`，content 就是该类型的 content_panel，格子跟着它的绝对尺寸走（100%c）。
 配方页脚本照旧拿 `RecipeControl.GetChildByPath("/wrapper/content/...")` 取控件。
 这里不建、不删控件，只在管理器给的 PREVIEW 里接上脚本：自己的 RecipesGridBind（集合 mei_tooltip_recipe）、格子长出来才 OnCreate、
-第 0 帧立刻画、自己的节拍
+第 0 帧立刻画、自己的节拍。正亮着时换同一类型的另一条配方用 Swap：只换格子上的脚本（集合绑定名只有一套，两份不能同时挂，所以不另建一份）
 """
 import mod.client.extraClientApi as clientApi
 from mod_log import logger
@@ -117,6 +117,34 @@ class TooltipRecipeView(object):
             self.GetPreviewVisible, ViewBinder.BF_BindBool, BindingConst.RecipeVisible, CollectionConst.TooltipRecipe)
         self.Ticks = 0
         self.Timer = self.GameComp.AddRepeatedTimer(BaseRecipeUIScript.ANIM_TICK_INTERVAL, self.OnAnimTimer)
+        return True
+
+    def Swap(self, recipe):  # type: (any) -> bool
+        """
+        原地换一条**同一类型**的配方：PREVIEW、预览 grid、绑定器、#visible 那一条、节拍都留着，只把格子上的配方页脚本换成新的这一条 ——
+        拆旧接新在同一次调用里（配方页翻页同一个做法：中间没有一帧找不到脚本、格子回缺省值），不收起、不写回透明，物品当场换。
+        建控件、挂绑定在这里做（新脚本的 OnCreate），所以只在每帧的处理里调、不在按钮回调里（引擎结论 §27-2）。
+        没在显示、上一份没接上或接坏了、类型不同、格子取不到、新脚本造不出来都给 False（什么都没动），调用方照原来的路子重建
+        """
+        old = self.Script
+        if old is None or not is_live(old) or self.GridControl is None or self.Recipe is None or recipe is None:
+            return False
+        category_id = getattr(recipe, "Type", None)
+        if not category_id or category_id != getattr(self.Recipe, "Type", None) or not self.CanPreview(recipe):
+            return False
+        cell = self.GridControl.GetChildByPath("/{}1".format(TooltipPath.PreviewCellName))
+        if cell is None or cell.GetChildByPath(TooltipPath.PreviewContentSub) is None:
+            return False
+        script_cls = RecipeUIManager.GetScriptData(category_id)[0]
+        try:
+            script = script_cls(recipe)
+        except Exception as e:  # noqa  第三方配方页脚本的构造抛了：旧的照样亮着，调用方照「建不出来」走
+            logger.error("[MEI/{}] 类型 {} 的配方页脚本建不出来: {}".format(self.LogTag, category_id, error_text(e)))
+            return False
+        detach_script(old, self.LogTag)
+        self.Script = script
+        self.Recipe = recipe
+        self.CreateScript(cell)
         return True
 
     def MakeBinder(self):  # type: () -> RecipesGridBind

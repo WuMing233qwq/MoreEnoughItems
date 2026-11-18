@@ -46,6 +46,7 @@ from mod_log import logger
 
 from MEIScripts.constants.texts import TreeText
 from MEIScripts.constants.ui import TreeConst, TreePath
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import flush, full_size, mark_dirty, show_later
 from MEIScripts.utils.text import error_text, native_str
 
 from .cell import TreeCell
@@ -97,14 +98,8 @@ RETRY_LIMIT = 5
 """ 一格的子控件取不到，最多再写这么多帧 """
 
 
-def set_size(control, size):  # type: (any, tuple) -> None
-    """
-    改控件的大小：**用 SetFullSize 写绝对值**，不用 SetSize —— SetSize 是旧接口，只改当前的值、不改尺寸规则，
-    JSON 里写相对尺寸（100%）的控件下一次排版就被拉回去（引擎结论 §28 grid 那次同一类；大树「偏下、拉不到剩下的」多半就是它）。
-    悬浮窗、成就界面改尺寸也都用 SetFullSize
-    """
-    control.SetFullSize("x", {"absoluteValue": int(size[0])})
-    control.SetFullSize("y", {"absoluteValue": int(size[1])})
+set_size = full_size
+""" 改控件的大小：写尺寸规则（blocks.writer.full_size）—— SetSize 只改当前的值，大树「偏下、拉不到剩下的」多半就是它（引擎结论 §28）"""
 
 
 def _hits(rect, area):  # type: (tuple, tuple) -> bool
@@ -164,11 +159,12 @@ class Scene(object):
 
 
 class TreeShape(object):
-    """ 框、连线：位置、大小、显隐各记着上次写的，没变不碰引擎 """
-    __slots__ = ("Control", "Pos", "Size", "Shown", "Fresh")
+    """ 框、连线：位置、大小、显隐各记着上次写的，没变不碰引擎；显隐不当场刷新（画布这一批分完控件 flush 一次）"""
+    __slots__ = ("Control", "Screen", "Pos", "Size", "Shown", "Fresh")
 
-    def __init__(self, control):
+    def __init__(self, control, screen=None):
         self.Control = control
+        self.Screen = screen
         self.Pos = None  # type: tuple or None
         self.Size = None  # type: tuple or None
         self.Shown = True  # 刚建出来是亮着的（模板没写 visible）
@@ -189,7 +185,7 @@ class TreeShape(object):
     def Show(self, on):
         on = bool(on)
         if on != self.Shown:
-            self.Control.SetVisible(on)
+            show_later(self.Control, on, self.Screen)
             self.Shown = on
 
 
@@ -420,7 +416,8 @@ class TreeCanvas(object):
                 self.__Hide(kind, slot)
         self.Released = []
         if refresh:
-            self.Screen.UpdateScreen(True)
+            mark_dirty(self.Screen)
+        flush()  # 这一批分控件里建的、改了显隐的一起刷新一次（显隐都没当场刷新：拖动时一批进出视口就是一批整屏重排）
         self.Synced = None if stopped else (delta, frame)
 
     def __Place(self, kind, item):  # type: (str, int) -> bool or None
@@ -499,7 +496,7 @@ class TreeCanvas(object):
             item.Prime()
             self.__Bind(item)
         else:
-            item = TreeShape(control)
+            item = TreeShape(control, self.Screen)
         pool.append(item)
         self.Owner[kind][index] = None
         return index
@@ -532,20 +529,21 @@ class TreeCanvas(object):
                 self.Free[kind].append(slot)
                 created = True
         if created:
-            self.Screen.UpdateScreen(True)
+            mark_dirty(self.Screen)
+            flush()
 
     def __SetHidden(self, hidden):
         """ 整块画布藏不藏（视口里的还没写完时藏）；「绘制中」另由 __SetBusy 管 """
         if self.Hidden == hidden:
             return
         self.Hidden = hidden
-        self.Content.SetVisible(not hidden)
+        show_later(self.Content, not hidden, self.Screen)
 
     def __SetBusy(self, shown):
         if self.BusyShown == shown or self.Busy is None:
             return
         self.BusyShown = shown
-        self.Busy.SetVisible(shown)
+        show_later(self.Busy, shown, self.Screen)
 
     # 视野
 # ======================================================================================================================

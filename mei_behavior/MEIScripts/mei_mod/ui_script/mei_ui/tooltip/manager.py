@@ -67,6 +67,7 @@ from MEIScripts.constants.texts import TooltipText
 from MEIScripts.constants.ui import ModeConst, TooltipKind, TooltipPath
 from MEIScripts.mei_mod.state.settings import IsAdvancedTooltipEnabled, IsScreenBoundsEnabled, IsTouchOppositeSide
 from MEIScripts.mei_mod.ui_script.controls.item.panel import panel_controls
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import flush, full_size, mark_dirty, show_later
 from MEIScripts.mei_mod.ui_script.mei_ui.floating.state import KIND_HUD
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.ruler import match_font
 from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
@@ -201,6 +202,7 @@ class TooltipManager(object):
         self.__Hovered = {}  # type: dict  # id(面板) -> 面板：这一帧悬停探针报上来的
         self.__TouchHovered = {}  # type: dict  # 触屏：上一帧报上来的（认「移进」用：这一帧有、上一帧没有的那一格）
         self.__Rejected = None  # type: any  # 上次没建成的那一格：光标离开前不再试
+        self.__Written = {}  # type: dict  # 宿主的显隐、触屏宿主与框的位置大小（(路径, 哪一样) -> 值）：一样的不再碰引擎
 
     def OnCreate(self):
         """
@@ -217,6 +219,7 @@ class TooltipManager(object):
         self.Host = HOST_TOUCH if is_touch() or on_hud else HOST_DESKTOP
         self.ReplacesVanillaName = self.Enabled and self.Host == HOST_DESKTOP
         self.__TouchHovered = {}
+        self.__Written = {}  # 开界面：宿主的显隐两个方向都重新写一遍，不认上次记的
         self.Hide(force=True)
 
     def OnDestroy(self):
@@ -376,9 +379,9 @@ class TooltipManager(object):
         if tip is None:
             return False
         if measure:
-            update = getattr(getattr(self.MainNode, "ScreenNode", None), "UpdateScreen", None)
-            if callable(update):
-                update(True)
+            # 当场排一次版（UpdateScreen(True)，同一帧算好）：菜单这一帧没刷新的显隐也一起排进去，所以经 flush（排完记下的就清了）
+            mark_dirty(getattr(self.MainNode, "ScreenNode", None))
+            flush()
         self.__PlaceTouch(tip.GetSize())
         return True
 
@@ -398,6 +401,31 @@ class TooltipManager(object):
         if rect is None:
             return False
         self.__SetTitle(text)
+        self.__Own(panel, rect, True)
+        return True
+
+    def SwapRecipeFor(self, panel):  # type: (any) -> bool
+        """
+        同一类型的配方预览原地换（tooltip.md §6.19）：触屏菜单开着、亮着的是配方预览，新的这一格（配方收藏）也要同一类型的配方预览 ——
+        不收起、不写回透明：同一个 PREVIEW 上只换配方页脚本（TooltipRecipeView.Swap）、换标题、换归属，框一直亮着；
+        菜单写好按钮后调 Relayout(measure=True) 按新尺寸、新格子重摆（同一帧）。新的配方页脚本在这里接上（建控件、挂绑定），只在每帧的处理里调。
+        不是这种情况（不是触屏、没在显示、亮着的不是配方预览、新的这一格不要配方预览或类型不同、设置关了高级 Tooltip）给 False，什么都没动，
+        调用方照原来的路子走
+        """
+        if not self.Enabled or self.Host != HOST_TOUCH or self.Phase != PHASE_SHOWN or self.Current != TooltipKind.Recipe:
+            return False
+        if self.Content is None or panel is None or getattr(panel, "Destroyed", False):
+            return False
+        content = panel.TooltipContent()
+        if content is None or content[0] != TooltipKind.Recipe:
+            return False
+        recipe = content[1]() if callable(content[1]) else content[1]
+        if recipe is None or RecipeManager.GetPreviewDef(getattr(recipe, "Type", None)) != self.ContentDef:
+            return False
+        rect = self.__RectOf(panel)
+        if rect is None or not self.Recipe.Swap(recipe):
+            return False
+        self.__SetTitle(self.RecipeTitle(recipe))
         self.__Own(panel, rect, True)
         return True
 
@@ -669,14 +697,35 @@ class TooltipManager(object):
         if root is None:
             return False
         desktop = self.Host == HOST_DESKTOP
-        root.SetVisible(self.Enabled or not desktop)
-        for path, visible in ((TooltipPath.Desktop, self.Enabled and desktop),
+        for path, visible in ((TooltipPath.Root, self.Enabled or not desktop),
+                              (TooltipPath.Desktop, self.Enabled and desktop),
                               (TooltipPath.DesktopFrame, desktop and showing),
                               (TooltipPath.Touch, showing and not desktop)):
-            control = self.MainNode.GetUIControl(path)
-            if control is not None:
-                control.SetVisible(visible)
+            self.__ShowHost(path, visible)
         return True
+
+    def __ShowHost(self, path, visible):
+        """
+        宿主显隐：和上次写的一样不碰引擎；写也不当场刷新（show_later），主节点这一帧末尾 flush 一次 ——
+        原来收起、建各写四个、每个都整屏重排一遍（换一种内容就是八次，tooltip.md §6.15）。这个管理器每次开界面新建一个，
+        头一回照样两个方向都写（界面状态跨开关存活，§22）
+        """
+        visible = bool(visible)
+        if self.__Written.get((path, "visible")) == visible:
+            return
+        control = self.MainNode.GetUIControl(path)
+        if control is None:
+            return
+        self.__Written[(path, "visible")] = visible
+        show_later(control, visible, self.MainNode.ScreenNode)
+
+    def __Resize(self, path, control, size):
+        """ 触屏宿主、框的大小：写尺寸规则（full_size；旧的 SetSize 排版一刷新就回到 JSON 的大小，引擎结论 §28），一样的不再写 """
+        if self.__Written.get((path, "size")) == size:
+            return
+        self.__Written[(path, "size")] = size
+        full_size(control, size)
+        mark_dirty(self.MainNode.ScreenNode)  # 尺寸规则也等这一帧末尾那次刷新一起排
 
     def __Build(self, kind):
         """
@@ -852,10 +901,10 @@ class TooltipManager(object):
             if slot is not None:
                 slot.SetPosition((0, 0))
         total = (int(round(total[0])), int(round(total[1])))
-        host.SetSize(total)
+        self.__Resize(TooltipPath.Touch, host, total)
         frame = self.MainNode.GetUIControl(TooltipPath.TouchFrame)
         if frame is not None:
-            frame.SetSize(total)
+            self.__Resize(TooltipPath.TouchFrame, frame, total)
         root_x, root_y = self.Origin
         rect = self.AnchorRect or ((0, 0), (0, 0))
         if self.OppositeSide:
@@ -865,7 +914,10 @@ class TooltipManager(object):
             x, y = place_outside(rect, total, region, side, self.Bounds)
         else:
             x, y = place_beside(rect, total, self.Bounds)
-        host.SetPosition((int(round(x - root_x)), int(round(y - root_y))))
+        pos = (int(round(x - root_x)), int(round(y - root_y)))
+        if self.__Written.get((TooltipPath.Touch, "pos")) != pos:
+            self.__Written[(TooltipPath.Touch, "pos")] = pos
+            host.SetPosition(pos)
 
     def __RectOf(self, panel):  # type: (any) -> tuple or None
         """ 这一格的矩形；有镜像格的（酿造台下面三瓶）取光标所在的那一个，光标不在哪个上面就取它自己的 """

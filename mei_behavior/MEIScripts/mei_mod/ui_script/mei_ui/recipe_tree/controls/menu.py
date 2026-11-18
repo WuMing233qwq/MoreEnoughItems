@@ -24,6 +24,10 @@
 内容是三样：标题（这一格完整的悬停文字）、一条配方、一行灰字。**配方先用这个类型自己的配方预览**（在配方树页面渲染
 配方 ui_script，tooltip 那套 PREVIEW，preview.py）—— 透明着建，建齐了菜单才排版、才显示；类型不支持预览（`preview_def=None`）、
 建不出来、等 0.5 秒还没齐，就用配方条兜底（工作方块 + 原料 → 产物，格子用 cell 模板）。
+正亮着时换同一类型的另一条配方不重建、不透明：原地换（STAGE_SWAP）。
+
+**显隐、尺寸都不当场刷新**：SDK 的 SetVisible 缺省每调一次就重排整个界面（引擎结论 §57），一份菜单要写几十个显隐 ——
+这里和上次写的比、一样不写，写的时候 show_later（不刷新）、尺寸写规则（full_size），这一份写完 flush 一次。
 
 按钮是 JSON 里静态的一池（button.mei.tree.menu.<i>，BF_ButtonClickUp 单个绑定，引擎结论 §9）；步进器两头是图标按钮，
 最多两个步进器。动作由脚本给（TreeMenuButton.Action），这里只排版、派发。
@@ -37,6 +41,7 @@ from mod_log import logger
 
 from MEIScripts.constants.ui import TreeConst, TreePath
 from MEIScripts.mei_mod.state.settings import IsScreenBoundsEnabled, IsTreePreviewEnabled
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import flush, full_size, mark_dirty, show_later
 from MEIScripts.mei_mod.ui_script.mei_ui.menu import layout
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.ruler import TextRuler
 from MEIScripts.mei_mod.ui_script.mei_ui.tooltip.layout import place_beside
@@ -73,6 +78,8 @@ STAGE_READY = "ready"
 """ 配方预览建齐了（或本来就亮着），只差量字 """
 STAGE_STRIP = "strip"
 """ 不用预览（配方条），只差量字 """
+STAGE_SWAP = "swap"
+""" 正亮着同一类型的预览、换成另一条：旧菜单照旧亮着，字量好了下一帧的 Tick 里原地换配方、当场排版（preview.TreePreview.Swap）"""
 
 MEASURE_TICKS = 10
 """ 量字最多等几帧（约 0.3 秒）：到了照估的宽排，菜单不能一直不出 """
@@ -259,6 +266,7 @@ class TreeMenu(object):
                 if button is not None:
                     button.AddTouchEventParams({"isSwallow": True, "strip": index})
                     button.SetButtonTouchUpCallback(self.OnStripUp)
+        self.Written = {}  # type: dict  # (哪一样, 控件) -> 上次写的显隐 / 大小：一样的不再碰引擎
         self.ButtonActions = [None] * len(self.Buttons)
         self.IconActions = {}
         self.Open = False
@@ -339,8 +347,8 @@ class TreeMenu(object):
         self.__DropPreview()
         self.ButtonActions = [None] * len(self.Buttons)
         self.IconActions = {}
-        if self.Host is not None:
-            self.Host.SetVisible(False)
+        self.__Show(self.Host, False)
+        flush()
 
     def Destroy(self):
         """ 关配方树：预览的脚本、绑定、控件一起拆 """
@@ -362,6 +370,9 @@ class TreeMenu(object):
         if self.Pending is None:
             return
         model, anchor, stage = self.Pending
+        if stage == STAGE_SWAP:
+            self.__Swap(model, anchor)
+            return
         if stage == STAGE_BEGIN:
             if self.Preview.Begin(model.Recipe, model.PreviewTitle):
                 self.Pending = (model, anchor, STAGE_BUILD)
@@ -391,7 +402,8 @@ class TreeMenu(object):
         """ 只改灰字（点了配方条里的一格写它的名字）"""
         if self.Info is not None and text:
             self.Info.asLabel().SetText(native_str(text))
-            self.Info.SetVisible(True)
+            self.__Show(self.Info, True)
+            flush()
 
     def Show(self, model, anchor):  # type: (TreeMenuModel, tuple) -> None
         """
@@ -412,6 +424,9 @@ class TreeMenu(object):
             elif pending is not None and pending[2] == STAGE_BUILD and self.Preview.Building(model.Recipe):
                 # 同一条正建着（菜单动作当场重排一次、重画完又排一次）：接着建，只换成新的这一份模型与位置
                 stage = STAGE_BUILD
+            elif self.Displayed and self.Preview.CanSwap(model.Recipe):
+                # 正亮着同一类型的另一条（换配方、上一条 / 下一条）：不透明着重建，原地换
+                stage = STAGE_SWAP
             else:
                 stage = STAGE_BEGIN
         else:
@@ -420,7 +435,7 @@ class TreeMenu(object):
             self.__Present(model, anchor, self.Preview.Size if stage == STAGE_READY else None)
             return
         self.Pending = (model, anchor, stage)
-        if self.Displayed and stage in (STAGE_READY, STAGE_STRIP):
+        if self.Displayed and stage in (STAGE_READY, STAGE_STRIP, STAGE_SWAP):
             self.__Hold()
         else:
             self.__Conceal()
@@ -429,6 +444,30 @@ class TreeMenu(object):
         """ 正亮着、只差量字：先不动它（换成透明会闪一下），旧的按钮先不响应；量好了 Tick 里当场换成新的 """
         self.ButtonActions = [None] * len(self.Buttons)
         self.IconActions = {}
+
+    def __Swap(self, model, anchor):
+        """
+        STAGE_SWAP（Tick 里）：要用的字量好了（最多等 MEASURE_TICKS 帧）才动 —— 原地换配方、当场排一次版量新尺寸、排菜单，
+        都在这一帧里：玩家看到的上一帧是旧菜单、下一帧是新菜单，框一直亮着。换不了（新的配方页脚本造不出来之类）照原来的路子透明着重建
+        """
+        self.Waited += 1
+        if self.Waited < MEASURE_TICKS and not self.Ruler.Ready(menu_texts(model)):
+            return
+        self.Pending = None
+        if self.Preview.Swap(model.Recipe, model.PreviewTitle):
+            if self.Preview.View.Broken():
+                # 换上的配方页脚本接坏了（attach_script 记过一行 error）：和建的时候一样用配方条
+                logger.warn("[MEI/tree] 配方预览建不成（{}），用配方条".format(self.Preview.Stage()))
+                self.Preview.Stop()
+                self.__Present(model, anchor, None)
+                return
+            mark_dirty(self.Screen)
+            flush()  # 当场排一次版（UpdateScreen(True)，同一帧算好）：标题换了字，量到的才是新的宽
+            self.Preview.Measure()
+            self.__Present(model, anchor, self.Preview.Size)
+            return
+        self.Pending = (model, anchor, STAGE_BEGIN)
+        self.__Conceal()
 
     def __Conceal(self):
         """
@@ -439,7 +478,8 @@ class TreeMenu(object):
         self.ButtonActions = [None] * len(self.Buttons)
         self.IconActions = {}
         self.Frame.SetAlpha(0.0)
-        self.Host.SetVisible(True)
+        self.__Show(self.Host, True)
+        flush()
         self.Open = True
         self.Displayed = False
 
@@ -453,7 +493,7 @@ class TreeMenu(object):
         label_w = max([layout.LABEL_W] + [layout.real_width(row.Section) for row in model.Rows])
         box = layout.box_layout(size, rows, labels=True, kind_width=layout.real_width(model.Kind),
                                 close_size=layout.CLOSE_SIZE, close_offset=layout.CLOSE_OFFSET, label_w=label_w)
-        self.Frame.SetSize(box["size"], False)
+        self.__Size(self.Frame, box["size"])
         self.Kind.SetPosition(box["kind"])
         self.Kind.asLabel().SetText(native_str(model.Kind))
         self.CloseSlot.SetPosition(box["close"][:2])
@@ -462,7 +502,7 @@ class TreeMenu(object):
         if title_pos is not None:
             self.Title.SetPosition(title_pos)
             self.Title.asLabel().SetText(native_str(model.Title or ""))
-        self.Title.SetVisible(title_pos is not None)
+        self.__Show(self.Title, title_pos is not None)
         self.__ShowStrip(model, strip_pos)
         if preview_pos is not None:
             self.Preview.Reveal(preview_pos)
@@ -471,16 +511,17 @@ class TreeMenu(object):
         if info_pos is not None:
             self.Info.SetPosition(info_pos)
             self.Info.asLabel().SetText(native_str(model.Info))
-        self.Info.SetVisible(info_pos is not None)
+        self.__Show(self.Info, info_pos is not None)
         if box["divider"] is not None:
             x, y, width = box["divider"]
             self.Divider.SetPosition((x, y))
-            self.Divider.SetSize((width, 1), False)
-        self.Divider.SetVisible(box["divider"] is not None)
+            self.__Size(self.Divider, (width, 1))
+        self.__Show(self.Divider, box["divider"] is not None)
         self.Actions.SetPosition(box["actions"][:2])
         self.__ShowButtons(model.Rows, specs, box)
         self.__Place(box["size"], anchor)
-        self.Host.SetVisible(True)
+        self.__Show(self.Host, True)
+        flush()  # 这一份写完刷新一次（显隐都没当场刷新：一份菜单几十个显隐，原来每写一个整个界面重排一遍）
         self.Open = True
         self.Displayed = True
 
@@ -515,8 +556,8 @@ class TreeMenu(object):
             spec.Pos = (x, 0)
             cell.Apply(spec)
             x += CELL
-        self.Strip.SetVisible(pos is not None)
-        self.Arrow.SetVisible(pos is not None and model.Arrow is not None and model.Arrow < len(model.Strip))
+        self.__Show(self.Strip, pos is not None)
+        self.__Show(self.Arrow, pos is not None and model.Arrow is not None and model.Arrow < len(model.Strip))
 
     def __ShowButtons(self, rows, specs, box):
         self.ButtonActions = [None] * len(self.Buttons)
@@ -544,7 +585,7 @@ class TreeMenu(object):
                     if control is None:
                         continue
                     control.SetPosition((x, y))
-                    control.SetVisible(True)
+                    self.__Show(control, True)
                     control.SetAlpha(1.0 if spec.Enabled else 0.35)
                     self.IconActions[slot] = spec.Action if spec.Enabled else None
                     continue
@@ -557,42 +598,68 @@ class TreeMenu(object):
                 if control is None:
                     continue
                 control.SetPosition((x, y))
-                control.SetSize((width, height), True)
+                self.__Size(control, (width, height))
                 label = control.GetChildByPath(TreePath.ButtonLabel)
                 if label is not None:
                     label.asLabel().SetText(native_str(spec.Text))
                     label.asLabel().SetTextColor(DANGER if spec.Danger else (WHITE if spec.Enabled else MUTED))
                 mask = control.GetChildByPath(TreePath.ButtonMask)
                 if mask is not None:
-                    mask.SetVisible(not spec.Enabled)
-                control.SetVisible(True)
+                    self.__Show(mask, not spec.Enabled, ("mask", used_buttons))
+                self.__Show(control, True)
             if row_index < len(self.Sections) and self.Sections[row_index] is not None:
                 section = self.Sections[row_index]
                 if box["names"][row_index] is not None:
                     section.SetPosition(box["names"][row_index])
                 section.asLabel().SetText(native_str(row.Section))
-                section.SetVisible(True)
+                self.__Show(section, True)
             if stepper_slot is not None and stepper_slot < len(self.Numbers) and self.Numbers[stepper_slot] is not None:
                 number = box["numbers"][row_index]
                 control = self.Numbers[stepper_slot]
                 if number is not None:
                     control.SetPosition((number[0], number[1]))
-                    control.SetSize((number[2], LINE_H), False)
+                    self.__Size(control, (number[2], LINE_H))
                 control.asLabel().SetText(native_str(row.Number))
-                control.SetVisible(True)
+                self.__Show(control, True)
         for index in range(used_buttons, len(self.Buttons)):
             if self.Buttons[index] is not None:
-                self.Buttons[index].SetVisible(False)
+                self.__Show(self.Buttons[index], False)
         for slots, controls in zip(TreeConst.MenuIcons, self.Icons):
             for slot, control in zip(slots, controls):
                 if slot not in used_icons and control is not None:
-                    control.SetVisible(False)
+                    self.__Show(control, False)
         for index in range(len(rows), len(self.Sections)):
             if self.Sections[index] is not None:
-                self.Sections[index].SetVisible(False)
+                self.__Show(self.Sections[index], False)
         for index in range(steppers, len(self.Numbers)):
             if self.Numbers[index] is not None:
-                self.Numbers[index].SetVisible(False)
+                self.__Show(self.Numbers[index], False)
+
+    def __Show(self, control, on, key=None):
+        """
+        显隐：和上次写的一样不碰引擎；写也不当场刷新（这一份写完 flush 一次）—— SDK 缺省每改一次显隐就重排整个界面（引擎结论 §57），
+        一份菜单几十个，原来每次重排都可能闪一下。key 给临时取到的子控件（每次取都是新对象）用
+        """
+        if control is None:
+            return
+        on = bool(on)
+        key = ("visible", key if key is not None else id(control))
+        if self.Written.get(key) == on:
+            return
+        self.Written[key] = on
+        show_later(control, on, self.Screen)
+
+    def __Size(self, control, size):
+        """ 大小：写尺寸规则（full_size；旧的 SetSize 排版一刷新就回到 JSON 的大小，引擎结论 §28），一样的不再写 """
+        if control is None:
+            return
+        size = (int(size[0]), int(size[1]))
+        key = ("size", id(control))
+        if self.Written.get(key) == size:
+            return
+        self.Written[key] = size
+        full_size(control, size)
+        mark_dirty(self.Screen)  # 尺寸规则也等这一份写完的那次刷新一起排
 
     def __Place(self, size, anchor):
         """

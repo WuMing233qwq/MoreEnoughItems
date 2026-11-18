@@ -39,6 +39,7 @@ from MEIScripts.constants.codes import NameConst, QueryConst
 from MEIScripts.constants.texts import TooltipText, TreeText
 from MEIScripts.constants.ui import ModeConst, TreeConst, TreePath
 from MEIScripts.mei_mod.state import BookmarkManager, TreePrefsManager
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import flush, forget_screen, show_later
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.actions import op_toggle_item
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.layout import real_width
 from MEIScripts.mei_mod.ui_script.mei_ui.modes.manager import ModeManager
@@ -189,6 +190,7 @@ class RecipeTreeScript(object):
         if self.Bindings is not None:
             self.Bindings.UnbindAll()
             self.Bindings = None
+        forget_screen(self.Screen)  # 界面要关了：记下没刷新的不刷了（关掉的界面再 UpdateScreen 会报错）
 
     def OnTick(self):
         """ 每帧（界面的 Update，每秒 30 次）：推进解算、画布，提示倒计时 """
@@ -224,6 +226,7 @@ class RecipeTreeScript(object):
         self.Menu.Tick()  # 量字；菜单里的配方预览建齐了、字量好了才排版、显示
         self.__RefitTitle()
         self.__AutoSave()
+        flush()  # 格子、汇总、根格这一帧改的显隐都没当场刷新（show_later）：一帧刷新一次
 
     def __InitialState(self):  # type: () -> TreeState or None
         param = self.Param
@@ -525,7 +528,7 @@ class RecipeTreeScript(object):
         control = self.TopControls.get(name)
         mask = control.GetChildByPath(TreePath.ButtonMask) if control is not None else None
         if mask is not None:
-            mask.SetVisible(not enabled)
+            show_later(mask, not enabled, self.Screen)
 
     def __SetIconOn(self, name, on):
         control = self.TopControls.get(name)
@@ -1020,7 +1023,7 @@ class RecipeTreeScript(object):
     def __PickChoices(self, node):  # type: (any) -> list
         """
         这一格能换成的候选：从根到父格子的路上已经有的不算 —— 选了它就绕回自己，解算器不用它（换成第一个不在路上的），
-        菜单还会按新键找那一格、找不到就收起；全在路上的话照全部（解算器那时也只能用第一个）
+        菜单还会按新键找那一格、找不到就收起；全在路上的话照全部（解算器那时用本树选的、出得了环的那个）
         """
         choices = list(node.Choices or ())
         parent = self.__Parent(node)
@@ -1165,4 +1168,4 @@ class RecipeTreeScript(object):
         if text is not None:
             control.asLabel().SetText(native_str(text))
         if visible is not None:
-            control.SetVisible(visible)
+            show_later(control, visible, self.Screen)

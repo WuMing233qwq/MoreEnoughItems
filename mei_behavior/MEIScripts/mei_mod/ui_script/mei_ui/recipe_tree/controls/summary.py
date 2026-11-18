@@ -34,6 +34,7 @@ from mod_log import logger
 
 from MEIScripts.constants.texts import TreeText
 from MEIScripts.constants.ui import TreeConst, TreePath
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import show_later
 from MEIScripts.mei_mod.ui_script.mei_ui.menu import layout
 from MEIScripts.utils.text import native_str
 
@@ -125,10 +126,11 @@ def capacity(height, foot_h):  # type: (int, int) -> int
 
 class SummaryRow(object):
     """ 清单的一行：行控件、它里面的格子（TreeCell）和两行字 """
-    __slots__ = ("Control", "Cell", "Name", "Info", "Shown", "Texts")
+    __slots__ = ("Control", "Cell", "Name", "Info", "Shown", "Texts", "Screen")
 
-    def __init__(self, control, cell, name, info):
+    def __init__(self, control, cell, name, info, screen=None):
         self.Control = control
+        self.Screen = screen
         self.Cell = cell
         self.Name = name
         self.Info = info
@@ -138,7 +140,7 @@ class SummaryRow(object):
     def SetVisible(self, on):  # type: (bool) -> None
         if self.Shown != on:
             self.Shown = on
-            self.Control.SetVisible(on)
+            show_later(self.Control, on, self.Screen)
         if not on:
             self.Cell.Hide()
 
@@ -170,6 +172,7 @@ class TreeSummary(object):
         self.RefreshButton = get(TreePath.Refresh)
         self.TabControls = dict((tab, get(TreePath.Tabs + "/tab_" + tab)) for tab in TABS)
         self.Lines = []  # type: list  # SummaryRow
+        self.Written = {}  # type: dict  # 写过的显隐（键 -> 值）：一样的不再碰引擎
         self.Cells = []  # type: list  # 每一行的格子（TreeCell）：脚本按它找菜单跟着的那一格
         for index in range(TreeConst.SummaryRows):
             row = get(TreePath.SummaryRow.format(index))
@@ -179,7 +182,7 @@ class TreeSummary(object):
             cell = TreeCell(screen, control, index)
             self.Cells.append(cell)
             self.Lines.append(SummaryRow(row, cell, row.GetChildByPath(TreePath.RowName),
-                                         row.GetChildByPath(TreePath.RowInfo)))
+                                         row.GetChildByPath(TreePath.RowInfo), screen))
             button = cell.Button()
             if button is not None:
                 button.AddTouchEventParams({"isSwallow": True, "sum": len(self.Cells) - 1})
@@ -248,6 +251,21 @@ class TreeSummary(object):
         if index is not None and 0 <= index < len(self.Cells) and self.Cells[index].Target is not None:
             self.OnCell(self.Cells[index].Target, self.Cells[index])
 
+    def __Show(self, control, on, key=None):
+        """
+        显隐：和上次写的一样不碰引擎；写也不当场刷新（show_later），配方树每帧末尾 flush 一次 ——
+        SDK 缺省每改一次显隐就重排整个界面（引擎结论 §57），展开 / 收起的过渡每帧都要写、换一页要写十来个。
+        key 给临时取到的子控件（每次取都是新对象）用
+        """
+        if control is None:
+            return
+        on = bool(on)
+        key = key if key is not None else id(control)
+        if self.Written.get(key) == on:
+            return
+        self.Written[key] = on
+        show_later(control, on, self.Screen)
+
     # 汇总栏的宽
 # ======================================================================================================================
     def SetShown(self, width):  # type: (int) -> None
@@ -256,7 +274,7 @@ class TreeSummary(object):
             return
         width = max(0, int(round(width)))
         self.Panel.SetFullSize("x", {"absoluteValue": width})
-        self.Panel.SetVisible(width > 0)
+        self.__Show(self.Panel, width > 0)
         self.ShownWidth = width
 
     # 画
@@ -311,7 +329,7 @@ class TreeSummary(object):
                 label.asLabel().SetTextColor(TreeConst.TabOnColor if on else TreeConst.TabOffColor)
             mark = control.GetChildByPath("/on")
             if mark is not None:
-                mark.SetVisible(on)
+                self.__Show(mark, on, ("tab", name))
         self.FootText = native_str(foot or "").decode("utf-8", "replace")
         if self.Foot is not None:
             self.Foot.asLabel().SetText(native_str(self.FootText))
@@ -340,19 +358,19 @@ class TreeSummary(object):
             if not self.Rows:
                 text = TreeText.EmptyLack if self.Tab == TAB_LACK else TreeText.Empty
                 self.Empty.asLabel().SetText(native_str(text))
-            self.Empty.SetVisible(not self.Rows)
+            self.__Show(self.Empty, not self.Rows)
         # 翻页都锚在 JSON 里（左下），这里只切显隐、改字；只有一页时「刷新背包」占满底下那一行
         pages = self.Pages()
         paged = pages > 1
         for control, on in ((self.Prev, self.Page > 0), (self.Next, self.Page + 1 < pages)):
             if control is not None:
-                control.SetVisible(paged)
+                self.__Show(control, paged)
                 mask = control.GetChildByPath(TreePath.ButtonMask)  # SetAlpha 只对图片、文字生效：到头了盖上遮罩
                 if mask is not None:
-                    mask.SetVisible(not on)
+                    self.__Show(mask, not on, ("mask", id(control)))
         if self.PageLabel is not None:
             self.PageLabel.asLabel().SetText(native_str(TreeText.Page.format(self.Page + 1, pages)))
-            self.PageLabel.SetVisible(paged)
+            self.__Show(self.PageLabel, paged)
         if self.RefreshButton is not None:
             width = self.Width - 2 * PAD - (PAGER_W if paged else 0)
             self.RefreshButton.SetFullSize("x", {"absoluteValue": width})

@@ -51,6 +51,7 @@ from MEIScripts.constants.ui import (
 )
 from MEIScripts.mei_mod.state.bookmarks import entry_identity
 from MEIScripts.mei_mod.ui_script.controls.item.panel import render_args
+from MEIScripts.mei_mod.ui_script.mei_ui.blocks.writer import full_size, mark_dirty, show_later
 from MEIScripts.mei_mod.ui_script.mei_ui.menu.actions import (
     ACTIONS, SECTION_CANDIDATE, SECTION_COUNT, SECTIONS, MenuTarget, actions_for, kind_of, mute, split_bar,
 )
@@ -226,7 +227,7 @@ class TouchMenu(object):
         self.__Click = None  # type: any  # 点了哪个按钮：(BAR / POOL, 第几个) / (ICON, 槽名) / CLOSE，下一帧执行
         self.__Armed = None  # type: int or None  # 要二次确认的动作点过第一下：它在 Actions 里的位置
         self.__Seek = None  # type: tuple or None  # 改完收藏在找新格子：(跟着的那一条, 找了几帧)
-        self.__Written = {}  # type: dict  # 写过的底图、颜色、图标（(路径, 哪一样) -> 值）：一样的不再碰引擎
+        self.__Written = {}  # type: dict  # 写过的显隐、字、位置、大小、底图、颜色（(路径, 哪一样) -> 值）：一样的不再碰引擎
         self.__Ruler = None  # type: TextRuler or None  # 量字宽（ruler.py）：第一次用到才取覆盖层里那排 label
         self.__Refine = False  # type: bool  # 排的时候有字还没量（照估的宽排了）：量好了重排一次
 
@@ -355,8 +356,9 @@ class TouchMenu(object):
                 MenuConst.PoolSize + len(pool), MenuConst.PoolSize))
             actions = [action for index, action in enumerate(actions) if index not in pool]
             slots = [slot for index, slot in enumerate(slots) if index not in pool]
-        if self.Target is not None and self.__Seek is None and self.Tooltip.RetitleFor(panel, menu_title(panel)):
-            # 同一种内容（只有标题）原地换：框不收起、不变透明，字、按钮、位置当场换成新格子的（tooltip.md §6.17）
+        if self.Target is not None and self.__Seek is None and (
+                self.Tooltip.RetitleFor(panel, menu_title(panel)) or self.Tooltip.SwapRecipeFor(panel)):
+            # 同一种内容原地换（只有标题 §6.17、同一类型的配方预览 §6.19）：框不收起、不变透明，字、按钮、位置当场换成新格子的
             self.__Clear()
             self.__HoldRotation(panel)
             self.Target = MenuTarget(self.MainNode, panel)
@@ -512,7 +514,7 @@ class TouchMenu(object):
     def Layout(self, content_size):  # type: (tuple) -> tuple
         """
         tooltip 管理器摆菜单时调（显示那一刻、内容尺寸变了、挂到新格子上、「更多」展开 / 收起）：按内容尺寸排好框里的每样东西，
-        返回框的尺寸。位置、尺寸都由这里写（绝对定位）；按钮改宽带上子控件（SetSize(…, True)：底、遮罩跟着变，图标、字跟着锚点走）。
+        返回框的尺寸。位置、尺寸都由这里写（绝对定位）；按钮改宽写尺寸规则（full_size：底、遮罩是 100% 跟着变，图标、字跟着锚点走）。
         字宽按量的算（ruler.py）；有字还没量（亮着的时候换了字）先照估的宽排，量好了 Update 里重排一次
         """
         if not self.Ruler().Request(self.MeasureTexts()):
@@ -553,14 +555,14 @@ class TouchMenu(object):
         bars = [slot[1] for slot in self.Slots if slot[0] == BAR]
         for slot, (x, y, width, height) in zip(bars, geo["bar"]):
             if slot < MenuConst.BarSize:
-                self.__Move(bar_path(slot), (x, y), (width, height), True)
+                self.__Move(bar_path(slot), (x, y), (width, height))
         if geo["more_line"] is not None:
             x, y, width = geo["more_line"]
             self.__Move(TooltipPath.MenuMoreLine, (x, y), (width, DIVIDER_H))
         pool = [slot[1] for slot in self.Slots if slot[0] == POOL]
         for slot, (x, y, width, height) in zip(pool, geo["more"]):
             if slot < MenuConst.PoolSize:
-                self.__Move(button_path(slot), (x, y), (width, height), True)
+                self.__Move(button_path(slot), (x, y), (width, height))
         return geo["size"]
 
     def __IconSize(self):  # type: () -> tuple
@@ -686,9 +688,7 @@ class TouchMenu(object):
         self.__Show(TooltipPath.TouchClose, False)
         self.__Show(TooltipPath.TouchDivider, False)
         self.__Show(TooltipPath.MenuMoreLine, False)
-        area = self.__Control(TooltipPath.TouchActions)
-        if area is not None:
-            area.SetSize((0, 0))
+        self.__Move(TooltipPath.TouchActions, (0, 0), (0, 0))
         for index in range(MenuConst.BarSize):
             self.__Show(bar_path(index), False)
             self.__SetText(bar_path(index) + TooltipPath.MenuButtonLabelSub, u"")
@@ -707,23 +707,51 @@ class TouchMenu(object):
     def __Control(self, path):
         return self.MainNode.GetUIControl(path)
 
-    def __Move(self, path, pos, size=None, resize_children=False):
+    def __Move(self, path, pos, size=None):
+        """
+        位置、大小：和上次写的一样不碰引擎。大小写尺寸规则（full_size）—— 旧的 SetSize 只改当前的值，排版一刷新就回到 JSON 的大小（引擎结论 §28），
+        显隐改成一批写完才刷新以后，那次刷新就会把按钮、分隔线拉回去。按钮里的底、遮罩是 100%，跟着变
+        """
+        pos = (int(pos[0]), int(pos[1]))
+        size = (int(size[0]), int(size[1])) if size is not None else None
+        moved = self.__Changed(path, "pos", pos)
+        resized = size is not None and self.__Changed(path, "size", size)
+        if not moved and not resized:
+            return
         control = self.__Control(path)
         if control is None:
+            self.__Written.pop((path, "pos"), None)
+            self.__Written.pop((path, "size"), None)
             return
-        control.SetPosition((int(pos[0]), int(pos[1])))
-        if size is not None:
-            control.SetSize((int(size[0]), int(size[1])), resize_children)
+        if moved:
+            control.SetPosition(pos)
+        if resized:
+            full_size(control, size)
+            mark_dirty(self.MainNode.ScreenNode)  # 尺寸规则也等这一帧末尾那次刷新一起排
 
     def __Show(self, path, on):
+        """
+        显隐：和上次写的一样不碰引擎；写也不当场刷新（show_later），这一帧写完由主节点 flush 一次 ——
+        SDK 缺省每改一次显隐就重排整个界面（引擎结论 §57），填一次菜单要写三十来个，原来就是三十来次整屏重排（tooltip.md §6.15 第 2 条）
+        """
+        on = bool(on)
+        if not self.__Changed(path, "visible", on):
+            return
         control = self.__Control(path)
-        if control is not None:
-            control.SetVisible(bool(on))
+        if control is None:
+            self.__Written.pop((path, "visible"), None)
+            return
+        show_later(control, on, self.MainNode.ScreenNode)
 
     def __SetText(self, path, text):
+        text = native_str(text)
+        if not self.__Changed(path, "text", text):
+            return
         label = self.MainNode.GetUIControl(path, "label")
-        if label is not None:
-            label.SetText(native_str(text))
+        if label is None:
+            self.__Written.pop((path, "text"), None)
+            return
+        label.SetText(text)
 
     def __Changed(self, path, what, value):  # type: (str, str, any) -> bool
         key = (path, what)
