@@ -25,7 +25,7 @@
 排版（modules.Layout，分帧）→ 画布换上新的一版（只给视口附近分控件），画完把刚才点的那一格摆回原处、菜单跟着它重开。
 每一步在状态栏写着做到哪了；哪一步出错记一行日志、提示一句，不会停在一片空白上。
 只是看的东西（折叠、全部展开、折到 2 层）不重新解算，只重画。解算的那几帧画布顺手先建一批控件（Canvas.Warm）。
-「展开递归」（红格的菜单里红字，按物品：这棵树里这样物品的红格强制展开一层）要重新解算；「全部展开」不动它，「折叠2层」连它一起收起。
+「展开递归」（红格的菜单里红字，按物品：这棵树里这样物品的红格强制展开一层）要重新解算；「全部展开」不动它，「折叠2层」连它一起收起；工作方块换到这一格只有递归配方的类型，就是换类型 + 展开递归。
 
 交互（docs/architecture/recipe_tree.md）：点原料格出菜单 —— 在当前类型里翻配方、用这条 / 设为首选、换候选、
 不再展开 / 当原料（全局）、折叠、以它为根、收藏、查看配方页（关掉树、回到下面的界面开它的配方页）；点工作方块出菜单 ——
@@ -1094,10 +1094,15 @@ class RecipeTreeScript(object):
         """ 点工作方块换类型：这个物品在这棵树里只在这个类型的配方里挑 """
         if not type_id or type_id == node.Type:
             return
-        if node.Key not in self.State.Force and not any(not candidate.Stuck for candidate in node.InType(type_id)):
-            # 这个类型在这一格只有递归配方：解算器用不了它、会退回别的类型 —— 不记这个选择，说一声（不让菜单与树各说一个类型）
-            self.ShowToast(TreeText.TypeUnusable.format(self.Provider.TypeName(type_id).decode("utf-8", "replace")))
-            return
+        if not any(not candidate.Stuck for candidate in node.InType(type_id)):
+            # 这个类型在这一格只有递归配方：换过去就是展开递归（按物品，照这个类型强制展开一层，绕回的原料留成红格）。
+            # 这样物品在这条路上方已经强制展开过（一条路只许一次）就用不了：不记这个选择，说一声（不让菜单与树各说一个类型）
+            name = self.Provider.TypeName(type_id).decode("utf-8", "replace")
+            if node.Key in node.ForcedKeys:
+                self.ShowToast(TreeText.TypeUnusable.format(name))
+                return
+            self.State.Force.add(node.Key)
+            self.ShowToast(TreeText.TypeForced.format(name))
         self.State.SetType(node.Key, type_id)
         choice = self.State.Choices.get(node.Key)
         if choice is not None and not any(c.Recipe.Id == choice for c in node.InType(type_id)):

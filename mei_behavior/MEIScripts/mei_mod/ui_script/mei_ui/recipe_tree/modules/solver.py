@@ -30,7 +30,8 @@
    候选全都用不了才把这一格当原料（CYCLIC）。多候选的原料（标签）先挑不在路上的候选，全在路上时挑有出口的。
    **强制展开**（玩家点了「展开递归」，按物品记在 TreeState.Force）：这样物品的红格照样挑一条配方展开一层 ——
    绕回出不来的那几样原料当原料（红格，Loop：要再展开就对那样物品再点一次），别的原料照常展开；
-   同一样物品在一条路上只强制展开一次（ForcedKeys），几样物品互相绕也停得下来
+   同一样物品在一条路上只强制展开一次（ForcedKeys），几样物品互相绕也停得下来；本树选的类型在这一格只有递归配方时，
+   展开递归的物品照这个类型强制展开（没点过的照旧退回别的类型）
 2. 还原识别：做 X 的候选 R 用到 Y，而 Y 两步之内能用 X 做出来 —— R 是「还原」（铁块 → 铁锭、拆涂蜡的铜块 → 铜锭），
    有别的候选时默认不选
 3. 护栏：深度 MAX_DEPTH、节点 MAX_NODES，触线的标 TRUNC
@@ -262,7 +263,7 @@ class Solver(object):
             chosen = self.__Choose(node)
         blocked = ()
         if chosen is None:
-            if key not in self.State.Force or key in node.ForcedKeys:
+            if not self.__CanForce(node):
                 node.State = STATE_CYCLIC
                 return
             chosen, blocked = self.__Force(node)
@@ -282,6 +283,10 @@ class Solver(object):
             child.Loop = slot in blocked
             node.Children.append(child.Id)
             self.__Add(child)
+
+    def __CanForce(self, node):  # type: (TreeNode) -> bool
+        """ 这样物品点了展开递归，而且这条路上还没强制展开过它（一条路只许一次）"""
+        return node.Key in self.State.Force and node.Key not in node.ForcedKeys
 
     def __Force(self, node):  # type: (TreeNode) -> tuple
         """
@@ -389,6 +394,9 @@ class Solver(object):
             typed = [c for c in usable if c.Recipe.Type == selected]
             if typed:
                 pool = typed
+            elif self.__CanForce(node) and any(c.Recipe.Type == selected for c in node.Candidates):
+                # 选的类型在这一格只有递归配方，这样物品又点了展开递归：不退回别的类型，照这个类型强制展开（__Force 按类型筛）
+                return None
         wanted = []
         if node.Depth == 0 and self.State.RootRecipe:
             wanted.append(self.State.RootRecipe)

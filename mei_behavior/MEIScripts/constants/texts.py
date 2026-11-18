@@ -299,6 +299,7 @@ class TreeText(object):
     Unbookmarked = u"已取消收藏"
     BookmarkFull = u"收藏页签满了"
     TypeUnusable = u"{}此处只有递归配方"  # 工作方块菜单换类型：这个类型在这一格用不了
+    TypeForced = u"{}此处只有递归配方，已展开递归"  # 工作方块菜单换类型：换过去就是展开递归
     NoRoot = u"无法识别该物品，打开配方树失败"
 
 
