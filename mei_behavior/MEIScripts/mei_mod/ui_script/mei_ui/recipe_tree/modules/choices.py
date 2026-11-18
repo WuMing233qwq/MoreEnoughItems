@@ -25,6 +25,7 @@
 - Choices {物品键: 配方 Id}：本树「用这条」的；Types {物品键: 类型 Id}：本树点工作方块换的类型
 - Picks {候选签名: 物品键}：多候选的原料（标签）选了哪个（solver.choice_sig）
 - Stop：本树「不再展开」的物品键；Fold：折叠的格子（路径签名，视图状态）
+- Force：本树「展开递归」的物品键 —— 这样物品的红格强制展开一层（solver.py 的强制展开）
 
 和收藏条目互转（k = "tree"，bookmarks.md §4）：root 是 {"id", "aux"}，count 是数量，别的用物品键字符串；raw 是保存那一刻的原料汇总快照，
 收藏栏展开时直接显示、不查配方。看不懂的字段丢掉、不报错（数据可以丢，加载不能卡 —— engineering.md §7-9）
@@ -57,7 +58,7 @@ def item_ref(key, count=None):  # type: (str, int or None) -> dict
 
 
 class TreeState(object):
-    __slots__ = ("Root", "Qty", "RootRecipe", "Choices", "Types", "Picks", "Stop", "Fold")
+    __slots__ = ("Root", "Qty", "RootRecipe", "Choices", "Types", "Picks", "Stop", "Fold", "Force")
 
     def __init__(self, root, qty=1, root_recipe=None):
         self.Root = root  # type: str
@@ -68,6 +69,7 @@ class TreeState(object):
         self.Picks = {}  # type: dict
         self.Stop = set()  # type: set
         self.Fold = set()  # type: set
+        self.Force = set()  # type: set
 
     def Copy(self):  # type: () -> TreeState
         other = TreeState(self.Root, self.Qty, self.RootRecipe)
@@ -76,12 +78,13 @@ class TreeState(object):
         other.Picks = dict(self.Picks)
         other.Stop = set(self.Stop)
         other.Fold = set(self.Fold)
+        other.Force = set(self.Force)
         return other
 
     def Signature(self):  # type: () -> tuple
         """ 这一棵的选择（比一比改没改：收藏着的树改了自动更新收藏）"""
         return (self.Root, self.Qty, self.RootRecipe, frozenset(self.Choices.items()), frozenset(self.Types.items()),
-                frozenset(self.Picks.items()), frozenset(self.Stop), frozenset(self.Fold))
+                frozenset(self.Picks.items()), frozenset(self.Stop), frozenset(self.Fold), frozenset(self.Force))
 
     def SetType(self, key, type_id):  # type: (str, str) -> None
         """ 点工作方块换类型：这一格本树选过的配方不是这个类型的就作废（原料格只在当前类型里翻）"""
@@ -104,6 +107,8 @@ class TreeState(object):
             entry["stop"] = sorted(self.Stop)
         if self.Fold:
             entry["fold"] = sorted(self.Fold)
+        if self.Force:
+            entry["force"] = sorted(self.Force)
         if raw:
             entry["raw"] = [item_ref(key, count) for key, count in sorted(raw.items(), key=lambda pair: (-pair[1], pair[0]))]
         return entry
@@ -127,6 +132,7 @@ class TreeState(object):
         state.Picks = _str_map(entry.get("picks"))
         state.Stop = _str_set(entry.get("stop"))
         state.Fold = _str_set(entry.get("fold"))
+        state.Force = _str_set(entry.get("force"))
         return state
 
 

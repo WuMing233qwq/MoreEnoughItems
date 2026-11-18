@@ -25,6 +25,7 @@
 排版（modules.Layout，分帧）→ 画布换上新的一版（只给视口附近分控件），画完把刚才点的那一格摆回原处、菜单跟着它重开。
 每一步在状态栏写着做到哪了；哪一步出错记一行日志、提示一句，不会停在一片空白上。
 只是看的东西（折叠、全部展开、折到 2 层）不重新解算，只重画。解算的那几帧画布顺手先建一批控件（Canvas.Warm）。
+「展开递归」（红格的菜单里红字，按物品：这棵树里这样物品的红格强制展开一层）要重新解算；「全部展开」不动它，「折叠2层」连它一起收起。
 
 交互（docs/architecture/recipe_tree.md）：点原料格出菜单 —— 在当前类型里翻配方、用这条 / 设为首选、换候选、
 不再展开 / 当原料（全局）、折叠、以它为根、收藏、查看配方页（关掉树、回到下面的界面开它的配方页）；点工作方块出菜单 ——
@@ -52,8 +53,8 @@ from .controls.cell import CellSpec, LazyCell, TreeCell, short_count
 from .controls.menu import (STRIP_PREVIEW, TreeMenuButton, TreeMenuModel, TreeMenuRow, TreeMenu, control_width, fit_text,
                             fit_width, stepper)
 from .controls.summary import TAB_BYPRODUCT, TAB_LACK, TAB_RAW, TAB_TOOL, TreeSummary, list_rows, set_tip
-from .modules import (DEFAULT, STATE_LEAF, STATE_OK, Layout, Solver, TreeState, choice_sig, clamp_qty, key_of, shortfall,
-                      summarize)
+from .modules import (DEFAULT, STATE_CYCLIC, STATE_LEAF, STATE_OK, Layout, Solver, TreeState, choice_sig, clamp_qty, key_of,
+                      shortfall, summarize)
 from .provider import TreeProvider
 
 ViewBinder = clientApi.GetViewBinderCls()
@@ -389,9 +390,10 @@ class RecipeTreeScript(object):
         fold = ""
         if node.State == STATE_OK and node.Sig in self.State.Fold:
             fold = TreeText.Hidden.format(self.Subtree[node.Id])
-        usable = [c for c in self.__TypeCandidates(node) if not c.Stuck]
+        # 强制展开的格子：每条配方都能换（解算器在全部候选里挑），右上标橙色
+        usable = [c for c in self.__TypeCandidates(node) if node.Forced or not c.Stuck]
         return CellSpec((TARGET_NODE, node.Sig), pos, self.Provider.RenderData(node.Key), count=short_count(node.Need),
-                        fold=fold, badge=TreeConst.BadgeColors.get(node.State),
+                        fold=fold, badge=TreeConst.BadgeColors.get("forced" if node.Forced else node.State),
                         multi=node.State == STATE_OK and len(usable) > 1)
 
     def __WsSpec(self, node, pos):  # type: (any, tuple) -> CellSpec
@@ -482,6 +484,11 @@ class RecipeTreeScript(object):
             if not self.Settled():
                 return  # 解算中 Nodes 只有一部分：折出来的不全，解算完画的就是这一份
             self.State.Fold = set(node.Sig for node in self.Solver.Nodes if node.State == STATE_OK and node.Depth == 2)
+            if self.State.Force:
+                # 收起也把强制展开的递归收起来（回到默认全收）：要重新解算，汇总跟着变回去
+                self.State.Force = set()
+                self.Resolve(self.__CanvasTarget())
+                return
             self.Draw(self.__CanvasTarget())
         elif name == "back":
             self.Back()
@@ -804,7 +811,7 @@ class RecipeTreeScript(object):
         title = provider.HoverOf(node.Key)
         if node.State == STATE_OK:
             info = TreeText.NeedInfo.format(node.Need, node.Crafts) + (
-                TreeText.Surplus.format(node.Surplus) if node.Surplus else u"")
+                TreeText.Surplus.format(node.Surplus) if node.Surplus else u"") + (TreeText.Forced if node.Forced else u"")
         else:
             info = TreeText.NeedState.format(node.Need, TreeText.States.get(node.State, TreeText.NoRecipe))
         candidates = self.__TypeCandidates(node)
@@ -825,10 +832,10 @@ class RecipeTreeScript(object):
             recipe = candidate.Recipe
             rows.append(TreeMenuRow(TreeText.SecChoose, [
                 TreeMenuButton(TreeText.InUse if in_use else TreeText.Use, lambda: self.UseRecipe(node, recipe),
-                               enabled=not in_use and not candidate.Stuck),
+                               enabled=not in_use and (node.Forced or not candidate.Stuck)),
                 TreeMenuButton(TreeText.UnsetDefault if is_default else TreeText.SetDefault,
                                lambda: self.SetDefault(node, None if is_default else recipe),
-                               enabled=is_default or not candidate.Stuck),
+                               enabled=is_default or node.Forced or not candidate.Stuck),
             ]))
         picks = self.__PickChoices(node) if not is_root else []
         if len(picks) > 1:
@@ -841,6 +848,11 @@ class RecipeTreeScript(object):
             expand.append(TreeMenuButton(TreeText.Resume if stopped else TreeText.Stop, lambda: self.ToggleStop(node)))
             raw = self.Prefs.IsRaw(node.Key)
             expand.append(TreeMenuButton(TreeText.UnsetRaw if raw else TreeText.SetRaw, lambda: self.ToggleRaw(node.Key)))
+        if node.Key in self.State.Force:
+            expand.append(TreeMenuButton(TreeText.CollapseRecursive, lambda: self.ToggleForce(node)))
+        elif node.State == STATE_CYCLIC:
+            # 红字警示：递归配方强制展开（按物品，这棵树里这样物品的红格都展开一层）
+            expand.append(TreeMenuButton(TreeText.ExpandRecursive, lambda: self.ToggleForce(node), danger=True))
         if node.State == STATE_OK:
             folded = node.Sig in self.State.Fold
             expand.append(TreeMenuButton(TreeText.UnfoldOne if folded else TreeText.Fold, lambda: self.ToggleFold(node)))
@@ -1053,6 +1065,14 @@ class RecipeTreeScript(object):
             self.State.Stop.add(node.Key)
         self.Resolve((TARGET_NODE, node.Sig))
 
+    def ToggleForce(self, node):
+        """ 展开递归 / 收起递归：按物品记，这棵树里这样物品的红格都强制展开一层（绕回出不来的原料留成红格）"""
+        if node.Key in self.State.Force:
+            self.State.Force.discard(node.Key)
+        else:
+            self.State.Force.add(node.Key)
+        self.Resolve((TARGET_NODE, node.Sig))
+
     def ToggleRaw(self, key):
         """ 当原料（全局）/ 取消：写全局表，每棵树都不再展开它 """
         raw = not self.Prefs.IsRaw(key)
@@ -1074,7 +1094,7 @@ class RecipeTreeScript(object):
         """ 点工作方块换类型：这个物品在这棵树里只在这个类型的配方里挑 """
         if not type_id or type_id == node.Type:
             return
-        if not any(not candidate.Stuck for candidate in node.InType(type_id)):
+        if node.Key not in self.State.Force and not any(not candidate.Stuck for candidate in node.InType(type_id)):
             # 这个类型在这一格只有递归配方：解算器用不了它、会退回别的类型 —— 不记这个选择，说一声（不让菜单与树各说一个类型）
             self.ShowToast(TreeText.TypeUnusable.format(self.Provider.TypeName(type_id).decode("utf-8", "replace")))
             return
@@ -1109,6 +1129,7 @@ class RecipeTreeScript(object):
             state.Types = dict(self.State.Types)
             state.Picks = dict(self.State.Picks)
             state.Stop = set(self.State.Stop) - {key}
+            state.Force = set(self.State.Force)
         self.State = state
         self.CloseMenu()
         self.Resolve(reset=True)

@@ -246,6 +246,8 @@ class TreeText(object):
     Resume = u"恢复展开"
     SetRaw = u"设为原料"
     UnsetRaw = u"取消原料"
+    ExpandRecursive = u"展开递归"  # 红字：这棵树里这样物品的红格都强制展开一层（绕回的原料留成红格）
+    CollapseRecursive = u"收起递归"
     Fold = u"隐藏子节点"
     UnfoldOne = u"显示子节点"
     AsRoot = u"打开配方树"
@@ -263,6 +265,7 @@ class TreeText(object):
     Current = u" · 当前使用"
     Reverse = u" · 还原"
     Stuck = u" · 递归配方：{}"
+    Forced = u" · 已强制展开递归"  # 强制展开的格子：灰字第一行后面
     Pinned = u" · 置顶"
     NoRecipe = u"没有配方"
     NeedState = u"需要 {} · {}"  # 没往下展开的格子：要几个 · 为什么没展开（下面 States 里的一句，或 NoRecipe）

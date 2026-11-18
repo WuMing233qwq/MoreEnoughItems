@@ -27,7 +27,10 @@
 1. 路径排除（候选级，不是节点级）：同一条配方在一条路上只用一次 —— 上面用过的这一格不能再用，那才是无限递归。
    用到路上已有物品的候选是「绕回」：那样物品还有一条没用过、原料不碰路上任何物品的配方（出口）才能用，排在不绕回的后面；
    于是一样物品在一条路上最多出现两次，第二次那一格只用不碰路上物品的配方（直接出环；本树选的类型不套在它上面）。
-   候选全都用不了才把这一格当原料（CYCLIC）。多候选的原料（标签）先挑不在路上的候选，全在路上时挑有出口的
+   候选全都用不了才把这一格当原料（CYCLIC）。多候选的原料（标签）先挑不在路上的候选，全在路上时挑有出口的。
+   **强制展开**（玩家点了「展开递归」，按物品记在 TreeState.Force）：这样物品的红格照样挑一条配方展开一层 ——
+   绕回出不来的那几样原料当原料（红格，Loop：要再展开就对那样物品再点一次），别的原料照常展开；
+   同一样物品在一条路上只强制展开一次（ForcedKeys），几样物品互相绕也停得下来
 2. 还原识别：做 X 的候选 R 用到 Y，而 Y 两步之内能用 X 做出来 —— R 是「还原」（铁块 → 铁锭、拆涂蜡的铜块 → 铜锭），
    有别的候选时默认不选
 3. 护栏：深度 MAX_DEPTH、节点 MAX_NODES，触线的标 TRUNC
@@ -116,13 +119,15 @@ class TreeNode(object):
     """
     树上的一格。Key 是物品键（provider 给的），Choices 是这一格的原料有哪几个候选（标签；根是它自己），
     Sig 是从根往下的路径签名（重算后 Id 会变，折叠、菜单靠它找回同一格），Path 是从根到这一格的物品键集合；
-    Used 是上面各格用了的配方 Id，Repeat 是这样物品在上面已经出现过（这一格是它第二次出现），Twice 是路上出现了两次的物品
+    Used 是上面各格用了的配方 Id，Repeat 是这样物品在上面已经出现过（这一格是它第二次出现），Twice 是路上出现了两次的物品；
+    Loop 是强制展开的那一格里绕回出不来的原料（不按常规展开），Forced 是这一格是强制展开的，ForcedKeys 是从根到这一格强制展开过的物品
     """
     __slots__ = ("Id", "Key", "Choices", "Need", "Depth", "Parent", "Slot", "Children", "Sig", "Path", "State",
-                 "Recipe", "Candidates", "Crafts", "Surplus", "Type", "Used", "Repeat", "Twice")
+                 "Recipe", "Candidates", "Crafts", "Surplus", "Type", "Used", "Repeat", "Twice", "Loop", "Forced",
+                 "ForcedKeys")
 
     def __init__(self, node_id, key, need, depth=0, parent=None, slot=0, choices=None, sig="r", path=frozenset(),
-                 used=frozenset(), twice=frozenset()):
+                 used=frozenset(), twice=frozenset(), forced=frozenset()):
         self.Id = node_id  # type: int
         self.Key = key  # type: str
         self.Choices = tuple(choices) if choices else (key,)  # type: tuple
@@ -142,6 +147,9 @@ class TreeNode(object):
         self.Crafts = 0  # type: int
         self.Surplus = 0  # type: int
         self.Type = None  # type: str or None  # 当前类型（选中的那条配方的类型）
+        self.Loop = False  # type: bool
+        self.Forced = False  # type: bool
+        self.ForcedKeys = forced  # type: frozenset
 
     def Types(self):  # type: () -> list
         """ 有候选的类型，按候选顺序去重（工作方块的菜单翻它）"""
@@ -244,10 +252,21 @@ class Solver(object):
         if len(node.Candidates) > 1:
             for candidate in node.Candidates:
                 candidate.Reverse = self.__IsReverse(candidate.Recipe, key)
-        chosen = self.__Choose(node)
+        if node.Loop:
+            # 强制展开那一格里绕回出不来的原料：不按常规挑（照常挑会成这样物品在路上第三次展开）；候选都算绕回，菜单里灰着
+            for candidate in node.Candidates:
+                if not candidate.Stuck:
+                    candidate.Stuck = (key,)
+            chosen = None
+        else:
+            chosen = self.__Choose(node)
+        blocked = ()
         if chosen is None:
-            node.State = STATE_CYCLIC
-            return
+            if key not in self.State.Force or key in node.ForcedKeys:
+                node.State = STATE_CYCLIC
+                return
+            chosen, blocked = self.__Force(node)
+            node.Forced = True
         recipe = chosen.Recipe
         node.State = STATE_OK
         node.Recipe = recipe
@@ -255,12 +274,48 @@ class Solver(object):
         node.Crafts = int(math.ceil(node.Need / float(recipe.Output)))
         node.Surplus = node.Crafts * recipe.Output - node.Need
         used = node.Used | frozenset((recipe.Id,))
+        forced = node.ForcedKeys | frozenset((key,)) if node.Forced else node.ForcedKeys
         for slot, (choices, count) in enumerate(recipe.Inputs):
             child_key = self.__Pick(choices, node.Path, lambda key: self.__CanExit(key, node, recipe))
             child = TreeNode(len(self.Nodes), child_key, node.Crafts * count, node.Depth + 1, node.Id, slot, choices,
-                             "{}/{}:{}".format(node.Sig, slot, child_key), node.Path, used, node.Twice)
+                             "{}/{}:{}".format(node.Sig, slot, child_key), node.Path, used, node.Twice, forced)
+            child.Loop = slot in blocked
             node.Children.append(child.Id)
             self.__Add(child)
+
+    def __Force(self, node):  # type: (TreeNode) -> tuple
+        """
+        强制展开一层：在全部候选里挑一条，给 (候选, 绕回出不来的那几样原料的下标)。
+        挑法：根配方 / 本树选的 / 首选照认（在当前类型里）；不然上面没用过的、绕回出不来的原料少的先，再照常的启发
+        """
+        pool = node.Candidates
+        selected = None if node.Repeat else self.State.Types.get(node.Key)
+        if selected is not None:
+            pool = [c for c in pool if c.Recipe.Type == selected] or pool
+        wanted = [self.State.RootRecipe] if node.Depth == 0 and self.State.RootRecipe else []
+        wanted += [self.State.Choices.get(node.Key), self.Prefs.Default(node.Key)]
+        for recipe_id in wanted:
+            for candidate in pool:
+                if recipe_id is not None and candidate.Recipe.Id == recipe_id:
+                    return candidate, self.__Blocked(candidate.Recipe, node)
+        best = min(pool, key=lambda c: (c.Recipe.Id in node.Used, len(self.__Blocked(c.Recipe, node)), c.Reverse,
+                                        len(c.Recipe.Inputs), -c.Recipe.Output, c.Recipe.Order))
+        return best, self.__Blocked(best.Recipe, node)
+
+    def __Blocked(self, recipe, node):  # type: (TreeRecipe, TreeNode) -> tuple
+        """
+        强制展开时这条配方的哪几样原料（下标）当原料、不往下展开：这条配方在上面用过的，用到路上物品的那几样；
+        不然全部候选都在路上、又出不了环的那几样（第二次出现的那一格、Loop 的那一格，在路上的都算出不了环）
+        """
+        blocked = []
+        for slot, (choices, _) in enumerate(recipe.Inputs):
+            on_path = [key in node.Path for key in choices]
+            if recipe.Id in node.Used:
+                if any(on_path):
+                    blocked.append(slot)
+            elif all(on_path) and (node.Repeat or not any(self.__CanExit(key, node, recipe) for key in choices)):
+                blocked.append(slot)
+        return tuple(blocked)
 
     def __Judge(self, recipe, node):  # type: (TreeRecipe, TreeNode) -> tuple
         """
