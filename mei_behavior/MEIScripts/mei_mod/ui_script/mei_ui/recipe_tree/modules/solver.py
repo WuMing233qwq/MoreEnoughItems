@@ -31,7 +31,10 @@
    **强制展开**（玩家点了「展开递归」，按物品记在 TreeState.Force）：这样物品的红格照样挑一条配方展开一层 ——
    绕回出不来的那几样原料当原料（红格，Loop：要再展开就对那样物品再点一次），别的原料照常展开；
    同一样物品在一条路上只强制展开一次（ForcedKeys），几样物品互相绕也停得下来；本树选的类型在这一格只有递归配方时，
-   展开递归的物品照这个类型强制展开（没点过的照旧退回别的类型）
+   展开递归的物品照这个类型强制展开（没点过的照旧退回别的类型）；本树选的配方在这一格是递归的（菜单里「选择递归配方」）也一样，
+   照选的那条强制展开。
+   **上方的副产物**：本来要成红格的物品，如果是路上某一格所用配方必出的其他产物（一锅出几样的化工配方：盐水电解同时出氢气、氯气、
+   氢氧化钠），就不当递归，记成「由上方那一格的副产物供给」（SUPPLIED，Supplier 是那一格）；汇总从那一格的副产物里扣，扣不够的差额才算递归
 2. 还原识别：做 X 的候选 R 用到 Y，而 Y 两步之内能用 X 做出来 —— R 是「还原」（铁块 → 铁锭、拆涂蜡的铜块 → 铜锭），
    有别的候选时默认不选
 3. 护栏：深度 MAX_DEPTH、节点 MAX_NODES，触线的标 TRUNC
@@ -58,6 +61,8 @@ STATE_CYCLIC = "cyclic"
 """ 候选配方全都会绕回：当原料 """
 STATE_TRUNC = "trunc"
 """ 触到深度 / 节点上限 """
+STATE_SUPPLIED = "supplied"
+""" 候选都绕回，可这样物品是路上某一格所用配方必出的其他产物：由那一格的副产物供给（Supplier），不往下展开 """
 STATE_NONITEM = "nonitem"
 """ 物品表里认不出的条目（provider.IsItem 为假，查不了配方）：当原料。流体登记成了隐藏物品，不算这一类、照常展开 """
 
@@ -121,11 +126,12 @@ class TreeNode(object):
     树上的一格。Key 是物品键（provider 给的），Choices 是这一格的原料有哪几个候选（标签；根是它自己），
     Sig 是从根往下的路径签名（重算后 Id 会变，折叠、菜单靠它找回同一格），Path 是从根到这一格的物品键集合；
     Used 是上面各格用了的配方 Id，Repeat 是这样物品在上面已经出现过（这一格是它第二次出现），Twice 是路上出现了两次的物品；
-    Loop 是强制展开的那一格里绕回出不来的原料（不按常规展开），Forced 是这一格是强制展开的，ForcedKeys 是从根到这一格强制展开过的物品
+    Loop 是强制展开的那一格里绕回出不来的原料（不按常规展开），Forced 是这一格是强制展开的，ForcedKeys 是从根到这一格强制展开过的物品；
+    Supplier 是供给这一格的那一格（SUPPLIED 时：路上它的配方顺带出这样物品）
     """
     __slots__ = ("Id", "Key", "Choices", "Need", "Depth", "Parent", "Slot", "Children", "Sig", "Path", "State",
                  "Recipe", "Candidates", "Crafts", "Surplus", "Type", "Used", "Repeat", "Twice", "Loop", "Forced",
-                 "ForcedKeys")
+                 "ForcedKeys", "Supplier")
 
     def __init__(self, node_id, key, need, depth=0, parent=None, slot=0, choices=None, sig="r", path=frozenset(),
                  used=frozenset(), twice=frozenset(), forced=frozenset()):
@@ -151,6 +157,7 @@ class TreeNode(object):
         self.Loop = False  # type: bool
         self.Forced = False  # type: bool
         self.ForcedKeys = forced  # type: frozenset
+        self.Supplier = None  # type: int or None
 
     def Types(self):  # type: () -> list
         """ 有候选的类型，按候选顺序去重（工作方块的菜单翻它）"""
@@ -264,6 +271,11 @@ class Solver(object):
         blocked = ()
         if chosen is None:
             if not self.__CanForce(node):
+                supplier = self.__Supplier(node)
+                if supplier is not None:
+                    node.State = STATE_SUPPLIED
+                    node.Supplier = supplier.Id
+                    return
                 node.State = STATE_CYCLIC
                 return
             chosen, blocked = self.__Force(node)
@@ -284,6 +296,17 @@ class Solver(object):
             node.Children.append(child.Id)
             self.__Add(child)
 
+    def __Supplier(self, node):  # type: (TreeNode) -> TreeNode or None
+        """ 路上离它最近、所用配方必出这样物品作为其他产物的那一格（概率产出不算：不一定有）；没有给 None """
+        parent = node.Parent
+        while parent is not None:
+            above = self.Nodes[parent]
+            if above.Recipe is not None and any(key == node.Key and chance >= 1.0
+                                                for key, _, chance in above.Recipe.Byproducts):
+                return above
+            parent = above.Parent
+        return None
+
     def __CanForce(self, node):  # type: (TreeNode) -> bool
         """ 这样物品点了展开递归，而且这条路上还没强制展开过它（一条路只许一次）"""
         return node.Key in self.State.Force and node.Key not in node.ForcedKeys
@@ -294,7 +317,7 @@ class Solver(object):
         挑法：根配方 / 本树选的 / 首选照认（在当前类型里）；不然上面没用过的、绕回出不来的原料少的先，再照常的启发
         """
         pool = node.Candidates
-        selected = None if node.Repeat else self.State.Types.get(node.Key)
+        selected = self.State.Types.get(node.Key)
         if selected is not None:
             pool = [c for c in pool if c.Recipe.Type == selected] or pool
         wanted = [self.State.RootRecipe] if node.Depth == 0 and self.State.RootRecipe else []
@@ -388,8 +411,13 @@ class Solver(object):
             return None
         pool = usable
         # 第二次出现的那一格是出环用的：类型不硬套（那是给第一次出现选的，套上可能只剩还原）。
-        # 本树、全局选的照样认 —— 菜单里点得动的「用这条」在这一格都要落得下来
-        selected = None if node.Repeat else self.State.Types.get(node.Key)
+        # 本树、全局选的照样认 —— 菜单里点得动的「用这条」在这一格都要落得下来；
+        # 换类型也一样：这样物品点了展开递归、选的类型在这一格只有递归配方（工作方块菜单换过去的），照这个类型强制展开
+        selected = self.State.Types.get(node.Key)
+        if node.Repeat:
+            if selected is not None and self.__CanForce(node) and not any(c.Recipe.Type == selected for c in usable)                     and any(c.Recipe.Type == selected for c in node.Candidates):
+                return None
+            selected = None
         if selected is not None:
             typed = [c for c in usable if c.Recipe.Type == selected]
             if typed:
@@ -408,6 +436,9 @@ class Solver(object):
             for candidate in pool:
                 if candidate.Recipe.Id == recipe_id:
                     return candidate
+            if self.__CanForce(node) and any(c.Recipe.Id == recipe_id for c in node.Candidates):
+                # 选的这条在这一格是递归配方（菜单里「选择递归配方」），这样物品又点了展开递归：不退回能用的配方，照它强制展开
+                return None
         # 没人选过：不绕回的先挑（绕回的只在别无选择时用）
         calm = [c for c in pool if not c.Loops] or pool
         pinned = [c for c in calm if self.Provider.IsPinned(c.Recipe)]

@@ -28,6 +28,8 @@
    所以一格的余量喂不到自己子树里的需求，只喂之后才走到的兄弟、表亲（照「深度优先、先走完的先做」的顺序合成，正好先有后用）。
    概率产出不进库存、不拿来抵，另记最多 / 平均（Chance）。
 4. 走完以后库存里剩下的，加上概率产出，就是副产物；工具只算真的做了的格子的配方（整棵被抵掉的子树不算），每样 1 个、不乘倍数。
+5. 「由上方副产物供给」的格子（SUPPLIED）：不记原料，记一笔欠账在供给它的那一格名下；那一格的子树走完、副产物放进库存之前先还账，
+   还不上的差额才记进原料（标成绕回：这一圈自己供不上）。上面那一格自己的子树就是这一圈 —— 所以只有它能还，库存里的别人的不算
 
 同一个中间物在几个分支里都要时，前一个做出来的余量后一个直接拿 —— 和「按物品 + 配方合并再取整」一样省；
 同一个物品在不同分支用了不同配方也照样抵（不用退回逐个相加、写「上界」）。
@@ -39,7 +41,7 @@
 """
 import math
 
-from .solver import STATE_OK
+from .solver import STATE_CYCLIC, STATE_OK, STATE_SUPPLIED
 
 
 class Summary(object):
@@ -81,8 +83,11 @@ def _take(stock, node, need):  # type: (dict, any, int) -> int
     return need
 
 
-def _made(summary, stock, node, crafts, need):  # type: (Summary, dict, any, int, int) -> None
-    """ 一格的子树走完了：多出来的、必出的其他产出放进库存；概率产出不进库存，记进副产物与 Chance """
+def _made(summary, stock, node, crafts, need, owed):  # type: (Summary, dict, any, int, int, dict) -> None
+    """
+    一格的子树走完了：多出来的、必出的其他产出放进库存；概率产出不进库存，记进副产物与 Chance。
+    owed 是它下面「由它的副产物供给」的格子欠它的 {物品键: 几个}：必出的其他产出先还账，还不上的差额记进原料（绕回）
+    """
     recipe = node.Recipe
     surplus = crafts * recipe.Output - need
     if surplus > 0:
@@ -90,27 +95,42 @@ def _made(summary, stock, node, crafts, need):  # type: (Summary, dict, any, int
     for key, count, chance in recipe.Byproducts:
         made = crafts * count
         if chance >= 1.0:
-            _add(stock, key, made)
+            debt = owed.pop(key, 0)
+            paid = min(made, debt)
+            if debt > paid:
+                owed[key] = debt - paid  # 还不上的差额：下面记进原料
+            made -= paid
+            if made > 0:
+                _add(stock, key, made)
             continue
         _add(summary.Byproducts, key, made)
         entry = summary.Chance.setdefault(key, [0, 0.0])
         entry[0] += made
         entry[1] += made * chance
+    for key, count in owed.items():
+        if count > 0:
+            _add(summary.Raw, key, count)
+            summary.Flags[key] = STATE_CYCLIC
 
 
 def _walk(nodes, qty, stock):  # type: (list, int, dict) -> Summary
     """ 从根深度优先走一遍（不递归：树最深 256 层）；stock 是库存，走的时候会改它 """
     summary = Summary()
+    debts = {}  # 供给的那一格的 Id -> {物品键: 下面欠它几个}
     # (节点 Id, 要几个, None) 是走到这一格；(节点 Id, 要几个, 做几次) 是它的子树走完了
     stack = [(0, qty, None)]
     while stack:
         node_id, need, crafts = stack.pop()
         node = nodes[node_id]
         if crafts is not None:
-            _made(summary, stock, node, crafts, need)
+            _made(summary, stock, node, crafts, need, debts.pop(node_id, {}))
             continue
         need = _take(stock, node, need)
         if need <= 0:
+            continue
+        supplier = getattr(node, "Supplier", None)
+        if node.State == STATE_SUPPLIED and supplier is not None:
+            _add(debts.setdefault(supplier, {}), node.Key, need)
             continue
         if node.State != STATE_OK:
             _add(summary.Raw, node.Key, need)

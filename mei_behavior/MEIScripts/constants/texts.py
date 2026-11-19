@@ -239,6 +239,9 @@ class TreeText(object):
     SecStation = u"显示"  # 工作方块格显示哪个工作站（只起显示作用）
     # 菜单：按钮
     Use = u"选择配方"
+    UseRecursive = u"选择递归配方"  # 红字：这条在这一格是递归配方，选了就是「选这条 + 展开递归」
+    CannotExpand = u"无法继续展开"  # 灰着的红字：这条路上方已经强制展开过这样物品，这一格展不开了
+    CannotPick = u"无法选择"  # 灰着的红字：上方同一样物品用的是别的配方，选了改的是上面那一格（这一格照样能展开）
     InUse = u"已选择"
     SetDefault = u"设为首选"
     UnsetDefault = u"取消首选"
@@ -259,12 +262,14 @@ class TreeText(object):
     Value = u"{}/{}"
     TypeValue = u"{} {}/{}"
     # 菜单：信息行
-    NeedInfo = u"需要 {} 个· 合成 {} 次"
+    NeedInfo = u"需要 {} · 合成 {} 次"
     Surplus = u" · 剩余 {}"
     RecipeInfo = u"第 {}/{} 条"  # 类型名在标题那一行（TooltipText.Recipe「类型名 · 物品名」）
-    Current = u" · 当前使用"
+    Current = u" · 当前"
     Reverse = u" · 还原"
     Stuck = u" · 递归配方：{}"
+    StuckUsed = u" · 配方已在路径中使用"  # 递归的原因是这条配方在上面（这条路上）已经用过
+    Supplied = u"由上方 {} 的副产物供给"  # 格子的状态：路上那一格的配方顺带出这样东西
     Forced = u" · 已强制展开递归"  # 强制展开的格子：灰字第一行后面
     Pinned = u" · 置顶"
     NoRecipe = u"没有配方"
@@ -275,6 +280,7 @@ class TreeText(object):
         "stop": u"该节点下不再展开",
         "raw": u"全局当原料",
         "cyclic": u"配方会无限递归",
+        "supplied": u"由上方的副产物供给",
         "trunc": u"已达到上限，无法再往下展开",
         "nonitem": u"不是物品",
     }
@@ -298,7 +304,8 @@ class TreeText(object):
     Bookmarked = u"已收藏"
     Unbookmarked = u"已取消收藏"
     BookmarkFull = u"收藏页签满了"
-    TypeUnusable = u"{}此处只有递归配方"  # 工作方块菜单换类型：这个类型在这一格用不了
+    TypeUnusable = u"{}此处只有递归配方，无法继续展开"  # 工作方块菜单换类型：这条路上方已经强制展开过这样物品
+    TypeUnpickable = u"{}此处只有递归配方，无法选择"  # 工作方块菜单换类型：上方同一样物品用的是别的类型
     TypeForced = u"{}此处只有递归配方，已展开递归"  # 工作方块菜单换类型：换过去就是展开递归
     NoRoot = u"无法识别该物品，打开配方树失败"
 

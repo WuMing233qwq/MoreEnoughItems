@@ -53,8 +53,8 @@ from .controls.cell import CellSpec, LazyCell, TreeCell, short_count
 from .controls.menu import (STRIP_PREVIEW, TreeMenuButton, TreeMenuModel, TreeMenuRow, TreeMenu, control_width, fit_text,
                             fit_width, stepper)
 from .controls.summary import TAB_BYPRODUCT, TAB_LACK, TAB_RAW, TAB_TOOL, TreeSummary, list_rows, set_tip
-from .modules import (DEFAULT, STATE_CYCLIC, STATE_LEAF, STATE_OK, Layout, Solver, TreeState, choice_sig, clamp_qty, key_of,
-                      shortfall, summarize)
+from .modules import (DEFAULT, STATE_CYCLIC, STATE_LEAF, STATE_OK, STATE_SUPPLIED, Layout, Solver, TreeState, choice_sig,
+                      clamp_qty, key_of, shortfall, summarize)
 from .provider import TreeProvider
 
 ViewBinder = clientApi.GetViewBinderCls()
@@ -66,6 +66,8 @@ STRIP_ITEM = "item"  # 菜单配方条里的一格：(STRIP_ITEM, 物品键, 数
 STRIP_STATION = "station"  # 工作方块菜单里的一个工作站：(STRIP_STATION, 物品键)
 STRIP_TYPE = "type"  # 没有工作站、画着类型图标（贴图）的那一格：(STRIP_TYPE, 类型 Id)
 ROOT_SIG = "r"
+BLOCK_FORCED = "forced"  # 递归配方选不了：这条路上方已经强制展开过这样物品（这一格展不开了）
+BLOCK_ABOVE = "above"  # 递归配方选不了：上方同一样物品用的是别的配方（只是选不了，这一格照样能展开）
 
 
 def subtree_sizes(nodes):  # type: (list) -> list
@@ -812,6 +814,10 @@ class RecipeTreeScript(object):
         if node.State == STATE_OK:
             info = TreeText.NeedInfo.format(node.Need, node.Crafts) + (
                 TreeText.Surplus.format(node.Surplus) if node.Surplus else u"") + (TreeText.Forced if node.Forced else u"")
+        elif node.State == STATE_SUPPLIED and node.Supplier is not None:
+            supplier = self.Solver.Nodes[node.Supplier].Key
+            info = TreeText.NeedState.format(node.Need, TreeText.Supplied.format(
+                provider.NameOf(supplier).decode("utf-8", "replace")))
         else:
             info = TreeText.NeedState.format(node.Need, TreeText.States.get(node.State, TreeText.NoRecipe))
         candidates = self.__TypeCandidates(node)
@@ -830,9 +836,20 @@ class RecipeTreeScript(object):
             in_use = node.Recipe is not None and candidate.Recipe.Id == node.Recipe.Id
             is_default = self.Prefs.Default(node.Key) == candidate.Recipe.Id
             recipe = candidate.Recipe
+            blocked = self.__ForceBlocked(node, lambda above: above.Recipe.Id == recipe.Id)                 if candidate.Stuck and not in_use else None
+            if candidate.Stuck and not in_use and blocked is None:
+                # 递归配方：红字「选择递归配方」，选了就是「选这条 + 展开递归」（按物品）
+                choose = TreeMenuButton(TreeText.UseRecursive, lambda: self.UseRecursiveRecipe(node, recipe), danger=True)
+            elif blocked is not None:
+                # 选不了：灰着、红字写原因（点了没反应的按钮要看得出来）——
+                # 上方已强制展开过这样物品是这一格展不开了；上方同一样物品用别的配方只是选不了，这一格照样能展开
+                choose = TreeMenuButton(TreeText.CannotExpand if blocked == BLOCK_FORCED else TreeText.CannotPick,
+                                        enabled=False, danger=True)
+            else:
+                choose = TreeMenuButton(TreeText.InUse if in_use else TreeText.Use, lambda: self.UseRecipe(node, recipe),
+                                        enabled=not in_use)
             rows.append(TreeMenuRow(TreeText.SecChoose, [
-                TreeMenuButton(TreeText.InUse if in_use else TreeText.Use, lambda: self.UseRecipe(node, recipe),
-                               enabled=not in_use and (node.Forced or not candidate.Stuck)),
+                choose,
                 TreeMenuButton(TreeText.UnsetDefault if is_default else TreeText.SetDefault,
                                lambda: self.SetDefault(node, None if is_default else recipe),
                                enabled=is_default or node.Forced or not candidate.Stuck),
@@ -850,8 +867,8 @@ class RecipeTreeScript(object):
             expand.append(TreeMenuButton(TreeText.UnsetRaw if raw else TreeText.SetRaw, lambda: self.ToggleRaw(node.Key)))
         if node.Key in self.State.Force:
             expand.append(TreeMenuButton(TreeText.CollapseRecursive, lambda: self.ToggleForce(node)))
-        elif node.State == STATE_CYCLIC:
-            # 红字警示：递归配方强制展开（按物品，这棵树里这样物品的红格都展开一层）
+        elif node.State in (STATE_CYCLIC, STATE_SUPPLIED):
+            # 红字警示：递归配方强制展开（按物品，这棵树里这样物品的红格都展开一层；由上方副产物供给的也能改成自己做）
             expand.append(TreeMenuButton(TreeText.ExpandRecursive, lambda: self.ToggleForce(node), danger=True))
         if node.State == STATE_OK:
             folded = node.Sig in self.State.Fold
@@ -916,7 +933,10 @@ class RecipeTreeScript(object):
             text += TreeText.Current
         if candidate.Reverse:
             text += TreeText.Reverse
-        if candidate.Stuck:
+        if candidate.Stuck and recipe.Id in node.Used:
+            # 递归是因为这条配方在这条路上面已经用过（比如一锅出几样的配方：上面为了别的产物用过它）：不写原料名，写原因
+            text += TreeText.StuckUsed
+        elif candidate.Stuck:
             names = TreeText.NameSep.join(self.Provider.NameOf(key).decode("utf-8", "replace") for key in candidate.Stuck[:2])
             text += TreeText.Stuck.format(names)
         if self.Provider.IsPinned(recipe):
@@ -1010,6 +1030,37 @@ class RecipeTreeScript(object):
         self.MenuBrowse = None
         self.Resolve((TARGET_NODE, node.Sig))
 
+    def __ForceBlocked(self, node, keeps):  # type: (any, callable) -> str or None
+        """
+        在这一格选递归配方、换到只有递归配方的类型落不落得下来；落得下来给 None，不然给原因：
+        BLOCK_FORCED 这条路上方已经强制展开过这样物品（一条路只许一次，这一格展不开了）；
+        BLOCK_ABOVE 上方有同一样物品的格子、它用的配方不合 keeps —— 选择按物品记，点了改的是上面那一格（它换了配方，这一格跟着没了），
+        这一格只是选不了，照样能展开（红格点「展开递归」）
+        """
+        if node.Key in node.ForcedKeys:
+            return BLOCK_FORCED
+        nodes = self.Solver.Nodes
+        parent = node.Parent
+        while parent is not None:
+            above = nodes[parent]
+            if above.Key == node.Key and (above.Recipe is None or not keeps(above)):
+                return BLOCK_ABOVE
+            parent = above.Parent
+        return None
+
+    def UseRecursiveRecipe(self, node, recipe):
+        """
+        选一条在这一格是递归的配方：这棵树里这个物品用这条（类型跟着它），再展开递归（按物品）——
+        在这一格照它强制展开一层，绕回出不来的原料留成红格
+        """
+        if node.Id == 0:
+            self.State.RootRecipe = None
+        self.State.Choices[node.Key] = recipe.Id
+        self.State.SetType(node.Key, recipe.Type)
+        self.State.Force.add(node.Key)
+        self.MenuBrowse = None
+        self.Resolve((TARGET_NODE, node.Sig))
+
     def SetDefault(self, node, recipe):
         """ 设为首选 / 取消首选：写全局表，以后每棵树先用它；这棵树里对它的单独选择清掉 """
         if recipe is not None:
@@ -1098,8 +1149,9 @@ class RecipeTreeScript(object):
             # 这个类型在这一格只有递归配方：换过去就是展开递归（按物品，照这个类型强制展开一层，绕回的原料留成红格）。
             # 这样物品在这条路上方已经强制展开过（一条路只许一次）就用不了：不记这个选择，说一声（不让菜单与树各说一个类型）
             name = self.Provider.TypeName(type_id).decode("utf-8", "replace")
-            if node.Key in node.ForcedKeys:
-                self.ShowToast(TreeText.TypeUnusable.format(name))
+            blocked = self.__ForceBlocked(node, lambda above: above.Recipe.Type == type_id)
+            if blocked is not None:
+                self.ShowToast((TreeText.TypeUnusable if blocked == BLOCK_FORCED else TreeText.TypeUnpickable).format(name))
                 return
             self.State.Force.add(node.Key)
             self.ShowToast(TreeText.TypeForced.format(name))

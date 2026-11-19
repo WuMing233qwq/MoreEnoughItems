@@ -27,12 +27,12 @@
 from .choices import KIND_TREE, TreeState, clamp_qty, item_ref, key_of, raw_snapshot, split_key
 from .layout import DEFAULT, Layout, Metrics, Placement, anchor_of, group_width, place
 from .solver import (MAX_DEPTH, MAX_NODES, STATE_CYCLIC, STATE_LEAF, STATE_NONITEM, STATE_OK, STATE_PENDING,
-                     STATE_RAW, STATE_STOP, STATE_TRUNC, Candidate, Solver, TreeNode, TreeRecipe, choice_sig)
+                     STATE_RAW, STATE_STOP, STATE_SUPPLIED, STATE_TRUNC, Candidate, Solver, TreeNode, TreeRecipe, choice_sig)
 from .summary import Summary, shortfall, summarize
 
 __all__ = [
     "Candidate", "DEFAULT", "KIND_TREE", "Layout", "MAX_DEPTH", "MAX_NODES", "Metrics", "Placement", "STATE_CYCLIC", "STATE_LEAF",
-    "STATE_NONITEM", "STATE_OK", "STATE_PENDING", "STATE_RAW", "STATE_STOP", "STATE_TRUNC", "Solver", "Summary",
+    "STATE_NONITEM", "STATE_OK", "STATE_PENDING", "STATE_RAW", "STATE_STOP", "STATE_SUPPLIED", "STATE_TRUNC", "Solver", "Summary",
     "TreeNode", "TreeRecipe", "TreeState", "anchor_of", "choice_sig", "clamp_qty", "group_width",
     "item_ref", "key_of", "place", "raw_snapshot", "shortfall", "split_key", "summarize",
 ]
